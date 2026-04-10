@@ -22,12 +22,9 @@ function assertClose(a, b, tol, msg) {
 // Ustawienie trybow globalnych (wymagane przez calcAvgStats i inne)
 wiborMode = '6M';
 cpiMode = 'annual';
-salarySource = 'private';
+salarySource = 'average';
 
 process.stdout.write('\n=== Testy kalkulatora kredytu hipotecznego ===\n');
-
-// ---------------------------------------------------------------------------
-// 1. Kalkulacja stopy miesięcznej
 // ---------------------------------------------------------------------------
 group('1. Stopa miesieczna (calcMonthlyRate)');
 assertClose(calcMonthlyRate(5, 2), (5 + 2) / 100 / 12, 1e-10, 'WIBOR 5% + marza 2% -> r miesieczna');
@@ -232,9 +229,9 @@ assert(CPI_ANNUAL[2022] !== undefined, 'CPI_ANNUAL[2022] istnieje');
 assert(CPI_ANNUAL[2022] > 10, 'CPI 2022 > 10% (got ' + CPI_ANNUAL[2022] + ')');
 assert(WIBOR6M_MONTHLY['2010-01'] !== undefined, 'WIBOR6M_MONTHLY 2010-01 istnieje');
 
-salarySource = 'private';
+salarySource = 'average';
 var wynagr2010 = getWynagr(2010);
-assertClose(wynagr2010, 3225, 1.0, 'Wynagrodzenie sektora 2010 = 3225 PLN');
+assertClose(wynagr2010, 3435, 1.0, 'Wynagrodzenie przecietne 2010 = 3435 PLN');
 
 // ---------------------------------------------------------------------------
 // 20. Srednie roczne WIBOR
@@ -412,7 +409,7 @@ assertClose(rows6mTest[3].wibor, expectedWibor, 0.01, 'WIBOR m3 = m0 (brak fixin
 // 35. Wskaznik przystepnosci (rata/wynagrodzenie)
 // ---------------------------------------------------------------------------
 group('35. Wskaznik przystepnosci (rata / wynagrodzenie)');
-salarySource = 'private';
+salarySource = 'average';
 var wynagr = getWynagr(2010);
 var rata1 = rowsTest[0].rata;
 var ratio = rata1 / wynagr * 100;
@@ -422,7 +419,7 @@ assert(ratio > 30 && ratio < 100, 'Rata/wynagrodzenie w rozsadnym zakresie: ' + 
 // 36. getWynagr - fallback i ekstrapolacja
 // ---------------------------------------------------------------------------
 group('36. getWynagr fallback/ekstrapolacja');
-salarySource = 'private';
+salarySource = 'average';
 var w1999 = getWynagr(1999);
 var w2000 = getWynagr(2000);
 assert(w1999 === w2000, 'Rok przed zakresem zwraca wartosc z pierwszego roku');
@@ -443,7 +440,7 @@ assert(fMonthly > 0 && fMonthly < 2, 'Deflator miesieczny w rozsadnym zakresie')
 // 38. aggregateYearly - wynagrodzenia
 // ---------------------------------------------------------------------------
 group('38. aggregateYearly - pola wynagrodzeniowe');
-salarySource = 'private';
+salarySource = 'average';
 var yearlyFull = aggregateYearly(rowsTest);
 assert(yearlyFull[0].wynagr > 0, 'Wynagr w agregacji rocznej > 0');
 assert(yearlyFull[0].wynagr === getWynagr(yearlyFull[0].rok), 'Wynagr zgodne z getWynagr()');

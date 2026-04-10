@@ -122,8 +122,7 @@
         <label>Źródło danych wynagrodzeń</label>
         <div class="field-row">
           <select id="salary_source">
-            <option value="private" selected>Przeciętne miesięczne wynagrodzenie brutto w sektorze prywatnym</option>
-            <option value="average">Przeciętne miesięczne wynagrodzenie brutto (ogółem)</option>
+            <option value="average" selected>Przeciętne miesięczne wynagrodzenie brutto (ogółem)</option>
             <option value="minimum">Wynagrodzenie minimalne</option>
           </select>
         </div>
@@ -454,9 +453,8 @@
           <div class="table-scroll"><table id="tableA"></table></div>
           <div class="note" style="margin-top:10px">
             <strong>Źródła danych o wynagrodzeniach (wybierane z listy po lewej):</strong>
-            <br>1) sektor prywatny: API DBW GUS (zmienna 398, przekrój 688 „Polska; Sektor własności”, pozycja „sektor prywatny”, 2020+), z uzupełnieniem historycznym dla 2000–2019;
-            <br>2) przeciętne wynagrodzenie (ogółem): BDL GUS (zmienna 64428) + dane ZUS dla 2000–2001;
-            <br>3) wynagrodzenie minimalne: ZUS (od 2003 roku) + dane historyczne 2000–2002.
+            <br>1) przeciętne wynagrodzenie (ogółem): BDL GUS (zmienna 64428) + dane ZUS dla 2000–2001;
+            <br>2) wynagrodzenie minimalne: ZUS (od 2003 roku) + dane historyczne 2000–2002.
             <strong>Kolor komórek Stosunek raty do wynagrodzenia:</strong> <span style="color:#70c997">zielony &lt;35%</span>, <span style="color:#c8a96e">żółty 35–50%</span>, <span style="color:#e07070">czerwony &gt;50%</span> wynagrodzenia.
           </div>
         </div>
@@ -464,9 +462,8 @@
           <div class="table-scroll"><table id="tableB"></table></div>
           <div class="note" style="margin-top:10px">
             <strong>Źródła danych o wynagrodzeniach (wybierane z listy po lewej):</strong>
-            <br>1) sektor prywatny: API DBW GUS (zmienna 398, przekrój 688 „Polska; Sektor własności”, pozycja „sektor prywatny”, 2020+), z uzupełnieniem historycznym dla 2000–2019;
-            <br>2) przeciętne wynagrodzenie (ogółem): BDL GUS (zmienna 64428) + dane ZUS dla 2000–2001;
-            <br>3) wynagrodzenie minimalne: ZUS (od 2003 roku) + dane historyczne 2000–2002.
+            <br>1) przeciętne wynagrodzenie (ogółem): BDL GUS (zmienna 64428) + dane ZUS dla 2000–2001;
+            <br>2) wynagrodzenie minimalne: ZUS (od 2003 roku) + dane historyczne 2000–2002.
             <strong>Kolor komórek Stosunek raty do wynagrodzenia:</strong> <span style="color:#70c997">zielony &lt;35%</span>, <span style="color:#c8a96e">żółty 35–50%</span>, <span style="color:#e07070">czerwony &gt;50%</span> wynagrodzenia.
           </div>
         </div>
@@ -481,7 +478,6 @@
 <script src="data-wibor3m.js"></script>
 <script src="data-cpi-annual.js"></script>
 <script src="data-cpi-monthly.js"></script>
-<script src="data-wynagrodzenia-prywatny.js"></script>
 <script src="data-wynagrodzenia-przecietne.js"></script>
 <script src="data-wynagrodzenia-minimalne.js"></script>
 <script src="kalkulator-kredytu.js"></script>

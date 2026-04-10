@@ -59,7 +59,6 @@ var dataFiles = [
   'data-wibor3m.js',
   'data-cpi-annual.js',
   'data-cpi-monthly.js',
-  'data-wynagrodzenia-prywatny.js',
   'data-wynagrodzenia-przecietne.js',
   'data-wynagrodzenia-minimalne.js',
   'kalkulator-kredytu.js'

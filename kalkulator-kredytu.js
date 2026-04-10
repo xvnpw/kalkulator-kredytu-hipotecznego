@@ -7,29 +7,7 @@ const DEFAULT_FUTURE_CPI   = 3.5;
 const DEFAULT_FUTURE_CPI_MONTHLY = (Math.pow(1 + DEFAULT_FUTURE_CPI / 100, 1 / 12) - 1) * 100;
 const EPSILON = 1e-12;
 
-// Uzupełnienie historyczne dla wariantu "sektor prywatny"
-// (2000-2019: seria sektora przedsiębiorstw, użyta dla ciągłości długich horyzontów)
-const WYNAGRODZENIA_SEKTOR_HIST = {
-  2000: 1893, 2001: 2061, 2002: 2133, 2003: 2201, 2004: 2289,
-  2005: 2380, 2006: 2477, 2007: 2691, 2008: 3024, 2009: 3103,
-  2010: 3225, 2011: 3474, 2012: 3522, 2013: 3650, 2014: 3783,
-  2015: 3899, 2016: 4048, 2017: 4277, 2018: 4585, 2019: 5169
-};
-
-const WYNAGRODZENIA_SEKTOR_PRYWATNY = {
-  ...WYNAGRODZENIA_SEKTOR_HIST,
-  ...WYNAGRODZENIA_PRYWATNY_2020
-};
-
 const SALARY_SOURCE_CONFIG = {
-  private: {
-    chartLabel: 'sektor prywatny',
-    tableHeader: 'Wynagrodzenie sektora',
-    tableTitle: 'Przeciętne miesięczne wynagrodzenie brutto - sektor prywatny (GUS)',
-    ratioHeader: 'Rata / wynagrodzenie sektora',
-    ratioTitle: 'Rata jako % wynagrodzenia sektora prywatnego',
-    data: WYNAGRODZENIA_SEKTOR_PRYWATNY
-  },
   average: {
     chartLabel: 'przeciętne',
     tableHeader: 'Wynagrodzenie przeciętne',
@@ -53,7 +31,7 @@ Object.values(SALARY_SOURCE_CONFIG).forEach(function(cfg) {
 });
 
 function getSalaryMeta() {
-  return SALARY_SOURCE_CONFIG[salarySource] || SALARY_SOURCE_CONFIG.private;
+  return SALARY_SOURCE_CONFIG[salarySource] || SALARY_SOURCE_CONFIG.average;
 }
 
 function getWynagr(year) {
@@ -240,7 +218,7 @@ let currentTab = 'nominal';
 let currentData = {};
 let wiborMode = '3M';
 let cpiMode = 'annual';
-let salarySource = 'private';
+let salarySource = 'average';
 let rateType = 'rowna';
 let methodologyOpen = false;
 let themeMode = 'dark';
@@ -429,7 +407,7 @@ function calculate() {
   const kwota      = parseFloat(document.getElementById('kwota').value)    || 350000;
   const rokStart   = parseInt(document.getElementById('rok_start').value)  || 2010;
   const startMonth = parseInt(document.getElementById('miesiac_start').value) || 1;
-  salarySource     = document.getElementById('salary_source').value || 'private';
+  salarySource     = document.getElementById('salary_source').value || 'average';
   const marza      = parseFloat(document.getElementById('marza').value)    || 2;
   const prowizjaInput = parseFloat(document.getElementById('prowizja').value);
   const prowizjaPct = Number.isFinite(prowizjaInput) ? prowizjaInput : 2;

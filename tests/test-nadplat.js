@@ -24,7 +24,7 @@ function assertClose(a, b, tol, msg) {
 // Ustawienie trybow globalnych
 wiborMode = '3M';
 cpiMode = 'annual';
-salarySource = 'private';
+salarySource = 'average';
 
 process.stdout.write('\n=== Testy symulatora nadplat kredytu hipotecznego ===\n');
 
@@ -803,7 +803,7 @@ assert(Math.abs(rowsAnn[12].deflator - rowsMon[12].deflator) < 0.05,
 // 58. getWynagr i calcAvgStats
 // ============================================================================
 group('58. getWynagr i calcAvgStats');
-salarySource = 'private';
+salarySource = 'average';
 var wyn2010 = getWynagr(2010);
 assert(wyn2010 > 0, 'Wynagrodzenie 2010 > 0');
 var wyn2050 = getWynagr(2050);
@@ -818,16 +818,13 @@ assertClose(avg.avgSpread, avg.avgWibor - avg.avgCpi, 0.001, 'avgSpread = avgWib
 // 59. Salary source - rozne zrodla
 // ============================================================================
 group('59. Salary source - rozne zrodla');
-salarySource = 'private';
-var wynPriv = getWynagr(2020);
 salarySource = 'average';
 var wynAvg = getWynagr(2020);
 salarySource = 'minimum';
 var wynMin = getWynagr(2020);
 assert(wynMin < wynAvg, 'Minimalne < przecietne');
-assert(wynMin < wynPriv, 'Minimalne < prywatne');
 // Przywroc domyslne
-salarySource = 'private';
+salarySource = 'average';
 
 // ============================================================================
 // 60. Nadplata w miesiacu 0
