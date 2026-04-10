@@ -536,30 +536,30 @@
       <div class="field">
         <label>Kwota kredytu (PLN)</label>
         <div class="field-row">
-          <input type="number" id="kwota" value="300000" min="10000" max="5000000" step="10000">
+          <input type="number" id="kwota" value="350000" min="10000" max="5000000" step="10000">
           <span class="unit">PLN</span>
         </div>
-        <input type="range" id="kwota_r" min="50000" max="2000000" step="10000" value="300000">
-        <div class="range-val" id="kwota_rv">300 000 PLN</div>
+        <input type="range" id="kwota_r" min="50000" max="2000000" step="10000" value="350000">
+        <div class="range-val" id="kwota_rv">350 000 PLN</div>
       </div>
 
       <div class="field">
         <label>Rok zaciągnięcia kredytu</label>
         <div class="field-row">
-          <input type="number" id="rok_start" value="2000" min="2000" max="2020" step="1">
+          <input type="number" id="rok_start" value="2021" min="2000" max="2024" step="1">
         </div>
-        <input type="range" id="rok_r" min="2000" max="2020" step="1" value="2000">
-        <div class="range-val" id="rok_rv">2000</div>
+        <input type="range" id="rok_r" min="2000" max="2024" step="1" value="2021">
+        <div class="range-val" id="rok_rv">2021</div>
       </div>
 
       <div class="field">
         <label>Marża banku (%)</label>
         <div class="field-row">
-          <input type="number" id="marza" value="2.0" min="0.5" max="5" step="0.1">
+          <input type="number" id="marza" value="1.85" min="0.5" max="5" step="0.05">
           <span class="unit">%</span>
         </div>
-        <input type="range" id="marza_r" min="0.5" max="5" step="0.1" value="2.0">
-        <div class="range-val" id="marza_rv">2,0%</div>
+        <input type="range" id="marza_r" min="0.5" max="5" step="0.05" value="1.85">
+        <div class="range-val" id="marza_rv">1,85%</div>
       </div>
 
       <div class="separator"></div>
@@ -569,9 +569,9 @@
         <div style="flex:1">
           <div class="field">
             <label>Wariant A – długi (lata)</label>
-            <input type="number" id="lat_A" value="25" min="5" max="35" step="1">
-            <input type="range" id="lat_A_r" min="5" max="35" step="1" value="25">
-            <div class="range-val" id="lat_A_rv"><span class="badge badge-gold">25 lat</span></div>
+            <input type="number" id="lat_A" value="30" min="5" max="35" step="1">
+            <input type="range" id="lat_A_r" min="5" max="35" step="1" value="30">
+            <div class="range-val" id="lat_A_rv"><span class="badge badge-gold">30 lat</span></div>
           </div>
         </div>
         <div style="flex:1">
@@ -987,10 +987,10 @@ function fmtPct(n) { return fmt(n, 2) + '%'; }
 // RENDER
 // ==========================================
 function calculate() {
-  const kwota    = parseFloat(document.getElementById('kwota').value)    || 300000;
-  const rokStart = parseInt(document.getElementById('rok_start').value)  || 2000;
-  const marza    = parseFloat(document.getElementById('marza').value)    || 2.0;
-  const latA     = parseInt(document.getElementById('lat_A').value)      || 25;
+  const kwota    = parseFloat(document.getElementById('kwota').value)    || 350000;
+  const rokStart = parseInt(document.getElementById('rok_start').value)  || 2021;
+  const marza    = parseFloat(document.getElementById('marza').value)    || 1.85;
+  const latA     = parseInt(document.getElementById('lat_A').value)      || 30;
   const latB     = parseInt(document.getElementById('lat_B').value)      || 10;
 
   const wiborStart = getWiborSemi(rokStart, 1); // fixing H1 roku startu
@@ -1045,12 +1045,12 @@ function calculate() {
   document.getElementById('cA_nom').textContent       = fmtPLN(totNomA);
   document.getElementById('cA_odsetki').textContent   = fmtPLN(odsetNomA);
   document.getElementById('cA_real').textContent      = fmtPLN(totRealA);
-  document.getElementById('cA_real_odsetki').textContent = fmtPLN(Math.max(0, odsetRealA));
+  document.getElementById('cA_real_odsetki').textContent = fmtPLN(odsetRealA);
   document.getElementById('cA_inflacja_zysk').textContent = fmtPLN(infZyskA);
   document.getElementById('cB_nom').textContent       = fmtPLN(totNomB);
   document.getElementById('cB_odsetki').textContent   = fmtPLN(odsetNomB);
   document.getElementById('cB_real').textContent      = fmtPLN(totRealB);
-  document.getElementById('cB_real_odsetki').textContent = fmtPLN(Math.max(0, odsetRealB));
+  document.getElementById('cB_real_odsetki').textContent = fmtPLN(odsetRealB);
   document.getElementById('cB_inflacja_zysk').textContent = fmtPLN(infZyskB);
 
   // Aktualizuj etykiety "realne" z data wyceny
@@ -1292,7 +1292,7 @@ function renderChart() {
 
 function renderTable(tableId, rows, kwota) {
   const t = document.getElementById(tableId);
-  // Wynagrodzenia są roczne – cache per rok
+  // Wynagrodzenia są miesięczne – cache per rok
   const wynagrCache = {};
   const wynagrITCache = {};
 
