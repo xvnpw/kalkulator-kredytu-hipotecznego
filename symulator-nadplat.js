@@ -584,8 +584,8 @@ function removeEvent(id) {
 function updateEvent(id, field, value) {
   var ev = events.find(function(e) { return e.id === id; });
   if (!ev) return;
-  if (field === 'type') {
-    ev.type = value;
+  if (field === 'type' || field === 'doKonca') {
+    ev[field] = value;
     renderEvents();
   } else {
     ev[field] = value;

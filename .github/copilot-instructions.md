@@ -93,7 +93,8 @@ UI text, variable names in comments, and all displayed strings are in **Polish**
 ### Running tests
 
 ```bash
-node tests/run-tests.js
+node tests/run-tests.js          # Calculator tests (38 groups, 92 assertions)
+node tests/run-tests-nadplat.js  # Overpayment simulator tests (66 groups, 215 assertions)
 ```
 
 No npm packages needed — only Node.js (built-in `vm` and `fs` modules).
@@ -130,3 +131,24 @@ WIBOR: fixing intervals (3M/6M), different start months, 6M vs 3M comparison.
 Data integrity: spot-checks on CPI/WIBOR/salary data, annual averages, future fallbacks.
 Aggregation: yearly totals match monthly sums, salary fields populated correctly.
 Edge cases: 3-year and 35-year loans, high inflation (2022), provision identity, verdict direction logic.
+
+### Symulator nadpłat tests (`tests/run-tests-nadplat.js` + `tests/test-nadplat.js`)
+
+The overpayment simulator test runner (`tests/run-tests-nadplat.js`) loads data JS files and `symulator-nadplat.js` into a VM sandbox with DOM stubs (default input values matching `symulator-nadplat.html`: kwota=350000, rok_start=2010, miesiac_start=1, okres=360, marża=2, prowizja=2). It also provides `document.createElement()` and `document.querySelectorAll()` stubs since the simulator builds dynamic event UI.
+
+#### Test coverage areas (66 groups, 215 assertions)
+
+Core math: annuity formula (`calcRataRowna`), monthly rate, zero-rate edge case, declining installments, WIBOR fixing intervals (3M/6M).
+Harmonogram: base schedule convergence, row-level identity, saldo monotonicity, calendar month mapping, yearly aggregation.
+Real values: cumulative deflator (annual and monthly CPI), high inflation (2022), year boundaries.
+Data integrity: spot-checks on CPI/WIBOR data, future fallbacks, annualization round-trip.
+Events — nadpłata: single overpayment (shorter term / lower installment), overpayment exceeding balance, overpayment at month 0, multiple in same month.
+Events — cykliczna: recurring overpayment (doKońca=true expands to end, doKońca=false to specified date), combined with shorter/lower-rata modes.
+Events — spłata: early full payoff, balance drops to 0 in payoff month.
+Events — refinansowanie: new margin applied, provision calculated, WIBOR type change, `fixCounterSinceReset` restarts.
+Event ordering: refinansowanie → nadpłata → spłata in same month.
+Combined events: multiple events across different months, balance identity (raty + nadpłaty ≈ kapitał + odsetki).
+Methodology verification: steps 1–6 (rate calculation, installment formula, real values, overpayment effect, refinancing, provisions).
+Table validation: all column fields present, event-specific fields populated.
+Comparison: modified schedule cheaper than base, CPI annual vs monthly modes.
+Edge cases: zero provision, date boundary filtering, formatting (`fmtOkres`), salary sources.

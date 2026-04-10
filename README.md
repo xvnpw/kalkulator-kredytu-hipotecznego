@@ -125,19 +125,20 @@ W trybie CPI m/m fallback jest automatycznie wyliczany miesięcznie z `DEFAULT_F
 
 ## Testy
 
-Zestaw testów weryfikuje poprawność obliczeń w `kalkulator-kredytu.js`. Testy nie wymagają żadnych zależności poza Node.js.
+Zestawy testów weryfikują poprawność obliczeń w `kalkulator-kredytu.js` i `symulator-nadplat.js`. Testy nie wymagają żadnych zależności poza Node.js.
 
 ### Uruchomienie
 
 ```bash
-node tests/run-tests.js
+node tests/run-tests.js          # Kalkulator kredytu
+node tests/run-tests-nadplat.js  # Symulator nadpłat
 ```
 
 ### Jak działają
 
-Plik `tests/run-tests.js` ładuje pliki danych i `kalkulator-kredytu.js` do piaskownicy `vm.createContext()` z zaślepkami DOM/Chart.js, a następnie wykonuje `tests/test-kalkulator.js` wewnątrz tego kontekstu. Dzięki temu testy mają bezpośredni dostęp do wszystkich `const`/`let`/`function` z kodu źródłowego.
+Każdy test runner (`tests/run-tests.js`, `tests/run-tests-nadplat.js`) ładuje pliki danych i odpowiedni skrypt JS do piaskownicy `vm.createContext()` z zaślepkami DOM/Chart.js, a następnie wykonuje plik testowy wewnątrz tego kontekstu. Dzięki temu testy mają bezpośredni dostęp do wszystkich `const`/`let`/`function` z kodu źródłowego.
 
-### Grupy testowe (38 grup, 92 asercje)
+### Kalkulator kredytu (38 grup, 92 asercje)
 
 | # | Grupa | Co weryfikuje |
 |---|---|---|
@@ -179,6 +180,77 @@ Plik `tests/run-tests.js` ładuje pliki danych i `kalkulator-kredytu.js` do pias
 | 36 | getWynagr fallback | Rok przed zakresem i ekstrapolacja 7% |
 | 37 | getMonthlyDeflatorFactor | Oba tryby CPI — wartości w rozsądnym zakresie |
 | 38 | aggregateYearly — wynagrodzenia | Pole wynagr zgodne z getWynagr() |
+
+### Symulator nadpłat (66 grup, 215 asercji)
+
+| # | Grupa | Co weryfikuje |
+|---|---|---|
+| 1 | Stopa miesięczna | `calcMonthlyRate()` — konwersja roczna→miesięczna |
+| 2 | Wzór annuitetowy | `calcRataRowna()` — porównanie z wartościami referencyjnymi |
+| 3 | Zerowa stopa | Edge case: stopa 0% → rata = kwota/n |
+| 4 | Harmonogram bazowy (annuitet) | Fixing, deflator m0=1, rata=odsetki+kapitał |
+| 5 | Zbieżność salda (annuitet) | Saldo → 0 po ostatniej racie, suma kapitału = kwota |
+| 6 | Raty malejące | Poprawność schematu malejącego, stała część kapitałowa między fixingami |
+| 7 | Interwały fixingu WIBOR | 3M co 3 mies., 6M co 6 mies., poprawne oznaczenie isFix |
+| 8 | Deflator skumulowany (roczny) | Akumulacja deflatora przez 12+ miesięcy |
+| 9 | Deflator CPI miesięczny | Tryb m/m — deflator m1 z poprawnego miesiąca |
+| 10 | Sumy nominalne — spójność | Odsetki = suma rat − kapitał |
+| 11 | Mapowanie miesiąca startowego | calMonth/rok przy starcie w lipcu, przejście roku |
+| 12 | Agregacja roczna | `aggregateYearly()` — suma roczna = suma miesięczna |
+| 13 | Annualizacja CPI | `annualizeMonthlyCpi()` — round-trip roczne↔miesięczne |
+| 14 | Fallback przyszłości | `DEFAULT_FUTURE_WIBOR/CPI/CPI_MONTHLY` dla lat poza danymi |
+| 15 | rata = odsetki + kapitał | Tożsamość w każdym wierszu (annuitet i malejące) |
+| 16 | Saldo monotoniczne | Saldo nierosnące (annuitet i malejące) |
+| 17 | Wysoka inflacja 2022 | Deflator < 0.90 po 12 mies. |
+| 18 | Spot-check danych | CPI 2022, WIBOR 3M/6M styczeń 2010 |
+| 19 | Kwota kredytu — różne wartości | 50k i 1.5M: saldo→0, większa kwota → większa rata |
+| 20 | Okres kredytu — różne wartości | 36 i 420 miesięcy: saldo→0, krótszy okres → wyższa rata |
+| 21 | Data startu — różne miesiące | Październik: calMonth, rok, przejście roku, nazwy |
+| 22 | WIBOR 3M vs 6M | Porównanie harmonogramów, oba zbiegają do 0 |
+| 23 | Marża i prowizja | Wyższa marża → wyższa rata/stopa/koszt |
+| 24 | Harmonogram z wydarzeniami — brak zdarzeń | Identyczny z bazowym, prowizja=kwota*pct |
+| 25 | Nadpłata jednorazowa — krótszy okres | Mniej wierszy, saldo→0, kwota/event poprawne |
+| 26 | Nadpłata jednorazowa — niższa rata | Okres bez zmian (360), rata niższa po nadpłacie |
+| 27 | Pełna wcześniejsza spłata | Kredyt zamknięty w miesiącu splaty, saldo=0 |
+| 28 | Refinansowanie | Nowa marża, prowizja ref, wiersz z eventem |
+| 29 | Refinansowanie ze zmianą WIBOR | Zmiana z 3M na 6M, natychmiastowy fixing |
+| 30 | Nadpłata cykliczna — doKońca=true | `expandEvents()` rozwija do końca kredytu |
+| 31 | Nadpłata cykliczna — doKońca=false | `expandEvents()` rozwija do wskazanej daty (24 zdarzenia) |
+| 32 | Nadpłata cykliczna — harmonogram | Skrócenie kredytu, wiele wierszy z nadpłatami |
+| 33 | Nadpłata cykliczna — niższa rata | Mała kwota: okres 360; duża kwota: saldo→0 wcześniej |
+| 34 | Nadpłata zamykająca kredyt | Nadpłata > saldo: kredyt zamknięty natychmiast |
+| 35 | expandEvents — jednorazowe | Nadpłata/spłata/refinansowanie: 3 elementy bez rozwijania |
+| 36 | expandEvents — graniczne daty | Zdarzenia sprzed startu kredytu odfiltrowane |
+| 37 | Kolejność przetwarzania zdarzeń | Refinansowanie → nadpłata → spłata w tym samym miesiącu |
+| 38 | Malejące + nadpłata — krótszy okres | Mniej wierszy, saldo→0 |
+| 39 | Malejące + nadpłata — niższa rata | Okres bez zmian (360) |
+| 40 | Malejące + pełna spłata | Kredyt zamknięty, saldo=0 |
+| 41 | Malejące + refinansowanie | Wiersz refinansowania z fixing=true |
+| 42 | Prowizje — początkowa i refinansowania | Łączne prowizje, realne < nominalne |
+| 43 | Wiele zdarzeń w różnych miesiącach | Łączna nadpłata, prowizje ≥ początkowej |
+| 44 | Spójność: raty + nadpłaty = kapitał + odsetki | Tożsamość bilansowa |
+| 45 | Nadpłata oszczędza odsetki | Odsetki z nadpłatą < odsetki bazowe |
+| 46 | Deflator w harmonogramie z wydarzeniami | Deflator m0=1, m12<1 |
+| 47 | Metodyka krok 1: oprocentowanie | WIBOR startu, stopa=WIBOR+marża |
+| 48 | Metodyka krok 2: rata miesięczna | Annuitet i malejące: wzory poprawne |
+| 49 | Metodyka krok 3: rata realna | Deflator m1, rata realna < nominalna |
+| 50 | Metodyka krok 4: efekt nadpłaty | Krótszy okres vs niższa rata |
+| 51 | Metodyka krok 5: refinansowanie | Nowa marża, natychmiastowy fixing, stopa po ref |
+| 52 | Metodyka krok 6: prowizje | Prowizja nie zwiększa salda |
+| 53 | Walidacja kolumn tabeli | Wszystkie pola wiersza harmonogramu obecne |
+| 54 | Tabela z wydarzeniami — pola | Nadpłata/spłata: poprawne pola event/nadplata/saldo |
+| 55 | Formatowanie (fmtOkres) | 360m=30lat, 120m=10lat, 5m, 25m=2lat 1mies |
+| 56 | Porównanie bazowy vs zmodyfikowany | Suma rat zmodyfikowanego < bazowego |
+| 57 | CPI roczne vs miesięczne | Raty nominalne identyczne, deflatory różne |
+| 58 | getWynagr i calcAvgStats | Wynagrodzenia, ekstrapolacja, avgSpread |
+| 59 | Salary source — różne źródła | Minimalne < przeciętne < prywatne |
+| 60 | Nadpłata w miesiącu 0 | Nadpłata na starcie kredytu |
+| 61 | Wielokrotna nadpłata w tym samym miesiącu | Łączna kwota dwóch nadpłat |
+| 62 | Refinansowanie + nadpłata w tym samym miesiącu | Kolejność: ref→nadpłata, prowizje |
+| 63 | fixCounterSinceReset po refinansowaniu | Nowy cykl fixingu po refinansowaniu |
+| 64 | Prowizja zerowa | 0% → totalProwizje = 0 |
+| 65 | Nadpłata nie przekracza salda | Obcięcie kwoty do salda |
+| 66 | Data label format | Poprawny format „sty 2010", „gru 2010" |
 
 ## Ograniczenia
 
