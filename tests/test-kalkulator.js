@@ -439,7 +439,7 @@ var w2000 = getWynagr(2000);
 assert(w1999 === w2000, 'Rok przed zakresem zwraca wartosc z pierwszego roku');
 
 var wFuture = getWynagr(2050);
-assert(wFuture > getWynagr(2024), 'Wynagrodzenie 2050 > 2024 (ekstrapolacja 7%)');
+assert(wFuture > getWynagr(2024), 'Wynagrodzenie 2050 > 2024 (ekstrapolacja wg futureSalaryGrowth)');
 
 // ---------------------------------------------------------------------------
 // 37. getMonthlyDeflatorFactor oba tryby CPI

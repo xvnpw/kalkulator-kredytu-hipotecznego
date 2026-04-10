@@ -435,7 +435,8 @@ function calculate() {
   futureCpi = Number.isFinite(futureCpiInput) ? futureCpiInput : DEFAULT_FUTURE_CPI;
   futureSalaryGrowth = Number.isFinite(futureSalaryInput) ? futureSalaryInput : DEFAULT_FUTURE_SALARY_GROWTH;
   const futureCpiMonthly = getFutureCpiMonthly();
-  const marza      = parseFloat(document.getElementById('marza').value)    || 2;
+  const marzaInput = parseFloat(document.getElementById('marza').value);
+  const marza      = Number.isFinite(marzaInput) ? marzaInput : 2;
   const prowizjaInput = parseFloat(document.getElementById('prowizja').value);
   const prowizjaPct = Number.isFinite(prowizjaInput) ? prowizjaInput : 2;
   const latA       = parseInt(document.getElementById('lat_A').value)      || 30;
