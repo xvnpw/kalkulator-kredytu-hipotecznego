@@ -2,9 +2,14 @@
 
 ## Architecture
 
-This is a **single-file application**: `kalkulator-kredytu.html` contains all HTML, CSS (inline `<style>`), and JavaScript (inline `<script>`). There is no build step, package manager, or test suite — open the file directly in a browser.
+This repository contains **two single-file applications** — open either HTML file directly in a browser. There is no build step, package manager, or test suite.
 
-Data is split across four external JS files loaded via `<script src="...">` before the main script block:
+| File | Purpose |
+|---|---|
+| `kalkulator-kredytu.html` | Mortgage cost calculator — compares two loan terms (Variant A vs B) with real-value analysis |
+| `symulator-nadplat.html` | Mortgage overpayment simulator — compares base schedule vs schedule modified by overpayments, early payoff, or refinancing |
+
+Both share the same external CSS (`kalkulator-kredytu.css`) and the same seven data JS files loaded via `<script src="...">` before the main script block:
 
 | File | Exported constant | Contents |
 |---|---|---|
@@ -12,52 +17,63 @@ Data is split across four external JS files loaded via `<script src="...">` befo
 | `data-wibor3m.js` | `WIBOR3M_MONTHLY` | WIBOR 3M monthly closing values. Key: `"YYYY-MM"`, value: % rate. Source: `plopln3m_m.csv`. |
 | `data-cpi-annual.js` | `CPI_ANNUAL` | Annual Polish CPI as **percentage points** (e.g. `14.4` means 14.4%). Source: GUS annual series. |
 | `data-cpi-monthly.js` | `CPI_MONTHLY` | Monthly CPI m/m (previous month = 100, stored as `index - 100`). Key: `"YYYY-MM"`. Source: GUS monthly series. |
+| `data-wynagrodzenia-prywatny.js` | `WYNAGRODZENIA_PRYWATNY_2020` | Annual average monthly gross wage in private sector (PLN) from 2020 onward (GUS DBW API). |
+| `data-wynagrodzenia-przecietne.js` | `WYNAGRODZENIA_PRZECIETNE` | Annual average monthly gross wage (PLN, overall). |
+| `data-wynagrodzenia-minimalne.js` | `WYNAGRODZENIA_MINIMALNE` | Annual minimum wage values (PLN). |
 
 The CSV source files are **reference only** — never read at runtime.
 
 ## Data layer (in-script constants)
 
-Defined in the main `<script>` block:
+Both applications define similar constants in their `<script>` blocks:
 
 | Constant | Contents |
 |---|---|
-| `WYNAGRODZENIA` | Monthly gross salary (PLN), enterprise sector, GUS. Key: year (int). |
-| `IT_MULTIPLIER` | Year-specific multiplier applied on top of `WYNAGRODZENIA` to estimate IT-sector pay. |
+| `SALARY_SOURCE_CONFIG` | Salary source registry (`private`, `average`, `minimum`) with labels, tooltips, and yearly data maps. |
+| `WYNAGRODZENIA_SEKTOR_HIST` | Historical supplement (2000–2019) used only for private-sector mode continuity. |
 | `WIBOR6M_ANNUAL` / `WIBOR3M_ANNUAL` | Annual averages computed at startup from `WIBOR6M_MONTHLY` / `WIBOR3M_MONTHLY`; used only for the WIBOR history chart. |
 | `DEFAULT_FUTURE_WIBOR` / `DEFAULT_FUTURE_CPI` / `DEFAULT_FUTURE_CPI_MONTHLY` | Fallback projection values; monthly CPI fallback is derived from annual CPI default. |
 
-## Calculation conventions
+## Shared calculation conventions
 
 - **WIBOR fixing** happens every `fixInterval` months from the loan start month (3 for WIBOR 3M, 6 for WIBOR 6M). There are no fixed calendar dates — the interval is purely relative to month index `m`: `isFix = (m % fixInterval === 0)`.
 - **Real payment** uses a **cumulative monthly deflator** that starts at `1.0` in month 0 (so `rataReal[0] === rata[0]`). The deflator is updated *after* each month: for annual CPI mode `cumulativeDeflator *= 1 / (1 + annualCPI/100)^(1/12)`, for monthly CPI mode `cumulativeDeflator *= 1 / (1 + monthlyCPI/100)`.
-- **Real interest** (`odsetRealA/B`) can legitimately be **negative** when high inflation deflates total real payments below the principal. Do not clamp with `Math.max(0, ...)`.
-- **Affordability ratio** uses the monthly salary from `WYNAGRODZENIA` (already monthly), not annual.
-- `calcSimpleRealTotal` uses a constant real rate `(WIBOR_start + marża − CPI_start)` for the full term — in monthly mode `CPI_start` is annualized from the m/m reading.
-- `calcAvgStats(rows)` computes average WIBOR, average CPI, and average WIBOR−CPI spread over a loan's rows array; it reads the module-level `cpiMode` variable.
+- **Real interest** can legitimately be **negative** when high inflation deflates total real payments below the principal. Do not clamp with `Math.max(0, ...)`.
+- **Affordability ratio** uses the currently selected salary source from `SALARY_SOURCE_CONFIG` (private/average/minimum), with monthly values.
 
-## Factor analysis (real cost decomposition)
+## kalkulator-kredytu.html specifics
 
-The comparison panel includes a **"Rozkład realnego kosztu wg czynników"** section. For each variant the real interest is additively decomposed into:
+- Compares two variants: **A** (longer term) vs **B** (shorter term).
+- CSS custom properties: `var(--accent)` (gold) for Variant A, `var(--accent2)` (blue) for Variant B.
+- Chart tabs: `nominal`, `real`, `wibor`, `affordability`.
+- Table tabs: `tA` / `tB`.
+- `calcAvgStats(rows)` computes average WIBOR, CPI, and spread; reads module-level `cpiMode`.
+- Factor analysis: real interest decomposed into **margin contribution** and **WIBOR−CPI spread effect** via zero-margin harmonograms.
 
-- **Wkład marży banku** = `odsetReal(marza) − odsetReal(marza=0)` — the bank margin's contribution in today's PLN.
-- **Efekt spreadu WIBOR−CPI** = `odsetReal(marza=0)` — the pure macro effect; negative when inflation exceeded WIBOR on average.
+## symulator-nadplat.html specifics
 
-These two components sum exactly to total real interest: `marzaContrib + wiborCpiContrib = odsetReal`.
+- Compares **base schedule** (no events) vs **modified schedule** (with overpayments/refinancing).
+- Loan duration is in **months** (36–420, default 300). Display shows "X lat Y mies." via `fmtOkres()`.
+- Supports two rate types: **rata równa** (annuity) and **rata malejąca** (decreasing installments).
+- **Events system** — four event types stored in the `events` array:
+  - `nadplata` — one-time overpayment (amount + date + effect: `nizsza_rata` / `krotszy_okres`)
+  - `cykliczna` — recurring monthly overpayment (start month, optional end month or `doKonca`)
+  - `splata` — full early payoff at a specific date
+  - `refinansowanie` — move to new bank (new margin, optional provision, optional WIBOR type change)
+- `expandEvents()` expands `cykliczna` entries into individual monthly `nadplata` events before calculation.
+- Event processing order per month: refinansowanie → nadpłata → pełna spłata.
+- `effectiveEndMonth` tracks loan shortening for `krotszy_okres` overpayments — at WIBOR fixing, `remaining = effectiveEndMonth - m` (not `nMonths - m`).
+- When overpayment fully zeroes the saldo, a final row with `saldo: 0` is recorded.
+- **Provisions** (initial + refinancing) are tracked in cost summary but NOT added to loan balance.
+- Chart tabs: `nominal`, `real`, `saldo`, `wibor`, `affordability`.
+- Colors: `var(--accent)` (gold) for base schedule, `var(--accent2)` (blue) for modified schedule.
 
-The section also shows average WIBOR, CPI, and spread over the loan's lifetime, plus the **duration effect** = real interest difference between variant A and B.
+## Shared UI conventions
 
-To compute this, `calculate()` runs two extra zero-margin harmonograms (`rowsA0`, `rowsB0`) alongside the main ones.
-
-## UI conventions
-
-- The calculator compares two variants: **A** (longer term, `latA`) vs **B** (shorter term, `latB`).
-- CSS custom properties are defined in `:root` — use `var(--accent)` (gold) for Variant A highlights and `var(--accent2)` (blue) for Variant B.
-- Chart tabs: `nominal`, `real`, `wibor`, `affordability` — rendered by `renderChart()` which reads `currentTab`.
-- Table tabs: `tA` / `tB` — toggled by `switchTableTab()`.
 - Input pairs (number input + range slider) are kept in sync via `bindInputs()`; every change calls `calculate()`.
-- The simplified-model note is plain text ("Uproszczony model zakłada ..."); do not reintroduce the old label with the "punkt 2" suffix.
 - Polish locale formatting: use `fmt(n, dec)` for numbers and `fmtPLN(n)` / `fmtPct(n)` helpers — never format manually.
 - Colors: `highlight-positive` (green, `var(--success)`) for borrower-favorable values; `highlight-negative` (red, `var(--danger)`) for costs.
+- Dark/light theme toggle via `toggleTheme()` with `localStorage` persistence.
 
 ## Language
 

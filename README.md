@@ -1,26 +1,36 @@
 # Kalkulator Kredytu Hipotecznego
 
-Interaktywny kalkulator porównujący **nominalny** i **realny** koszt kredytu hipotecznego z uwzględnieniem historycznych notowań WIBOR oraz inflacji CPI GUS.
+Dwa interaktywne narzędzia do analizy kredytu hipotecznego z uwzględnieniem historycznych notowań WIBOR oraz inflacji CPI GUS.
+
+## Narzędzia
+
+### 1. Kalkulator kredytu (`kalkulator-kredytu.html`)
+
+Porównuje **nominalny** i **realny** koszt dwóch wariantów kredytu (krótszy vs dłuższy okres).
+
+### 2. Symulator nadpłat (`symulator-nadplat.html`)
+
+Symuluje wpływ nadpłat, wcześniejszej spłaty i refinansowania na harmonogram kredytu. Porównuje **harmonogram bazowy** (bez zmian) z **harmonogramem zmodyfikowanym** (po zdarzeniach).
 
 ## Uruchomienie
 
-Otwórz `kalkulator-kredytu.html` bezpośrednio w przeglądarce. Brak zależności, serwera ani kroku budowania.
+Otwórz wybrany plik HTML bezpośrednio w przeglądarce. Brak zależności, serwera ani kroku budowania.
 
-## Funkcjonalność
+---
+
+## Kalkulator kredytu
 
 ### Parametry wejściowe
 - Kwota kredytu, rok i miesiąc zaciągnięcia
 - Marża banku (%)
 - Wybór wskaźnika: WIBOR 3M lub WIBOR 6M
 - Wybór danych CPI: roczne (GUS) lub miesięczne m/m (GUS, „poprzedni miesiąc = 100”)
+- Wybór źródła danych wynagrodzeń: sektor prywatny / przeciętne wynagrodzenie / wynagrodzenie minimalne
 - Dwa okresy kredytowania do porównania: **Wariant A** (długi) vs **Wariant B** (krótki)
 
 ### Obliczenia
 - **Harmonogram ratalny** z refixingiem WIBOR co 3 lub 6 miesięcy od daty startu
 - **Realna wartość płatności** — każda rata dyskontowana skumulowanym deflaktorem CPI (deflator = 1,0 w miesiącu 0; dla CPI rocznego używany jest miesięczny pierwiastek 12., dla CPI m/m bezpośredni mnożnik miesięczny)
-- **Notka „Uproszczony model”** — stała stopa realna `(WIBOR_start + marża − CPI_start)` dla całego okresu (w trybie m/m `CPI_start` jest annualizowane), jako porównanie do pełnego harmonogramu
-
-Opis uproszczonego modelu w UI jest prezentowany bez dawnej etykiety z dopiskiem „punkt 2”.
 
 ### Analiza czynników realnego kosztu
 
@@ -37,10 +47,49 @@ Dodatkowo pokazuje średnie WIBOR, CPI i spread w okresie kredytowania oraz **ef
 - **Nominalne** — skumulowane przepływy pieniężne (PLN nominalne)
 - **Realne (po inflacji)** — skumulowane przepływy zdyskontowane CPI
 - **WIBOR historia** — historyczne notowania WIBOR 3M/6M i inflacji CPI od 2000 r.
-- **Rata vs zarobki** — rata jako % wynagrodzenia (sektor przedsiębiorstw GUS i szacowane IT)
+- **Rata vs zarobki** — rata jako % wybranego źródła wynagrodzeń
 
 ### Szczegółowa tabela miesięczna
-Pełny harmonogram z kolumnami: WIBOR, stopa łączna, rata nominalna, rata realna, odsetki, kapitał, saldo, wynagrodzenia (sektor / IT) i wskaźnik rata/wynagrodzenie z kolorowaniem (zielony &lt;35%, żółty 35–50%, czerwony &gt;50%).
+Pełny harmonogram z kolumnami: WIBOR, stopa łączna, rata nominalna, rata realna, odsetki, kapitał, saldo, wynagrodzenie (zgodnie z wybranym źródłem) i wskaźnik rata/wynagrodzenie z kolorowaniem (zielony &lt;35%, żółty 35–50%, czerwony &gt;50%).
+
+---
+
+## Symulator nadpłat
+
+### Parametry wejściowe
+- Kwota kredytu, rok i miesiąc zaciągnięcia
+- Okres kredytowania w **miesiącach** (36–420, wyświetlany jako „X lat Y mies.")
+- Typ raty: **rata równa** (annuitet) lub **rata malejąca**
+- Marża banku (%), prowizja początkowa (%)
+- Wybór wskaźnika: WIBOR 3M lub WIBOR 6M
+- Wybór danych CPI i źródła wynagrodzeń (jak w kalkulatorze)
+
+### Zdarzenia (do 20)
+Użytkownik dodaje zdarzenia modyfikujące harmonogram:
+
+| Typ | Opis |
+|---|---|
+| 💰 **Nadpłata jednorazowa** | Kwota, data, efekt: niższa rata lub krótszy okres |
+| 🔄 **Nadpłata cykliczna** | Kwota/miesiąc, data startu i końca (lub „do końca kredytu"), efekt j.w. |
+| ✅ **Pełna spłata** | Wcześniejsza spłata całości w danym miesiącu |
+| 🏦 **Refinansowanie** | Przeniesienie do nowego banku: nowa marża, prowizja, opcjonalna zmiana WIBOR 6M↔3M |
+
+### Porównanie
+- **Harmonogram bazowy** (bez zdarzeń) vs **harmonogram zmodyfikowany** (ze zdarzeniami)
+- Panel porównawczy: suma rat, suma odsetek, prowizje, łączny koszt — nominalnie i realnie
+- Werdykt tekstowy z podsumowaniem oszczędności
+
+### Wykresy
+- **Nominalne** — rata bazowa vs zmodyfikowana w czasie
+- **Realne (po inflacji)** — to samo po deflacji CPI
+- **Saldo** — przebieg salda bazowego vs zmodyfikowanego
+- **WIBOR historia** — historyczne notowania WIBOR i CPI
+- **Rata vs zarobki** — rata jako % wynagrodzenia
+
+### Tabela miesięczna
+Harmonogram z wyróżnieniem miesięcy, w których wystąpiły zdarzenia (kolor, etykieta).
+
+---
 
 ## Źródła danych
 
@@ -50,7 +99,10 @@ Pełny harmonogram z kolumnami: WIBOR, stopa łączna, rata nominalna, rata real
 | `data-wibor3m.js` | WIBOR 3M — notowania miesięczne (zamknięcie) 1997–2026 | `plopln3m_m.csv` |
 | `data-cpi-annual.js` | Roczne wskaźniki CPI od 1997 r. | GUS — roczne wskaźniki cen towarów i usług konsumpcyjnych |
 | `data-cpi-monthly.js` | Miesięczne wskaźniki CPI m/m od 1982 r. (poprzedni miesiąc = 100, wartość = wskaźnik−100) | GUS — miesięczne wskaźniki cen towarów i usług konsumpcyjnych |
-| (in-script) | Przeciętne wynagrodzenie brutto — sektor przedsiębiorstw | GUS — komunikaty Prezesa GUS, dane roczne |
+| `data-wynagrodzenia-prywatny.js` | Przeciętne miesięczne wynagrodzenie brutto — sektor prywatny (od 2020 r.) | API DBW GUS — zmienna 398, przekrój 688 „Polska; Sektor własności”, pozycja „sektor prywatny” |
+| `data-wynagrodzenia-przecietne.js` | Przeciętne miesięczne wynagrodzenie brutto (ogółem) | BDL GUS — zmienna 64428 + ZUS (lata 2000–2001) |
+| `data-wynagrodzenia-minimalne.js` | Minimalne wynagrodzenie za pracę (roczne) | ZUS (od 2003 r.) + dane historyczne 2000–2002 |
+| (in-script) | Uzupełnienie historyczne dla wariantu „sektor prywatny” (2000–2019) | GUS — dane roczne sektora przedsiębiorstw |
 
 Pliki CSV są wyłącznie źródłem referencyjnym — dane zostały wyekstrahowane do plików JS i nie są wczytywane w czasie wykonania.
 
@@ -64,4 +116,4 @@ W trybie CPI m/m fallback jest automatycznie wyliczany miesięcznie z `DEFAULT_F
 
 ## Ograniczenia
 
-Kalkulator ma charakter poglądowy. Nie uwzględnia: prowizji, ubezpieczeń, wakacji kredytowych, wcześniejszej spłaty, spreadu walutowego, ani podatku od odsetek.
+Oba narzędzia mają charakter poglądowy. Nie uwzględniają: ubezpieczeń, wakacji kredytowych, spreadu walutowego, ani podatku od odsetek. Symulator nadpłat uwzględnia prowizje (początkową i przy refinansowaniu), ale traktuje je jako koszt pozabilansowy.
