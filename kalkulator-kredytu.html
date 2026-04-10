@@ -881,12 +881,17 @@ const LAST_HIST_CPI_YEAR = CPI_YEARS[CPI_YEARS.length - 1];
 // Projekcja na lata przyszłe (po ostatnich danych historycznych)
 const DEFAULT_FUTURE_WIBOR = 4.5;
 const DEFAULT_FUTURE_CPI   = 3.5;
+const EPSILON = 1e-12;
 
 function getWibor(year) {
   return WIBOR6M[year] !== undefined ? WIBOR6M[year] : DEFAULT_FUTURE_WIBOR;
 }
 function getCpi(year) {
   return CPI[year] !== undefined ? CPI[year] : DEFAULT_FUTURE_CPI;
+}
+
+function getHalfForMonth(monthOneBased) {
+  return monthOneBased <= 6 ? 1 : 2;
 }
 
 // ==========================================
@@ -898,7 +903,7 @@ function calcMonthlyRate(wibor_pct, marza_pct) {
 }
 
 function calcRata(kwota, rMonthly, nMonths) {
-  if (Math.abs(rMonthly) < 1e-12) return kwota / nMonths;
+  if (Math.abs(rMonthly) < EPSILON) return kwota / nMonths;
   return kwota * rMonthly * Math.pow(1 + rMonthly, nMonths) /
          (Math.pow(1 + rMonthly, nMonths) - 1);
 }
@@ -943,7 +948,8 @@ function calcHarmonogram(kwota, rokStart, startMonth, latKredytu, marza) {
     // Fixing w maju (calMonth==4) i listopadzie (calMonth==10)
     const isFix = (m === 0) || (calMonth === 4) || (calMonth === 10);
     if (isFix) {
-      const fixHalf = calMonth <= 5 ? 1 : 2;
+      // Dla miesiąca startu i fixingu przypisujemy półrocze po kalendarzu: I–VI => H1, VII–XII => H2
+      const fixHalf = getHalfForMonth(calMonth + 1);
       currentWibor = getWiborSemi(calYear, fixHalf);
       currentStopa = currentWibor + marza;
       const rMonthly = calcMonthlyRate(currentWibor, marza);
@@ -1070,7 +1076,7 @@ function calculate() {
   const latA     = parseInt(document.getElementById('lat_A').value)      || 30;
   const latB     = parseInt(document.getElementById('lat_B').value)      || 10;
 
-  const startHalf = startMonth <= 6 ? 1 : 2;
+  const startHalf = getHalfForMonth(startMonth);
   const wiborStart = getWiborSemi(rokStart, startHalf);
   const cpiStart   = getCpi(rokStart);
   const stopaStart = wiborStart + marza;
