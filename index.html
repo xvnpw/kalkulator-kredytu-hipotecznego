@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kalkulator-kredytu.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
 <body>
 <div class="wrapper">
@@ -19,6 +20,9 @@
     </div>
     <h1>Rzeczywisty koszt kredytu<br>z uwzględnieniem <em>inflacji</em></h1>
     <p>Kalkulator porównuje nominalny koszt kredytu z realnym — uwzględniając historyczne notowania WIBOR 3M/6M oraz wskaźnik CPI GUS od 2000 roku. Sprawdź, czy naprawdę lepiej spłacić kredyt wcześniej.</p>
+    <div class="quick-nav">
+      <a class="quick-link" href="symulator-nadplat.html" target="_blank">Przejdź do symulatora nadpłat →</a>
+    </div>
     <div style="margin-top:14px">
       <span class="data-tag" id="tag_wibor">WIBOR 6M · dane historyczne (notowania miesięczne)</span>
       <span class="data-tag" id="tag_cpi">Inflacja CPI · GUS Polska (roczna)</span>
@@ -406,8 +410,8 @@
             <strong>Źródła danych o wynagrodzeniach (wybierane z listy po lewej):</strong>
             <br>1) sektor prywatny: API DBW GUS (zmienna 398, przekrój 688 „Polska; Sektor własności”, pozycja „sektor prywatny”, 2020+), z uzupełnieniem historycznym dla 2000–2019;
             <br>2) przeciętne wynagrodzenie (ogółem): BDL GUS (zmienna 64428) + dane ZUS dla 2000–2001;
-            <br>3) wynagrodzenie minimalne: ZUS (od 2003 r.) + dane historyczne 2000–2002.
-            <strong>Kolor komórek Rata/Wynagrodzenie:</strong> <span style="color:#70c997">zielony &lt;35%</span>, <span style="color:#c8a96e">żółty 35–50%</span>, <span style="color:#e07070">czerwony &gt;50%</span> wynagrodzenia.
+            <br>3) wynagrodzenie minimalne: ZUS (od 2003 roku) + dane historyczne 2000–2002.
+            <strong>Kolor komórek Stosunek raty do wynagrodzenia:</strong> <span style="color:#70c997">zielony &lt;35%</span>, <span style="color:#c8a96e">żółty 35–50%</span>, <span style="color:#e07070">czerwony &gt;50%</span> wynagrodzenia.
           </div>
         </div>
         <div class="tab-content" id="tB">
@@ -416,8 +420,8 @@
             <strong>Źródła danych o wynagrodzeniach (wybierane z listy po lewej):</strong>
             <br>1) sektor prywatny: API DBW GUS (zmienna 398, przekrój 688 „Polska; Sektor własności”, pozycja „sektor prywatny”, 2020+), z uzupełnieniem historycznym dla 2000–2019;
             <br>2) przeciętne wynagrodzenie (ogółem): BDL GUS (zmienna 64428) + dane ZUS dla 2000–2001;
-            <br>3) wynagrodzenie minimalne: ZUS (od 2003 r.) + dane historyczne 2000–2002.
-            <strong>Kolor komórek Rata/Wynagrodzenie:</strong> <span style="color:#70c997">zielony &lt;35%</span>, <span style="color:#c8a96e">żółty 35–50%</span>, <span style="color:#e07070">czerwony &gt;50%</span> wynagrodzenia.
+            <br>3) wynagrodzenie minimalne: ZUS (od 2003 roku) + dane historyczne 2000–2002.
+            <strong>Kolor komórek Stosunek raty do wynagrodzenia:</strong> <span style="color:#70c997">zielony &lt;35%</span>, <span style="color:#c8a96e">żółty 35–50%</span>, <span style="color:#e07070">czerwony &gt;50%</span> wynagrodzenia.
           </div>
         </div>
       </div>

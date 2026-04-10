@@ -21,25 +21,25 @@ const WYNAGRODZENIA_SEKTOR_PRYWATNY = {
 const SALARY_SOURCE_CONFIG = {
   private: {
     chartLabel: 'sektor prywatny',
-    tableHeader: 'Wynagr. sektora',
+    tableHeader: 'Wynagrodzenie sektora',
     tableTitle: 'Przeciętne miesięczne wynagrodzenie brutto - sektor prywatny (GUS)',
-    ratioHeader: 'Rata/Wynagr.',
+    ratioHeader: 'Rata / wynagrodzenie',
     ratioTitle: 'Rata jako % wynagrodzenia sektora prywatnego',
     data: WYNAGRODZENIA_SEKTOR_PRYWATNY
   },
   average: {
     chartLabel: 'przeciętne',
-    tableHeader: 'Wynagr. przeciętne',
+    tableHeader: 'Wynagrodzenie przeciętne',
     tableTitle: 'Przeciętne miesięczne wynagrodzenie brutto - ogółem (GUS)',
-    ratioHeader: 'Rata/Wynagr.',
+    ratioHeader: 'Rata / wynagrodzenie',
     ratioTitle: 'Rata jako % przeciętnego wynagrodzenia',
     data: WYNAGRODZENIA_PRZECIETNE
   },
   minimum: {
     chartLabel: 'minimalne',
-    tableHeader: 'Wynagr. minimalne',
+    tableHeader: 'Wynagrodzenie minimalne',
     tableTitle: 'Minimalne wynagrodzenie za pracę',
-    ratioHeader: 'Rata/Wynagr.',
+    ratioHeader: 'Rata / wynagrodzenie',
     ratioTitle: 'Rata jako % wynagrodzenia minimalnego',
     data: WYNAGRODZENIA_MINIMALNE
   }
@@ -459,9 +459,9 @@ function fmtPct(n) { return fmt(n, 2) + '%'; }
 function fmtOkres(n) {
   var lat = Math.floor(n / 12);
   var mies = n % 12;
-  if (lat === 0) return n + ' mies.';
+  if (lat === 0) return n + ' miesięcy';
   if (mies === 0) return lat + ' lat';
-  return lat + ' lat ' + mies + ' mies.';
+  return lat + ' lat ' + mies + ' miesięcy';
 }
 
 // ==========================================
@@ -750,19 +750,19 @@ function calculate() {
   // Aktualizuj etykiety
   document.getElementById('wibor_label').textContent = 'WIBOR ' + wiborMode + ' (miesiąc startu)';
   var cpiLabelEl = document.getElementById('cpi_label');
-  cpiLabelEl.textContent = cpiMode === 'monthly' ? 'Inflacja CPI (m/m, miesiąc startu)' : 'Inflacja CPI (roczna, rok startu)';
+  cpiLabelEl.textContent = cpiMode === 'monthly' ? 'Inflacja CPI (miesiąc do miesiąca, miesiąc startu)' : 'Inflacja CPI (roczna, rok startu)';
   document.getElementById('wibor_display').textContent = fmtPct(wiborStart);
   document.getElementById('marza_display').textContent = fmtPct(marza);
   document.getElementById('total_rate_display').textContent = fmtPct(stopaStart);
   document.getElementById('inf_display').textContent = cpiMode === 'monthly'
-    ? fmtPct(cpiStartRaw) + ' (≈' + fmtPct(cpiStartComparable) + ' r/r)'
+    ? fmtPct(cpiStartRaw) + ' (≈' + fmtPct(cpiStartComparable) + ' rok do roku)'
     : fmtPct(cpiStartRaw);
   document.getElementById('real_rate_display').textContent = fmtPct(realStopa);
 
   var tagWiborEl = document.getElementById('tag_wibor');
   tagWiborEl.textContent = 'WIBOR ' + wiborMode + ' · dane historyczne (notowania miesięczne)';
   var tagCpiEl = document.getElementById('tag_cpi');
-  tagCpiEl.textContent = cpiMode === 'monthly' ? 'Inflacja CPI · GUS Polska (miesięczna m/m)' : 'Inflacja CPI · GUS Polska (roczna)';
+  tagCpiEl.textContent = cpiMode === 'monthly' ? 'Inflacja CPI · GUS Polska (miesięczna, miesiąc do miesiąca)' : 'Inflacja CPI · GUS Polska (roczna)';
 
   // Harmonogram bazowy (A)
   var rowsA = calcHarmonogram(kwota, rokStart, startMonth, nMonths, marza, wiborMode, cpiMode, rateType);
@@ -872,7 +872,7 @@ function calculate() {
   var lastHistCPI = cpiMode === 'monthly' ? LAST_HIST_CPI_MONTHLY : LAST_HIST_CPI_ANNUAL;
   document.getElementById('note_extra').innerHTML =
     '<strong>Metodologia:</strong> ' +
-    'Fixing WIBOR ' + wiborMode + ' co ' + fixInterval + ' mies. od startu. ' +
+    'Fixing WIBOR ' + wiborMode + ' co ' + fixInterval + ' miesięcy od startu. ' +
     'Rodzaj rat: ' + (rateType === 'malejaca' ? 'malejące' : 'równe (annuitet)') + '. ' +
     'Dane historyczne: WIBOR do ' + LAST_HIST_WIBOR_YEAR + ', CPI do ' + lastHistCPI +
     '. Projekcja: WIBOR ' + DEFAULT_FUTURE_WIBOR + '%, inflacja ' + DEFAULT_FUTURE_CPI + '%.';
@@ -1057,10 +1057,10 @@ function renderTable(tableId, rows, kwota, showEvents) {
   var evCol = showEvents ? '<th>Nadpłata</th>' : '';
   var header = '<thead><tr>' +
     '<th>#</th><th>Data</th>' +
-    '<th title="Fixing WIBOR">Fix</th>' +
+    '<th title="Fixing WIBOR">Fixing WIBOR</th>' +
     '<th>WIBOR</th><th>Stopa</th><th>Rata</th>' +
     '<th>Odsetki</th><th>Kapitał</th>' + evCol +
-    '<th title="Rata realna (PLN z dnia startu)">Rata real.</th>' +
+    '<th title="Rata realna (PLN z dnia startu)">Rata realna</th>' +
     '<th title="' + salaryMeta.tableTitle + '">' + salaryMeta.tableHeader + '</th>' +
     '<th title="' + salaryMeta.ratioTitle + '">' + salaryMeta.ratioHeader + '</th>' +
     '<th>Saldo</th>' +
@@ -1083,20 +1083,20 @@ function renderTable(tableId, rows, kwota, showEvents) {
     var evCell = '';
     if (showEvents) {
       if (r.nadplata > 0) evCell = '<td data-label="Nadpłata" style="color:var(--success);font-weight:600">' + fmt(Math.round(r.nadplata)) + '</td>';
-      else if (r.event === 'refinansowanie') evCell = '<td data-label="Nadpłata" style="color:var(--accent2);font-size:10px">refi.</td>';
+      else if (r.event === 'refinansowanie') evCell = '<td data-label="Nadpłata" style="color:var(--accent2);font-size:10px">refinansowanie</td>';
       else if (r.event === 'splata') evCell = '<td data-label="Nadpłata" style="color:var(--danger);font-size:10px">spłata</td>';
       else evCell = '<td data-label="Nadpłata"></td>';
     }
     return '<tr class="' + rowClass + '" style="' + rowStyle + '">' +
       '<td data-label="#" style="color:var(--muted)">' + r.miesiac + '</td>' +
       '<td data-label="Data" style="white-space:nowrap">' + r.dataLabel + '</td>' +
-      '<td data-label="Fix" style="text-align:center">' + fixIcon + '</td>' +
+      '<td data-label="Fixing WIBOR" style="text-align:center">' + fixIcon + '</td>' +
       '<td data-label="WIBOR">' + r.wibor.toFixed(2) + '%</td>' +
       '<td data-label="Stopa">' + r.stopa.toFixed(2) + '%</td>' +
       '<td data-label="Rata">' + fmt(Math.round(r.rata)) + '</td>' +
       '<td data-label="Odsetki">' + fmt(Math.round(r.odsetki)) + '</td>' +
       '<td data-label="Kapitał">' + fmt(Math.round(r.kapital)) + '</td>' + evCell +
-      '<td data-label="Rata real." style="color:var(--accent2)">' + fmt(Math.round(r.rataReal)) + '</td>' +
+      '<td data-label="Rata realna" style="color:var(--accent2)">' + fmt(Math.round(r.rataReal)) + '</td>' +
       '<td data-label="' + salaryMeta.tableHeader + '">' + fmt(wynagr) + '</td>' +
       '<td data-label="' + salaryMeta.ratioHeader + '" style="color:' + colS + ';font-weight:600">' + pctS.toFixed(1) + '%</td>' +
       '<td data-label="Saldo">' + fmt(Math.round(r.saldo)) + '</td>' +
@@ -1115,7 +1115,7 @@ function bindInputs() {
     ['rok_start','rok_r',      'rok_rv',      function(v){ return v; }],
     ['marza',    'marza_r',    'marza_rv',    function(v){ return parseFloat(v).toFixed(1) + '%'; }],
     ['prowizja', 'prowizja_r', 'prowizja_rv', function(v){ return parseFloat(v).toFixed(1) + '%'; }],
-    ['okres',    'okres_r',    'okres_rv',    function(v){ var n = parseInt(v); return n + ' mies. = ' + fmtOkres(n); }]
+    ['okres',    'okres_r',    'okres_rv',    function(v){ var n = parseInt(v); return n + ' miesięcy = ' + fmtOkres(n); }]
   ];
   pairs.forEach(function(pair) {
     var inputId = pair[0], rangId = pair[1], dispId = pair[2], fmtFn = pair[3];

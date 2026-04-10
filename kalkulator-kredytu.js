@@ -672,9 +672,9 @@ function renderChart() {
       data: {
         labels: allYears.map(String),
         datasets: [
-          { label: d.latA + 'l – ' + salaryMeta.chartLabel + ' (%)', data: allYears.map(function(y){ return pct(mapA[y],'wynagr'); }),
+          { label: d.latA + ' lat – ' + salaryMeta.chartLabel + ' (%)', data: allYears.map(function(y){ return pct(mapA[y],'wynagr'); }),
             borderColor: '#c8a96e', borderWidth: 2, pointRadius: 2, tension: 0.35, fill: false },
-          { label: d.latB + 'l – ' + salaryMeta.chartLabel + ' (%)', data: allYears.map(function(y){ return pct(mapB[y],'wynagr'); }),
+          { label: d.latB + ' lat – ' + salaryMeta.chartLabel + ' (%)', data: allYears.map(function(y){ return pct(mapB[y],'wynagr'); }),
             borderColor: '#7eb8c9', borderWidth: 2, pointRadius: 2, tension: 0.35, fill: false }
         ]
       },
@@ -729,7 +729,7 @@ function renderTable(tableId, rows, kwota) {
   const wynagrCache = {};
   const header = '<thead><tr>' +
     '<th>#</th><th>Data</th>' +
-    '<th title="Fixing WIBOR w tym miesiącu">Fix</th>' +
+    '<th title="Fixing WIBOR w tym miesiącu">Fixing WIBOR</th>' +
     '<th>WIBOR ' + wiborMode + '</th><th>Stopa</th><th>Rata</th>' +
     '<th>Odsetki</th><th>Kapitał</th>' +
     '<th title="Rata w złotówkach z dnia zaciągnięcia kredytu (zdyskontowana CPI)">Rata realna</th>' +
@@ -750,7 +750,7 @@ function renderTable(tableId, rows, kwota) {
     return '<tr style="' + rowStyle + '">' +
       '<td data-label="#" style="color:var(--muted)">' + r.miesiac + '</td>' +
       '<td data-label="Data" style="white-space:nowrap">' + r.dataLabel + '</td>' +
-      '<td data-label="Fix" style="text-align:center">' + fixIcon + '</td>' +
+      '<td data-label="Fixing WIBOR" style="text-align:center">' + fixIcon + '</td>' +
       '<td data-label="WIBOR ' + wiborMode + '">' + r.wibor.toFixed(2) + '%</td>' +
       '<td data-label="Stopa">' + r.stopa.toFixed(2) + '%</td>' +
       '<td data-label="Rata">' + fmt(Math.round(r.rata)) + '</td>' +

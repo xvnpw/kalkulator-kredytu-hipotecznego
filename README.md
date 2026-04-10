@@ -4,7 +4,7 @@ Dwa interaktywne narzędzia do analizy kredytu hipotecznego z uwzględnieniem hi
 
 ## Narzędzia
 
-### 1. Kalkulator kredytu (`kalkulator-kredytu.html`)
+### 1. Kalkulator kredytu (`index.html`)
 
 Porównuje **nominalny** i **realny** koszt dwóch wariantów kredytu (krótszy vs dłuższy okres).
 
@@ -14,7 +14,10 @@ Symuluje wpływ nadpłat, wcześniejszej spłaty i refinansowania na harmonogram
 
 ## Uruchomienie
 
-Otwórz wybrany plik HTML bezpośrednio w przeglądarce. Brak zależności, serwera ani kroku budowania.
+W GitHub Pages domyślnie ładuje się `index.html`.
+Lokalnie otwórz bezpośrednio `index.html` albo `symulator-nadplat.html` w przeglądarce.
+Brak zależności, serwera ani kroku budowania.
+Na stronie startowej (`index.html`) jest wyróżniony skrót do symulatora nadpłat.
 
 ---
 

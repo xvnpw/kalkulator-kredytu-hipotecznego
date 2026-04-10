@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="kalkulator-kredytu.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
   /* Styl specyficzny dla symulatora nadplat */
   .events-section { margin-top: 14px; }
@@ -217,10 +218,10 @@
         <label>Okres kredytu (miesiące)</label>
         <div class="field-row">
           <input type="number" id="okres" value="300" min="36" max="420" step="1">
-          <span class="unit">mies.</span>
+          <span class="unit">miesięcy</span>
         </div>
         <input type="range" id="okres_r" min="36" max="420" step="1" value="300">
-        <div class="range-val" id="okres_rv">300 mies. = 25 lat 0 mies.</div>
+        <div class="range-val" id="okres_rv">300 miesięcy = 25 lat 0 miesięcy</div>
       </div>
 
       <div class="field">
@@ -263,7 +264,7 @@
         <label>Dane inflacji CPI</label>
         <div class="toggle-group">
           <button class="toggle-btn active" id="btn_cpi_annual" onclick="setCpiMode('annual')">Roczna (GUS)</button>
-          <button class="toggle-btn" id="btn_cpi_monthly" onclick="setCpiMode('monthly')">Miesięczna (m/m)</button>
+          <button class="toggle-btn" id="btn_cpi_monthly" onclick="setCpiMode('monthly')">Miesięczna (miesiąc do miesiąca)</button>
         </div>
       </div>
 
@@ -385,7 +386,7 @@
               <span class="val highlight-negative" id="cB_odsetki">—</span>
             </div>
             <div class="compare-row">
-              <span class="lbl">Prowizje + nadpłaty (łącznie nom.)</span>
+              <span class="lbl">Prowizje + nadpłaty (łącznie nominalnie)</span>
               <span class="val" id="cB_prowizje">—</span>
             </div>
             <div class="compare-row">
@@ -480,7 +481,7 @@
           <span style="color:#7eb8c9">niebieski</span> — refinansowanie,
           <span style="color:#e07070">czerwony</span> — pełna spłata,
           <span style="color:#c8a96e">złoty</span> — fixing/prowizja.
-          <br><strong>Rata/Wynagrodzenie:</strong> <span style="color:#70c997">&lt;35%</span>, <span style="color:#c8a96e">35–50%</span>, <span style="color:#e07070">&gt;50%</span>.
+          <br><strong>Stosunek raty do wynagrodzenia:</strong> <span style="color:#70c997">&lt;35%</span>, <span style="color:#c8a96e">35–50%</span>, <span style="color:#e07070">&gt;50%</span>.
         </div>
       </div>
 

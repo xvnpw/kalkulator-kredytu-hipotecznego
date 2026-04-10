@@ -2,11 +2,11 @@
 
 ## Architecture
 
-This repository contains **two single-file applications** — open either HTML file directly in a browser. There is no build step, package manager, or test suite.
+This repository contains **two browser applications** with **two HTML entry files**. There is no build step, package manager, or test suite.
 
 | File | Purpose |
 |---|---|
-| `kalkulator-kredytu.html` | Mortgage cost calculator — compares two loan terms (Variant A vs B) with real-value analysis |
+| `index.html` | Default GitHub Pages entrypoint for the mortgage cost calculator (Variant A vs B real-value analysis) |
 | `symulator-nadplat.html` | Mortgage overpayment simulator — compares base schedule vs schedule modified by overpayments, early payoff, or refinancing |
 
 Both share the same external CSS (`kalkulator-kredytu.css`) and the same seven data JS files loaded via `<script src="...">` before the main script block:
@@ -22,6 +22,7 @@ Both share the same external CSS (`kalkulator-kredytu.css`) and the same seven d
 | `data-wynagrodzenia-minimalne.js` | `WYNAGRODZENIA_MINIMALNE` | Annual minimum wage values (PLN). |
 
 The CSV source files are **reference only** — never read at runtime.
+Both HTML entry files use the shared `favicon.svg` (`💸`).
 
 ## Data layer (in-script constants)
 
@@ -41,9 +42,10 @@ Both applications define similar constants in their `<script>` blocks:
 - **Real interest** can legitimately be **negative** when high inflation deflates total real payments below the principal. Do not clamp with `Math.max(0, ...)`.
 - **Affordability ratio** uses the currently selected salary source from `SALARY_SOURCE_CONFIG` (private/average/minimum), with monthly values.
 
-## kalkulator-kredytu.html specifics
+## index.html specifics
 
 - Compares two variants: **A** (longer term) vs **B** (shorter term).
+- `index.html` includes a prominent header shortcut (`.quick-link`) to `symulator-nadplat.html`.
 - CSS custom properties: `var(--accent)` (gold) for Variant A, `var(--accent2)` (blue) for Variant B.
 - Chart tabs: `nominal`, `real`, `wibor`, `affordability`.
 - Table tabs: `tA` / `tB`.
