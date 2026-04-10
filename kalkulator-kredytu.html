@@ -520,11 +520,11 @@
   <header>
     <div class="eyebrow">Analiza finansowa · Kredyt hipoteczny PLN</div>
     <h1>Rzeczywisty koszt kredytu<br>z uwzględnieniem <em>inflacji</em></h1>
-    <p>Kalkulator porównuje nominalny koszt kredytu z realnym — uwzględniając WIBOR 6M obliczany na bazie stopy referencyjnej RPP i CPI GUS od 2000 roku. Sprawdź, czy naprawdę lepiej spłacić kredyt wcześniej.</p>
+    <p>Kalkulator porównuje nominalny koszt kredytu z realnym — uwzględniając historyczne notowania WIBOR 6M oraz wskaźnik CPI GUS od 2000 roku. Sprawdź, czy naprawdę lepiej spłacić kredyt wcześniej.</p>
     <div style="margin-top:14px">
-      <span class="data-tag">WIBOR 6M · stopa referencyjna RPP + spread</span>
-      <span class="data-tag">Inflacja CPI · GUS Polska</span>
-      <span class="data-tag">Projekcja 2026+ · średnia wieloletnia</span>
+      <span class="data-tag">WIBOR 6M · dane historyczne (notowania miesięczne)</span>
+      <span class="data-tag">Inflacja CPI · GUS Polska (roczna)</span>
+      <span class="data-tag">Projekcja 2027+ · średnia wieloletnia</span>
     </div>
   </header>
 
@@ -763,156 +763,74 @@ function getITWynagr(year) {
   return Math.round(getWynagr(year) * mult);
 }
 
-// Stopa referencyjna NBP (RPP reference rate) – pełna historia zmian
-// Źródło: NBP / Wikipedia (Podstawowe stopy procentowe NBP)
-// Format: [data_obowiązywania, stopa_referencyjna_%]
-const RPP_REF_RATE_CHANGES = [
-  ["1998-02-26", 24.00],
-  ["1998-04-23", 23.00],
-  ["1998-05-21", 21.50],
-  ["1998-07-17", 19.00],
-  ["1998-09-10", 18.00],
-  ["1998-10-29", 17.00],
-  ["1998-12-10", 15.50],
-  ["1999-01-21", 13.00],
-  ["1999-09-23", 14.00],
-  ["1999-11-18", 16.50],
-  ["2000-02-24", 17.50],
-  ["2000-08-31", 19.00],
-  ["2001-03-01", 18.00],
-  ["2001-03-29", 17.00],
-  ["2001-06-28", 15.50],
-  ["2001-08-23", 14.50],
-  ["2001-10-26", 13.00],
-  ["2001-11-29", 11.50],
-  ["2002-01-31", 10.00],
-  ["2002-04-26",  9.50],
-  ["2002-05-30",  9.00],
-  ["2002-06-27",  8.50],
-  ["2002-08-29",  8.00],
-  ["2002-09-26",  7.50],
-  ["2002-10-24",  7.00],
-  ["2002-11-28",  6.75],
-  ["2003-01-30",  6.50],
-  ["2003-02-27",  6.25],
-  ["2003-03-27",  6.00],
-  ["2003-04-25",  5.75],
-  ["2003-05-29",  5.50],
-  ["2003-06-26",  5.25],
-  ["2004-07-01",  5.75],
-  ["2004-07-29",  6.00],
-  ["2004-08-26",  6.50],
-  ["2005-03-31",  6.00],
-  ["2005-04-28",  5.50],
-  ["2005-06-30",  5.00],
-  ["2005-07-28",  4.75],
-  ["2005-09-01",  4.50],
-  ["2006-02-01",  4.25],
-  ["2006-03-01",  4.00],
-  ["2007-04-26",  4.25],
-  ["2007-06-28",  4.50],
-  ["2007-08-30",  4.75],
-  ["2007-11-29",  5.00],
-  ["2008-01-31",  5.25],
-  ["2008-02-28",  5.50],
-  ["2008-03-27",  5.75],
-  ["2008-06-26",  6.00],
-  ["2008-11-27",  5.75],
-  ["2008-12-24",  5.00],
-  ["2009-01-28",  4.25],
-  ["2009-02-26",  4.00],
-  ["2009-03-26",  3.75],
-  ["2009-06-25",  3.50],
-  ["2011-01-20",  3.75],
-  ["2011-04-06",  4.00],
-  ["2011-05-12",  4.25],
-  ["2011-06-09",  4.50],
-  ["2012-05-10",  4.75],
-  ["2012-11-08",  4.50],
-  ["2012-12-06",  4.25],
-  ["2013-01-10",  4.00],
-  ["2013-02-07",  3.75],
-  ["2013-03-07",  3.25],
-  ["2013-05-09",  3.00],
-  ["2013-06-06",  2.75],
-  ["2013-07-04",  2.50],
-  ["2014-10-09",  2.00],
-  ["2015-03-05",  1.50],
-  ["2020-03-18",  1.00],
-  ["2020-04-09",  0.50],
-  ["2020-05-29",  0.10],
-  ["2021-10-07",  0.50],
-  ["2021-11-04",  1.25],
-  ["2021-12-09",  1.75],
-  ["2022-01-05",  2.25],
-  ["2022-02-09",  2.75],
-  ["2022-03-09",  3.50],
-  ["2022-04-07",  4.50],
-  ["2022-05-06",  5.25],
-  ["2022-06-09",  6.00],
-  ["2022-07-08",  6.50],
-  ["2022-09-08",  6.75],
-  ["2023-09-07",  6.00],
-  ["2023-10-05",  5.75],
-  ["2025-05-07",  5.25],
-  ["2025-07-03",  5.00],
-  ["2025-09-04",  4.75],
-  ["2025-10-09",  4.50],
-  ["2025-11-05",  4.25],
-  ["2025-12-04",  4.00],
-];
-
-// Narzut WIBOR 6M ponad stopę referencyjną NBP
-// WIBOR jest z reguły nieco wyższy od stopy referencyjnej
-const WIBOR_RPP_SPREAD = 0.25;
-
-// Zwraca stopę referencyjną NBP obowiązującą w danym dniu
-function getRppRefRate(dateStr) {
-  let rate = RPP_REF_RATE_CHANGES[0][1];
-  for (const [d, r] of RPP_REF_RATE_CHANGES) {
-    if (d <= dateStr) rate = r;
-    else break;
-  }
-  return rate;
-}
-
-// WIBOR 6M – obliczany na bazie stopy referencyjnej RPP + spread
-// H1 fixing: stopa referencyjna na 1 maja roku Y + spread
-// H2 fixing: stopa referencyjna na 1 listopada roku Y + spread
-const WIBOR6M_SEMI = {};
-for (let y = 2000; y <= 2025; y++) {
-  const refH1 = getRppRefRate(`${y}-05-01`);
-  const refH2 = getRppRefRate(`${y}-11-01`);
-  WIBOR6M_SEMI[`${y}-H1`] = +(refH1 + WIBOR_RPP_SPREAD).toFixed(2);
-  WIBOR6M_SEMI[`${y}-H2`] = +(refH2 + WIBOR_RPP_SPREAD).toFixed(2);
-}
+// WIBOR 6M – historyczne notowania (zamknięcie miesiąca)
+// Źródło: dane rynkowe PLN PLN 6M (plopln6m_m.csv)
+// H1 = zamknięcie maja danego roku, H2 = zamknięcie listopada
+// Dla 2026: tylko H1 (zamknięcie kwietnia — ostatnie dostępne dane); H2 brak → projekcja DEFAULT_FUTURE_WIBOR
+const WIBOR6M_SEMI = {
+  "1997-H1": 22.80, "1997-H2": 25.43,
+  "1998-H1": 22.12, "1998-H2": 16.04,
+  "1999-H1": 13.10, "1999-H2": 18.26,
+  "2000-H1": 18.62, "2000-H2": 19.81,
+  "2001-H1": 16.53, "2001-H2": 12.00,
+  "2002-H1":  9.60, "2002-H2":  6.52,
+  "2003-H1":  5.19, "2003-H2":  6.02,
+  "2004-H1":  6.34, "2004-H2":  6.84,
+  "2005-H1":  5.37, "2005-H2":  4.69,
+  "2006-H1":  4.22, "2006-H2":  4.33,
+  "2007-H1":  4.62, "2007-H2":  5.84,
+  "2008-H1":  6.62, "2008-H2":  6.64,
+  "2009-H1":  4.71, "2009-H2":  4.30,
+  "2010-H1":  4.01, "2010-H2":  4.08,
+  "2011-H1":  4.61, "2011-H2":  4.97,
+  "2012-H1":  5.13, "2012-H2":  4.46,
+  "2013-H1":  2.66, "2013-H2":  2.70,
+  "2014-H1":  2.74, "2014-H2":  2.05,
+  "2015-H1":  1.76, "2015-H2":  1.80,
+  "2016-H1":  1.74, "2016-H2":  1.81,
+  "2017-H1":  1.81, "2017-H2":  1.81,
+  "2018-H1":  1.78, "2018-H2":  1.79,
+  "2019-H1":  1.79, "2019-H2":  1.79,
+  "2020-H1":  0.29, "2020-H2":  0.25,
+  "2021-H1":  0.25, "2021-H2":  2.38,
+  "2022-H1":  6.79, "2022-H2":  7.46,
+  "2023-H1":  6.95, "2023-H2":  5.83,
+  "2024-H1":  5.86, "2024-H2":  5.79,
+  "2025-H1":  5.03, "2025-H2":  4.08,
+  "2026-H1":  3.88
+};
 
 // Pomocnicze: roczna średnia (H1+H2)/2 do wyświetlenia w sidebarze i na wykresie
 const WIBOR6M = {};
-for (let y = 2000; y <= 2025; y++) {
+for (let y = 1997; y <= 2026; y++) {
   const h1 = WIBOR6M_SEMI[`${y}-H1`];
   const h2 = WIBOR6M_SEMI[`${y}-H2`];
   if (h1 !== undefined && h2 !== undefined) WIBOR6M[y] = +((h1 + h2) / 2).toFixed(2);
+  else if (h1 !== undefined) WIBOR6M[y] = h1;
 }
 
 // Zwraca WIBOR 6M na dany moment (rok + półrocze 1 lub 2)
-// Obliczany jako stopa referencyjna RPP + spread
+// Dane historyczne z notowań rynkowych
+// Kredyt zaciagniety w MAJU danego roku.
 function getWiborSemi(year, half) {
   const key = `${year}-H${half}`;
   return WIBOR6M_SEMI[key] !== undefined ? WIBOR6M_SEMI[key] : DEFAULT_FUTURE_WIBOR;
 }
 
 // Inflacja CPI Polska – roczna (GUS)
+// Źródło: GUS – Roczne wskaźniki cen towarów i usług konsumpcyjnych od 1950 roku
+// Wartość = wskaźnik − 100 (np. wskaźnik 110.1 → inflacja 10.1%)
 const CPI = {
+  1997: 14.9, 1998: 11.8, 1999: 7.3,
   2000: 10.1, 2001: 5.5,  2002: 1.9,  2003: 0.8,  2004: 3.5,
   2005: 2.1,  2006: 1.0,  2007: 2.5,  2008: 4.2,  2009: 3.5,
   2010: 2.6,  2011: 4.3,  2012: 3.7,  2013: 0.9,  2014: 0.0,
   2015: -0.9, 2016: -0.6, 2017: 2.0,  2018: 1.6,  2019: 2.3,
   2020: 3.4,  2021: 5.1,  2022: 14.4, 2023: 11.4, 2024: 3.6,
-  2025: 4.1
+  2025: 3.6
 };
 
-// Projekcja na lata przyszłe (NBP target + ryzyko)
+// Projekcja na lata przyszłe (po ostatnich danych historycznych)
 const DEFAULT_FUTURE_WIBOR = 4.5;
 const DEFAULT_FUTURE_CPI   = 3.5;
 
@@ -938,11 +856,11 @@ function calcRata(kwota, rMonthly, nMonths) {
 }
 
 // Oblicz pelny harmonogram z historycznym WIBOR 6M
-// WIBOR 6M obliczany jako stopa referencyjna RPP + spread
+// WIBOR 6M z danych rynkowych (notowania zamknięcia miesięcznego)
 // Kredyt zaciagniety w MAJU danego roku.
 // Fixing WIBOR 6M zawsze w MAJ i LISTOPAD:
-//   – maj  roku Y  -> WIBOR = RPP ref rate na 1.05.Y + spread
-//   – lis  roku Y  -> WIBOR = RPP ref rate na 1.11.Y + spread
+//   – maj  roku Y  -> WIBOR = notowanie zamknięcia maja Y
+//   – lis  roku Y  -> WIBOR = notowanie zamknięcia listopada Y
 // Deflator: miesiac 0 (maj roku startu) = 1.0 -> rata realna[0] == rata nominalna[0]
 function calcHarmonogram(kwota, rokStart, latKredytu, marza) {
   const nMonths = latKredytu * 12;
@@ -1169,9 +1087,9 @@ function calculate() {
 
   noteEl.innerHTML = `<strong>Metodologia:</strong> Rata przeliczana co 6 miesięcy — fixing WIBOR 6M na początku każdego półrocza
   (H1: I–VI, H2: VII–XII). Przez kolejne 6 rat obowiązuje stała rata wyznaczona na bazie salda w dniu fixingu
-  i nowego WIBOR 6M. WIBOR 6M obliczany jako stopa referencyjna RPP na dzień fixingu + ${WIBOR_RPP_SPREAD}pp spreadu.
-  Źródło stóp RPP: NBP.
-  Dla lat po 2025: projekcja WIBOR ${DEFAULT_FUTURE_WIBOR}%, inflacja ${DEFAULT_FUTURE_CPI}%.
+  i nowego WIBOR 6M. Dane WIBOR 6M: historyczne notowania rynkowe (zamknięcie miesiąca).
+  Inflacja CPI: GUS — roczne wskaźniki cen towarów i usług konsumpcyjnych.
+  Dla lat po 2026: projekcja WIBOR ${DEFAULT_FUTURE_WIBOR}%, inflacja ${DEFAULT_FUTURE_CPI}%.
   Obliczenia mają charakter poglądowy — nie uwzględniają kosztów ubezpieczenia, prowizji ani efektu alternatywnego
   inwestowania różnicy w ratach.`;
 
@@ -1194,7 +1112,7 @@ function renderChart() {
 
   if (currentTab === 'wibor') {
     const years = [];
-    for (let y = 2000; y <= 2025; y++) years.push(y);
+    for (let y = 2000; y <= 2026; y++) years.push(y);
     labels = years.map(String);
     ds1 = years.map(y => WIBOR6M[y] || null);
     ds2 = years.map(y => CPI[y] || null);
