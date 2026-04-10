@@ -766,7 +766,7 @@ function getITWynagr(year) {
 // WIBOR 6M – historyczne notowania (zamknięcie miesiąca)
 // Źródło: dane rynkowe PLN PLN 6M (plopln6m_m.csv)
 // H1 = zamknięcie maja danego roku, H2 = zamknięcie listopada
-// Dla 2026: H1 = zamknięcie kwietnia (ostatnie dostępne dane)
+// Dla 2026: tylko H1 (zamknięcie kwietnia — ostatnie dostępne dane); H2 brak → projekcja DEFAULT_FUTURE_WIBOR
 const WIBOR6M_SEMI = {
   "1997-H1": 22.80, "1997-H2": 25.43,
   "1998-H1": 22.12, "1998-H2": 16.04,
