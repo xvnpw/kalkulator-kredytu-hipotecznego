@@ -877,6 +877,8 @@ const CPI = {
 const CPI_YEARS = Object.keys(CPI).map(Number).sort((a,b) => a - b);
 const MIN_CPI_YEAR = CPI_YEARS[0];
 const LAST_HIST_CPI_YEAR = CPI_YEARS[CPI_YEARS.length - 1];
+// UI i seria wynagrodzeń są przygotowane od 2000 r.
+const HIST_MIN_YEAR = Math.max(2000, Math.max(MIN_WIBOR_YEAR, MIN_CPI_YEAR));
 
 // Projekcja na lata przyszłe (po ostatnich danych historycznych)
 const DEFAULT_FUTURE_WIBOR = 4.5;
@@ -892,6 +894,11 @@ function getCpi(year) {
 
 function getHalfForMonth(monthOneBased) {
   return monthOneBased <= 6 ? 1 : 2;
+}
+
+function normalizeStartMonth(value) {
+  const month = parseInt(value);
+  return Number.isFinite(month) && month >= 1 && month <= 12 ? month : 5;
 }
 
 // ==========================================
@@ -933,7 +940,7 @@ function calcHarmonogram(kwota, rokStart, startMonth, latKredytu, marza) {
   let rows = [];
   let cumulativeDeflator = 1.0;
 
-  const START_MONTH_IDX = Math.min(Math.max(startMonth, 1), 12) - 1;
+  const START_MONTH_IDX = startMonth - 1;
   const MIESIAC_NAZWY = ['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paz','lis','gru'];
 
   let currentRata = 0;
@@ -948,7 +955,7 @@ function calcHarmonogram(kwota, rokStart, startMonth, latKredytu, marza) {
     // Fixing w maju (calMonth==4) i listopadzie (calMonth==10)
     const isFix = (m === 0) || (calMonth === 4) || (calMonth === 10);
     if (isFix) {
-      // Dla miesiąca startu i fixingu przypisujemy półrocze po kalendarzu: I–VI => H1, VII–XII => H2
+      // Gdy występuje fixing (miesiąc startu, maj, listopad), półrocze wybieramy wg kalendarza: I–VI => H1, VII–XII => H2.
       const fixHalf = getHalfForMonth(calMonth + 1);
       currentWibor = getWiborSemi(calYear, fixHalf);
       currentStopa = currentWibor + marza;
@@ -1041,7 +1048,7 @@ function switchTableTab(id) {
 }
 
 function syncHistoricalRanges() {
-  const minYear = Math.max(2000, Math.max(MIN_WIBOR_YEAR, MIN_CPI_YEAR));
+  const minYear = HIST_MIN_YEAR;
   const maxYear = LAST_HIST_WIBOR_YEAR;
   const rokInput = document.getElementById('rok_start');
   const rokRange = document.getElementById('rok_r');
@@ -1071,7 +1078,9 @@ function fmtPct(n) { return fmt(n, 2) + '%'; }
 function calculate() {
   const kwota    = parseFloat(document.getElementById('kwota').value)    || 350000;
   const rokStart = parseInt(document.getElementById('rok_start').value)  || 2021;
-  const startMonth = parseInt(document.getElementById('miesiac_start').value) || 5;
+  const startMonthInput = document.getElementById('miesiac_start');
+  const startMonth = normalizeStartMonth(startMonthInput.value);
+  startMonthInput.value = String(startMonth);
   const marza    = parseFloat(document.getElementById('marza').value)    || 1.85;
   const latA     = parseInt(document.getElementById('lat_A').value)      || 30;
   const latB     = parseInt(document.getElementById('lat_B').value)      || 10;
@@ -1216,7 +1225,7 @@ function renderChart() {
   let labels, ds1, ds2, label1, label2, yTitle;
 
   if (currentTab === 'wibor') {
-    const startYear = Math.max(2000, Math.max(MIN_WIBOR_YEAR, MIN_CPI_YEAR));
+    const startYear = HIST_MIN_YEAR;
     const years = [];
     for (let y = startYear; y <= LAST_HIST_WIBOR_YEAR; y++) years.push(y);
     labels = years.map(String);
