@@ -164,7 +164,7 @@
     <h1>Symulator nadpłat<br>kredytu <em>hipotecznego</em></h1>
     <p>Sprawdź ile zaoszczędzisz nadpłacając kredyt — nominalnie i realnie (po inflacji). Dodawaj nadpłaty, przenoś kredyt między bankami, analizuj wpływ na harmonogram.</p>
     <div style="margin-top:14px">
-      <span class="data-tag" id="tag_wibor">WIBOR 6M · dane historyczne (notowania miesięczne)</span>
+      <span class="data-tag" id="tag_wibor">WIBOR 3M · dane historyczne (notowania miesięczne)</span>
       <span class="data-tag" id="tag_cpi">Inflacja CPI · GUS Polska (roczna)</span>
       <span class="data-tag">Projekcja 2027+ · średnia wieloletnia</span>
     </div>
@@ -188,21 +188,21 @@
       <div class="field">
         <label>Rok zaciągnięcia kredytu</label>
         <div class="field-row">
-          <input type="number" id="rok_start" value="2021" min="2000" max="2026" step="1">
+          <input type="number" id="rok_start" value="2010" min="2000" max="2026" step="1">
         </div>
-        <input type="range" id="rok_r" min="2000" max="2026" step="1" value="2021">
-        <div class="range-val" id="rok_rv">2021</div>
+        <input type="range" id="rok_r" min="2000" max="2026" step="1" value="2010">
+        <div class="range-val" id="rok_rv">2010</div>
       </div>
 
       <div class="field">
         <label>Miesiąc startu kredytu</label>
         <div class="field-row">
           <select id="miesiac_start">
-            <option value="1">styczeń</option>
+            <option value="1" selected>styczeń</option>
             <option value="2">luty</option>
             <option value="3">marzec</option>
             <option value="4">kwiecień</option>
-            <option value="5" selected>maj</option>
+            <option value="5">maj</option>
             <option value="6">czerwiec</option>
             <option value="7">lipiec</option>
             <option value="8">sierpień</option>
@@ -217,11 +217,11 @@
       <div class="field">
         <label>Okres kredytu (miesiące)</label>
         <div class="field-row">
-          <input type="number" id="okres" value="300" min="36" max="420" step="1">
+          <input type="number" id="okres" value="360" min="36" max="420" step="1">
           <span class="unit">miesięcy</span>
         </div>
-        <input type="range" id="okres_r" min="36" max="420" step="1" value="300">
-        <div class="range-val" id="okres_rv">300 miesięcy = 25 lat 0 miesięcy</div>
+        <input type="range" id="okres_r" min="36" max="420" step="1" value="360">
+        <div class="range-val" id="okres_rv">360 miesięcy = 30 lat</div>
       </div>
 
       <div class="field">
@@ -235,28 +235,28 @@
       <div class="field">
         <label>Marża banku (%)</label>
         <div class="field-row">
-          <input type="number" id="marza" value="1.85" min="0.5" max="5" step="0.05">
+          <input type="number" id="marza" value="2" min="0.5" max="5" step="0.05">
           <span class="unit">%</span>
         </div>
-        <input type="range" id="marza_r" min="0.5" max="5" step="0.05" value="1.85">
-        <div class="range-val" id="marza_rv">1,85%</div>
+        <input type="range" id="marza_r" min="0.5" max="5" step="0.05" value="2">
+        <div class="range-val" id="marza_rv">2,0%</div>
       </div>
 
       <div class="field">
         <label>Prowizja banku (%)</label>
         <div class="field-row">
-          <input type="number" id="prowizja" value="0" min="0" max="5" step="0.1">
+          <input type="number" id="prowizja" value="2" min="0" max="5" step="0.1">
           <span class="unit">%</span>
         </div>
-        <input type="range" id="prowizja_r" min="0" max="5" step="0.1" value="0">
-        <div class="range-val" id="prowizja_rv">0,0%</div>
+        <input type="range" id="prowizja_r" min="0" max="5" step="0.1" value="2">
+        <div class="range-val" id="prowizja_rv">2,0%</div>
       </div>
 
       <div class="field">
         <label>Wskaźnik WIBOR</label>
         <div class="toggle-group">
-          <button class="toggle-btn active" id="btn_wibor6m" onclick="setWiborMode('6M')">WIBOR 6M</button>
-          <button class="toggle-btn" id="btn_wibor3m" onclick="setWiborMode('3M')">WIBOR 3M</button>
+          <button class="toggle-btn active" id="btn_wibor3m" onclick="setWiborMode('3M')">WIBOR 3M</button>
+          <button class="toggle-btn" id="btn_wibor6m" onclick="setWiborMode('6M')">WIBOR 6M</button>
         </div>
       </div>
 
@@ -281,7 +281,7 @@
 
       <div class="separator"></div>
       <div style="margin: 14px 0 10px; font-size: 12px; color: var(--muted); letter-spacing: 0.5px;">Oprocentowanie efektywne</div>
-      <div class="info-row"><span id="wibor_label">WIBOR 6M (miesiąc startu)</span><span id="wibor_display">—</span></div>
+      <div class="info-row"><span id="wibor_label">WIBOR 3M (miesiąc startu)</span><span id="wibor_display">—</span></div>
       <div class="info-row"><span>Marża banku</span><span id="marza_display">—</span></div>
       <div class="info-row"><span style="color:var(--text)">Oprocentowanie łączne</span><span id="total_rate_display" style="color:var(--accent)">—</span></div>
       <div class="info-row"><span id="cpi_label">Inflacja w roku startu</span><span id="inf_display">—</span></div>

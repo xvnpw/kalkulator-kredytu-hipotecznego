@@ -39,6 +39,7 @@ Both applications define similar constants in their `<script>` blocks:
 
 - **WIBOR fixing** happens every `fixInterval` months from the loan start month (3 for WIBOR 3M, 6 for WIBOR 6M). There are no fixed calendar dates — the interval is purely relative to month index `m`: `isFix = (m % fixInterval === 0)`.
 - **Real payment** uses a **cumulative monthly deflator** that starts at `1.0` in month 0 (so `rataReal[0] === rata[0]`). The deflator is updated *after* each month: for annual CPI mode `cumulativeDeflator *= 1 / (1 + annualCPI/100)^(1/12)`, for monthly CPI mode `cumulativeDeflator *= 1 / (1 + monthlyCPI/100)`.
+- **Provision (`prowizja`)** is an off-balance one-time cost at month 0 (does not increase `saldo`). In real totals it is added 1:1 (month-0 deflator is `1.0`).
 - **Real interest** can legitimately be **negative** when high inflation deflates total real payments below the principal. Do not clamp with `Math.max(0, ...)`.
 - **Affordability ratio** uses the currently selected salary source from `SALARY_SOURCE_CONFIG` (private/average/minimum), with monthly values.
 
@@ -46,6 +47,10 @@ Both applications define similar constants in their `<script>` blocks:
 
 - Compares two variants: **A** (longer term) vs **B** (shorter term).
 - `index.html` includes a prominent header shortcut (`.quick-link`) to `symulator-nadplat.html`.
+- Supports two rate types via `rateType` + `setRateType()`: `rowna` (annuity) and `malejaca` (decreasing).
+- Includes initial bank provision input (`prowizja`, default `2.0%`) with synced number/range controls.
+- Cost summary (`cA_*`, `cB_*`) shows provision separately; totals include provision.
+- In methodology: total real amount includes provision, but real-interest decomposition is computed from installments only (without provision).
 - CSS custom properties: `var(--accent)` (gold) for Variant A, `var(--accent2)` (blue) for Variant B.
 - Chart tabs: `nominal`, `real`, `wibor`, `affordability`.
 - Table tabs: `tA` / `tB`.
