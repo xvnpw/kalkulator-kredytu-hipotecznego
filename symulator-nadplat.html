@@ -317,65 +317,69 @@
 
       <div class="separator" style="margin-top:14px"></div>
       <div style="margin: 14px 0 10px; font-size: 12px; color: var(--muted); letter-spacing: 0.5px;">Projekcje przyszłe</div>
-
-      <div class="field">
-        <label>Przyszły WIBOR (%)</label>
-        <div class="field-row">
-          <input type="number" id="future_wibor" value="3.0" min="0.5" max="15" step="0.1">
-          <span class="unit">%</span>
+      <button type="button" class="explainer-toggle" id="future_toggle_btn" onclick="toggleFutureProjections()" aria-expanded="false" aria-controls="future_projections_body">
+        Pokaż projekcje przyszłe
+      </button>
+      <div class="explainer-body" id="future_projections_body" hidden>
+        <div class="field">
+          <label>Przyszły WIBOR (%)</label>
+          <div class="field-row">
+            <input type="number" id="future_wibor" value="3.0" min="0.5" max="15" step="0.1">
+            <span class="unit">%</span>
+          </div>
+          <input type="range" id="future_wibor_r" min="0.5" max="15" step="0.1" value="3.0">
+          <div class="range-val" id="future_wibor_rv">3,0%</div>
         </div>
-        <input type="range" id="future_wibor_r" min="0.5" max="15" step="0.1" value="3.0">
-        <div class="range-val" id="future_wibor_rv">3,0%</div>
-      </div>
 
-      <div class="field">
-        <label>Przyszła inflacja CPI (%)</label>
-        <div class="field-row">
-          <input type="number" id="future_cpi" value="3.0" min="0" max="20" step="0.1">
-          <span class="unit">%</span>
+        <div class="field">
+          <label>Przyszła inflacja CPI (%)</label>
+          <div class="field-row">
+            <input type="number" id="future_cpi" value="3.0" min="0" max="20" step="0.1">
+            <span class="unit">%</span>
+          </div>
+          <input type="range" id="future_cpi_r" min="0" max="20" step="0.1" value="3.0">
+          <div class="range-val" id="future_cpi_rv">3,0%</div>
         </div>
-        <input type="range" id="future_cpi_r" min="0" max="20" step="0.1" value="3.0">
-        <div class="range-val" id="future_cpi_rv">3,0%</div>
-      </div>
 
-      <div class="field">
-        <label>Przyszły wzrost wynagrodzeń (%)</label>
-        <div class="field-row">
-          <input type="number" id="future_salary" value="3.5" min="0" max="15" step="0.1">
-          <span class="unit">%</span>
+        <div class="field">
+          <label>Przyszły wzrost wynagrodzeń (%)</label>
+          <div class="field-row">
+            <input type="number" id="future_salary" value="3.5" min="0" max="15" step="0.1">
+            <span class="unit">%</span>
+          </div>
+          <input type="range" id="future_salary_r" min="0" max="15" step="0.1" value="3.5">
+          <div class="range-val" id="future_salary_rv">3,5%</div>
         </div>
-        <input type="range" id="future_salary_r" min="0" max="15" step="0.1" value="3.5">
-        <div class="range-val" id="future_salary_rv">3,5%</div>
-      </div>
 
-      <div class="field">
-        <label>Przyszła stopa zwrotu akcji (%/rok)</label>
-        <div class="field-row">
-          <input type="number" id="future_stock_return" value="5.0" min="-5" max="20" step="0.5">
-          <span class="unit">%</span>
+        <div class="field">
+          <label>Przyszła stopa zwrotu akcji (%/rok)</label>
+          <div class="field-row">
+            <input type="number" id="future_stock_return" value="5.0" min="-5" max="20" step="0.5">
+            <span class="unit">%</span>
+          </div>
+          <input type="range" id="future_stock_return_r" min="-5" max="20" step="0.5" value="5.0">
+          <div class="range-val" id="future_stock_return_rv">5,0%</div>
         </div>
-        <input type="range" id="future_stock_return_r" min="-5" max="20" step="0.5" value="5.0">
-        <div class="range-val" id="future_stock_return_rv">5,0%</div>
-      </div>
 
-      <div class="field">
-        <label>Przyszła stopa lokaty (%/rok)</label>
-        <div class="field-row">
-          <input type="number" id="future_deposit_rate" value="3.0" min="0" max="15" step="0.1">
-          <span class="unit">%</span>
+        <div class="field">
+          <label>Przyszła stopa lokaty (%/rok)</label>
+          <div class="field-row">
+            <input type="number" id="future_deposit_rate" value="3.0" min="0" max="15" step="0.1">
+            <span class="unit">%</span>
+          </div>
+          <input type="range" id="future_deposit_rate_r" min="0" max="15" step="0.1" value="3.0">
+          <div class="range-val" id="future_deposit_rate_rv">3,0%</div>
         </div>
-        <input type="range" id="future_deposit_rate_r" min="0" max="15" step="0.1" value="3.0">
-        <div class="range-val" id="future_deposit_rate_rv">3,0%</div>
-      </div>
 
-      <div class="field">
-        <label>Przyszły kurs USD/PLN</label>
-        <div class="field-row">
-          <input type="number" id="future_usdpln" value="3.5" min="1.0" max="8.0" step="0.1">
-          <span class="unit">PLN</span>
+        <div class="field">
+          <label>Przyszły kurs USD/PLN</label>
+          <div class="field-row">
+            <input type="number" id="future_usdpln" value="3.5" min="1.0" max="8.0" step="0.1">
+            <span class="unit">PLN</span>
+          </div>
+          <input type="range" id="future_usdpln_r" min="1.0" max="8.0" step="0.1" value="3.5">
+          <div class="range-val" id="future_usdpln_rv">3,50</div>
         </div>
-        <input type="range" id="future_usdpln_r" min="1.0" max="8.0" step="0.1" value="3.5">
-        <div class="range-val" id="future_usdpln_rv">3,50</div>
       </div>
 
       <div class="separator" style="margin-top:14px"></div>
@@ -385,8 +389,8 @@
         <label>Porównanie z inwestycją alternatywną</label>
         <div class="field-row">
           <select id="investment_type">
-            <option value="none">Brak (nie porównuj)</option>
-            <option value="wig30" selected>WIG30 (indeks giełdowy)</option>
+            <option value="none" selected>Brak (nie porównuj)</option>
+            <option value="wig30">WIG30 (indeks giełdowy)</option>
             <option value="wig">WIG (indeks szeroki rynku)</option>
             <option value="sp500">S&amp;P 500 w PLN (indeks USA)</option>
             <option value="lokata">Lokata bankowa (stopa NBP, po Belce 19%)</option>

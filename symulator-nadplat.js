@@ -16,9 +16,9 @@ const EPSILON = 1e-12;
 const SALARY_SOURCE_CONFIG = {
   average: {
     chartLabel: 'przeciętne',
-    tableHeader: 'Wynagrodzenie przeciętne',
+    tableHeader: 'Wyn. przeciętne',
     tableTitle: 'Przeciętne miesięczne wynagrodzenie brutto - ogółem (GUS)',
-    ratioHeader: 'Rata / wynagrodzenie',
+    ratioHeader: 'Rata / wyn. przeciętne',
     ratioTitle: 'Rata jako % przeciętnego wynagrodzenia',
     data: WYNAGRODZENIA_PRZECIETNE
   },
@@ -436,6 +436,7 @@ var cpiMode = 'annual';
 var salarySource = 'average';
 var rateType = 'rowna';
 var methodologyOpen = false;
+var futureProjectionsOpen = false;
 var themeMode = 'dark';
 var events = []; // lista zdarzeń
 var eventIdCounter = 0;
@@ -530,6 +531,18 @@ function toggleMethodology() {
   body.hidden = !methodologyOpen;
   btn.setAttribute('aria-expanded', methodologyOpen ? 'true' : 'false');
   btn.textContent = methodologyOpen ? 'Ukryj metodykę i wzory' : 'Pokaż metodykę i wzory';
+}
+function toggleFutureProjections() {
+  futureProjectionsOpen = !futureProjectionsOpen;
+  syncFutureProjectionsToggleUI();
+}
+function syncFutureProjectionsToggleUI() {
+  var body = document.getElementById('future_projections_body');
+  var btn = document.getElementById('future_toggle_btn');
+  if (!body || !btn) return;
+  body.hidden = !futureProjectionsOpen;
+  btn.setAttribute('aria-expanded', futureProjectionsOpen ? 'true' : 'false');
+  btn.textContent = futureProjectionsOpen ? 'Ukryj projekcje przyszłe' : 'Pokaż projekcje przyszłe';
 }
 function syncHistoricalRanges() {
   var rokInput = document.getElementById('rok_start');
@@ -1449,5 +1462,6 @@ function bindInputs() {
 // ==========================================
 syncHistoricalRanges();
 bindInputs();
+syncFutureProjectionsToggleUI();
 initTheme();
 calculate();

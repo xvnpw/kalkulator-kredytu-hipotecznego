@@ -131,35 +131,39 @@
 
       <div class="separator"></div>
       <div style="margin: 14px 0 10px; font-size: 12px; color: var(--muted); letter-spacing: 0.5px;">Projekcje przyszłe</div>
-
-      <div class="field">
-        <label title="Stosowany dla WIBOR 1M, 3M i 6M">Przyszły WIBOR (%)</label>
-        <div class="field-row">
-          <input type="number" id="future_wibor" value="3.0" min="0" max="15" step="0.1">
-          <span class="unit">%</span>
+      <button type="button" class="explainer-toggle" id="future_toggle_btn" onclick="toggleFutureProjections()" aria-expanded="false" aria-controls="future_projections_body">
+        Pokaż projekcje przyszłe
+      </button>
+      <div class="explainer-body" id="future_projections_body" hidden>
+        <div class="field">
+          <label title="Stosowany dla WIBOR 1M, 3M i 6M">Przyszły WIBOR (%)</label>
+          <div class="field-row">
+            <input type="number" id="future_wibor" value="3.0" min="0" max="15" step="0.1">
+            <span class="unit">%</span>
+          </div>
+          <input type="range" id="future_wibor_r" min="0" max="15" step="0.1" value="3.0">
+          <div class="range-val" id="future_wibor_rv">3,0%</div>
         </div>
-        <input type="range" id="future_wibor_r" min="0" max="15" step="0.1" value="3.0">
-        <div class="range-val" id="future_wibor_rv">3,0%</div>
-      </div>
 
-      <div class="field">
-        <label>Przyszła inflacja CPI (%)</label>
-        <div class="field-row">
-          <input type="number" id="future_cpi" value="3.0" min="-5" max="20" step="0.1">
-          <span class="unit">%</span>
+        <div class="field">
+          <label>Przyszła inflacja CPI (%)</label>
+          <div class="field-row">
+            <input type="number" id="future_cpi" value="3.0" min="-5" max="20" step="0.1">
+            <span class="unit">%</span>
+          </div>
+          <input type="range" id="future_cpi_r" min="-5" max="20" step="0.1" value="3.0">
+          <div class="range-val" id="future_cpi_rv">3,0% rocznie (≈ 0,25% m/m)</div>
         </div>
-        <input type="range" id="future_cpi_r" min="-5" max="20" step="0.1" value="3.0">
-        <div class="range-val" id="future_cpi_rv">3,0% rocznie (≈ 0,25% m/m)</div>
-      </div>
 
-      <div class="field">
-        <label>Przyszły wzrost wynagrodzeń (%)</label>
-        <div class="field-row">
-          <input type="number" id="future_salary" value="3.5" min="0" max="15" step="0.1">
-          <span class="unit">%</span>
+        <div class="field">
+          <label>Przyszły wzrost wynagrodzeń (%)</label>
+          <div class="field-row">
+            <input type="number" id="future_salary" value="3.5" min="0" max="15" step="0.1">
+            <span class="unit">%</span>
+          </div>
+          <input type="range" id="future_salary_r" min="0" max="15" step="0.1" value="3.5">
+          <div class="range-val" id="future_salary_rv">3,5%</div>
         </div>
-        <input type="range" id="future_salary_r" min="0" max="15" step="0.1" value="3.5">
-        <div class="range-val" id="future_salary_rv">3,5%</div>
       </div>
 
       <div class="separator"></div>

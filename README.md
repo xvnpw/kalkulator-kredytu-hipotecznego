@@ -72,7 +72,7 @@ Pełny harmonogram z kolumnami: WIBOR, stopa łączna, rata nominalna, rata real
 - Marża banku (%), prowizja początkowa (%)
 - Wybór wskaźnika: WIBOR 1M, WIBOR 3M lub WIBOR 6M (domyślnie WIBOR 3M)
 - Wybór danych CPI i źródła wynagrodzeń (jak w kalkulatorze)
-- Domyślne wartości startowe: rok **2010**, miesiąc **styczeń**, okres **360 miesięcy**, marża **2,0%**, prowizja **2,0%**
+- Domyślne wartości startowe: rok **2010**, miesiąc **styczeń**, okres **360 miesięcy**, marża **2,0%**, prowizja **2,0%**, porównanie z inwestycją: **Brak (nie porównuj)**
 
 ### Projekcje przyszłe
 Konfigurowalne wartości domyślne dla okresów bez danych historycznych:
@@ -133,22 +133,56 @@ Harmonogram z wyróżnieniem miesięcy, w których wystąpiły zdarzenia (kolor,
 
 | Plik | Dane | Źródło |
 |---|---|---|
-| `data-wibor6m.js` | WIBOR 6M — notowania miesięczne (zamknięcie) 1997–2026 | `plopln6m_m.csv` |
-| `data-wibor3m.js` | WIBOR 3M — notowania miesięczne (zamknięcie) 1997–2026 | `plopln3m_m.csv` |
-| `data-wibor1m.js` | WIBOR 1M — notowania miesięczne (zamknięcie) 1995–2026 | `plopln1m_m.csv` |
-| `data-cpi-annual.js` | Roczne wskaźniki CPI od 1997 r. | GUS — roczne wskaźniki cen towarów i usług konsumpcyjnych |
-| `data-cpi-monthly.js` | Miesięczne wskaźniki CPI m/m od 1982 r. (poprzedni miesiąc = 100, wartość = wskaźnik−100) | GUS — miesięczne wskaźniki cen towarów i usług konsumpcyjnych |
+| `data-wibor6m.js` | WIBOR 6M — notowania miesięczne (zamknięcie) 1997–2026 | `sources/csv/plopln6m_m.csv` |
+| `data-wibor3m.js` | WIBOR 3M — notowania miesięczne (zamknięcie) 1997–2026 | `sources/csv/plopln3m_m.csv` |
+| `data-wibor1m.js` | WIBOR 1M — notowania miesięczne (zamknięcie) 1995–2026 | `sources/csv/plopln1m_m.csv` |
+| `data-cpi-annual.js` | Roczne wskaźniki CPI od 1997 r. | `sources/csv/rocznewskaznikicentowarowiuslugkonsumpcyjnychod1950roku_2.csv` |
+| `data-cpi-monthly.js` | Miesięczne wskaźniki CPI m/m od 1982 r. (poprzedni miesiąc = 100, wartość = wskaźnik−100) | `sources/csv/miesieczne_wskazniki_cen_towarow_i_uslug_konsumpcyjnych_od_1982_roku__2.csv` |
 | `data-wynagrodzenia-przecietne.js` | Przeciętne miesięczne wynagrodzenie brutto (ogółem) | BDL GUS — zmienna 64428 + ZUS (lata 2000–2001) |
 | `data-wynagrodzenia-minimalne.js` | Minimalne wynagrodzenie za pracę (roczne) | ZUS (od 2003 r.) + dane historyczne 2000–2002 |
-| `data-nbp-rate.js` | Stopa referencyjna NBP — wartości miesięczne fill-forward 1998–2026 | `inrtpl_m_m.csv` |
-| `data-wig30.js` | WIG30 — notowania miesięczne (zamknięcie) 1991–2026 | `wig30_m.csv` |
-| `data-wig.js` | WIG — notowania miesięczne (zamknięcie) 1991–2026 | `wig_m.csv` |
-| `data-spx.js` | S&P 500 — notowania miesięczne (zamknięcie) 1984–2026 | `spx_m.csv` |
-| `data-usdpln.js` | Kurs USD/PLN — wartości miesięczne 1984–2026 | `usdpln_m.csv` |
+| `data-nbp-rate.js` | Stopa referencyjna NBP — wartości miesięczne fill-forward 1998–2026 | `sources/csv/inrtpl_m_m.csv` |
+| `data-wig30.js` | WIG30 — notowania miesięczne (zamknięcie) 1991–2026 | `sources/csv/wig30_m.csv` |
+| `data-wig.js` | WIG — notowania miesięczne (zamknięcie) 1991–2026 | `sources/csv/wig_m.csv` |
+| `data-spx.js` | S&P 500 — notowania miesięczne (zamknięcie) 1984–2026 | `sources/csv/spx_m.csv` |
+| `data-usdpln.js` | Kurs USD/PLN — wartości miesięczne 1984–2026 | `sources/csv/usdpln_m.csv` |
 | `kalkulator-kredytu.js` | Logika kalkulatora kredytu | — |
 | `symulator-nadplat.js` | Logika symulatora nadpłat | — |
 
-Pliki CSV są wyłącznie źródłem referencyjnym — dane zostały wyekstrahowane do plików JS i nie są wczytywane w czasie wykonania.
+Pliki CSV są wyłącznie źródłem referencyjnym (katalog `sources/csv/`) — dane są wyekstrahowane do plików JS i nie są wczytywane w czasie wykonania.
+
+## Aktualizacja danych z CSV
+
+Nowe wersje plików CSV podmieniaj ręcznie w `sources/csv/`, a następnie uruchom parsery w Pythonie (bez zewnętrznych bibliotek):
+
+```bash
+# wszystkie parsery równolegle (docelowo nadpisuje data-*.js w katalogu głównym)
+python3 scripts/csv_to_js/run_all.py
+
+# tylko wybrane serie
+python3 scripts/csv_to_js/run_all.py --only wibor3m --only cpi-monthly
+
+# pojedynczy parser
+python3 scripts/csv_to_js/jobs/parse_nbp_rate.py
+```
+
+Każdy parser działa w czystym kontekście (`1 input CSV -> 1 output data-*.js`), a `run_all.py` uruchamia je równolegle.
+
+| Job key (`--only`) | Parser | Wejście CSV | Wyjście JS |
+|---|---|---|---|
+| `wibor1m` | `scripts/csv_to_js/jobs/parse_wibor1m.py` | `sources/csv/plopln1m_m.csv` | `data-wibor1m.js` |
+| `wibor3m` | `scripts/csv_to_js/jobs/parse_wibor3m.py` | `sources/csv/plopln3m_m.csv` | `data-wibor3m.js` |
+| `wibor6m` | `scripts/csv_to_js/jobs/parse_wibor6m.py` | `sources/csv/plopln6m_m.csv` | `data-wibor6m.js` |
+| `nbp-rate` | `scripts/csv_to_js/jobs/parse_nbp_rate.py` | `sources/csv/inrtpl_m_m.csv` | `data-nbp-rate.js` |
+| `wig` | `scripts/csv_to_js/jobs/parse_wig.py` | `sources/csv/wig_m.csv` | `data-wig.js` |
+| `wig30` | `scripts/csv_to_js/jobs/parse_wig30.py` | `sources/csv/wig30_m.csv` | `data-wig30.js` |
+| `spx` | `scripts/csv_to_js/jobs/parse_spx.py` | `sources/csv/spx_m.csv` | `data-spx.js` |
+| `usdpln` | `scripts/csv_to_js/jobs/parse_usdpln.py` | `sources/csv/usdpln_m.csv` | `data-usdpln.js` |
+| `cpi-monthly` | `scripts/csv_to_js/jobs/parse_cpi_monthly.py` | `sources/csv/miesieczne_wskazniki_cen_towarow_i_uslug_konsumpcyjnych_od_1982_roku__2.csv` | `data-cpi-monthly.js` |
+| `cpi-annual` | `scripts/csv_to_js/jobs/parse_cpi_annual.py` | `sources/csv/rocznewskaznikicentowarowiuslugkonsumpcyjnychod1950roku_2.csv` | `data-cpi-annual.js` |
+
+Przydatne opcje:
+- `--workers N` — liczba procesów równoległych.
+- `--output-dir /sciezka` — wygenerowanie plików do katalogu tymczasowego zamiast nadpisywania głównych `data-*.js`.
 
 ## Projekcja przyszłości
 

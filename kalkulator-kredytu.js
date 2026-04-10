@@ -239,6 +239,7 @@ let cpiMode = 'annual';
 let salarySource = 'average';
 let rateType = 'rowna';
 let methodologyOpen = false;
+let futureProjectionsOpen = false;
 let themeMode = 'dark';
 
 function getCssVar(name, fallback) {
@@ -327,6 +328,20 @@ function syncMethodologyToggleUI() {
   body.hidden = !methodologyOpen;
   btn.setAttribute('aria-expanded', methodologyOpen ? 'true' : 'false');
   btn.textContent = methodologyOpen ? 'Ukryj metodykę i wzory' : 'Pokaż metodykę i wzory';
+}
+
+function toggleFutureProjections() {
+  futureProjectionsOpen = !futureProjectionsOpen;
+  syncFutureProjectionsToggleUI();
+}
+
+function syncFutureProjectionsToggleUI() {
+  const body = document.getElementById('future_projections_body');
+  const btn = document.getElementById('future_toggle_btn');
+  if (!body || !btn) return;
+  body.hidden = !futureProjectionsOpen;
+  btn.setAttribute('aria-expanded', futureProjectionsOpen ? 'true' : 'false');
+  btn.textContent = futureProjectionsOpen ? 'Ukryj projekcje przyszłe' : 'Pokaż projekcje przyszłe';
 }
 
 function setMethodValue(id, value) {
@@ -879,5 +894,6 @@ function bindInputs() {
 syncHistoricalRanges();
 bindInputs();
 syncMethodologyToggleUI();
+syncFutureProjectionsToggleUI();
 initTheme();
 calculate();
