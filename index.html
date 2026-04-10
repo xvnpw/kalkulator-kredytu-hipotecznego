@@ -19,14 +19,14 @@
       </button>
     </div>
     <h1>Rzeczywisty koszt kredytu<br>z uwzględnieniem <em>inflacji</em></h1>
-    <p>Kalkulator porównuje nominalny koszt kredytu z realnym — uwzględniając historyczne notowania WIBOR 3M/6M oraz wskaźnik CPI GUS od 2000 roku. Sprawdź, czy naprawdę lepiej spłacić kredyt wcześniej.</p>
+    <p>Kalkulator porównuje nominalny koszt kredytu z realnym — uwzględniając historyczne notowania WIBOR 1M/3M/6M oraz wskaźnik CPI GUS od 2000 roku. Sprawdź, czy naprawdę lepiej spłacić kredyt wcześniej.</p>
     <div class="quick-nav">
       <a class="quick-link" href="symulator-nadplat.html" target="_blank">Przejdź do symulatora nadpłat →</a>
     </div>
     <div style="margin-top:14px">
-      <span class="data-tag" id="tag_wibor">WIBOR 6M · dane historyczne (notowania miesięczne)</span>
+      <span class="data-tag" id="tag_wibor">WIBOR 3M · dane historyczne (notowania miesięczne)</span>
       <span class="data-tag" id="tag_cpi">Inflacja CPI · GUS Polska (roczna)</span>
-      <span class="data-tag">Projekcja 2027+ · średnia wieloletnia</span>
+      <span class="data-tag" id="tag_projection">Projekcja 2027+ · średnia wieloletnia</span>
     </div>
   </header>
 
@@ -48,21 +48,21 @@
       <div class="field">
         <label>Rok zaciągnięcia kredytu</label>
         <div class="field-row">
-          <input type="number" id="rok_start" value="2021" min="2000" max="2026" step="1">
+          <input type="number" id="rok_start" value="2010" min="2000" max="2026" step="1">
         </div>
-        <input type="range" id="rok_r" min="2000" max="2026" step="1" value="2021">
-        <div class="range-val" id="rok_rv">2021</div>
+        <input type="range" id="rok_r" min="2000" max="2026" step="1" value="2010">
+        <div class="range-val" id="rok_rv">2010</div>
       </div>
 
       <div class="field">
         <label>Miesiąc startu kredytu</label>
         <div class="field-row">
           <select id="miesiac_start">
-            <option value="1">styczeń</option>
+            <option value="1" selected>styczeń</option>
             <option value="2">luty</option>
             <option value="3">marzec</option>
             <option value="4">kwiecień</option>
-            <option value="5" selected>maj</option>
+            <option value="5">maj</option>
             <option value="6">czerwiec</option>
             <option value="7">lipiec</option>
             <option value="8">sierpień</option>
@@ -77,18 +77,37 @@
       <div class="field">
         <label>Marża banku (%)</label>
         <div class="field-row">
-          <input type="number" id="marza" value="1.85" min="0.5" max="5" step="0.05">
+          <input type="number" id="marza" value="2" min="0" max="5" step="0.05">
           <span class="unit">%</span>
         </div>
-        <input type="range" id="marza_r" min="0.5" max="5" step="0.05" value="1.85">
-        <div class="range-val" id="marza_rv">1,85%</div>
+        <input type="range" id="marza_r" min="0" max="5" step="0.05" value="2">
+        <div class="range-val" id="marza_rv">2,0%</div>
+      </div>
+
+      <div class="field">
+        <label>Prowizja banku (%)</label>
+        <div class="field-row">
+          <input type="number" id="prowizja" value="2" min="0" max="5" step="0.1">
+          <span class="unit">%</span>
+        </div>
+        <input type="range" id="prowizja_r" min="0" max="5" step="0.1" value="2">
+        <div class="range-val" id="prowizja_rv">2,0%</div>
+      </div>
+
+      <div class="field">
+        <label>Rodzaj rat</label>
+        <div class="toggle-group">
+          <button class="toggle-btn active" id="btn_rowna" onclick="setRateType('rowna')">Rata równa (annuitet)</button>
+          <button class="toggle-btn" id="btn_malejaca" onclick="setRateType('malejaca')">Rata malejąca</button>
+        </div>
       </div>
 
       <div class="field">
         <label>Wskaźnik WIBOR</label>
         <div class="toggle-group">
-          <button class="toggle-btn active" id="btn_wibor6m" onclick="setWiborMode('6M')">WIBOR 6M</button>
-          <button class="toggle-btn" id="btn_wibor3m" onclick="setWiborMode('3M')">WIBOR 3M</button>
+          <button class="toggle-btn" id="btn_wibor1m" onclick="setWiborMode('1M')">WIBOR 1M</button>
+          <button class="toggle-btn active" id="btn_wibor3m" onclick="setWiborMode('3M')">WIBOR 3M</button>
+          <button class="toggle-btn" id="btn_wibor6m" onclick="setWiborMode('6M')">WIBOR 6M</button>
         </div>
       </div>
 
@@ -104,11 +123,43 @@
         <label>Źródło danych wynagrodzeń</label>
         <div class="field-row">
           <select id="salary_source">
-            <option value="private" selected>Przeciętne miesięczne wynagrodzenie brutto w sektorze prywatnym</option>
-            <option value="average">Przeciętne miesięczne wynagrodzenie brutto (ogółem)</option>
+            <option value="average" selected>Przeciętne miesięczne wynagrodzenie brutto (ogółem)</option>
             <option value="minimum">Wynagrodzenie minimalne</option>
           </select>
         </div>
+      </div>
+
+      <div class="separator"></div>
+      <div style="margin: 14px 0 10px; font-size: 12px; color: var(--muted); letter-spacing: 0.5px;">Projekcje przyszłe</div>
+
+      <div class="field">
+        <label title="Stosowany dla WIBOR 1M, 3M i 6M">Przyszły WIBOR (%)</label>
+        <div class="field-row">
+          <input type="number" id="future_wibor" value="3.0" min="0" max="15" step="0.1">
+          <span class="unit">%</span>
+        </div>
+        <input type="range" id="future_wibor_r" min="0" max="15" step="0.1" value="3.0">
+        <div class="range-val" id="future_wibor_rv">3,0%</div>
+      </div>
+
+      <div class="field">
+        <label>Przyszła inflacja CPI (%)</label>
+        <div class="field-row">
+          <input type="number" id="future_cpi" value="3.0" min="-5" max="20" step="0.1">
+          <span class="unit">%</span>
+        </div>
+        <input type="range" id="future_cpi_r" min="-5" max="20" step="0.1" value="3.0">
+        <div class="range-val" id="future_cpi_rv">3,0% rocznie (≈ 0,25% m/m)</div>
+      </div>
+
+      <div class="field">
+        <label>Przyszły wzrost wynagrodzeń (%)</label>
+        <div class="field-row">
+          <input type="number" id="future_salary" value="3.5" min="0" max="15" step="0.1">
+          <span class="unit">%</span>
+        </div>
+        <input type="range" id="future_salary_r" min="0" max="15" step="0.1" value="3.5">
+        <div class="range-val" id="future_salary_rv">3,5%</div>
       </div>
 
       <div class="separator"></div>
@@ -136,7 +187,7 @@
       <div class="separator"></div>
       <div style="margin-top:14px">
         <div class="panel-title" style="margin-bottom:12px">Oprocentowanie efektywne</div>
-        <div class="info-row"><span id="wibor_label">WIBOR 6M (rok startu)</span><span id="wibor_display">—</span></div>
+        <div class="info-row"><span id="wibor_label">WIBOR 3M (rok startu)</span><span id="wibor_display">—</span></div>
         <div class="info-row"><span>Marża banku</span><span id="marza_display">—</span></div>
         <div class="info-row"><span style="color:var(--text)">Oprocentowanie łączne</span><span id="total_rate_display" style="color:var(--accent)">—</span></div>
         <div class="info-row"><span id="cpi_label">Inflacja w roku startu</span><span id="inf_display">—</span></div>
@@ -196,6 +247,10 @@
               <span class="val highlight-negative" id="cA_odsetki">—</span>
             </div>
             <div class="compare-row">
+              <span class="lbl">Prowizja</span>
+              <span class="val" id="cA_prowizje">—</span>
+            </div>
+            <div class="compare-row">
               <span class="lbl real-date-label">Całkowita kwota realna (PLN z …)</span>
               <span class="val" id="cA_real">—</span>
             </div>
@@ -218,6 +273,10 @@
             <div class="compare-row">
               <span class="lbl">Odsetki nominalne</span>
               <span class="val highlight-negative" id="cB_odsetki">—</span>
+            </div>
+            <div class="compare-row">
+              <span class="lbl">Prowizja</span>
+              <span class="val" id="cB_prowizje">—</span>
             </div>
             <div class="compare-row">
               <span class="lbl real-date-label">Całkowita kwota realna (PLN z …)</span>
@@ -309,12 +368,15 @@
             <span class="val" id="f_duration_effect">—</span>
           </div>
           <div class="note" style="margin-top:10px">
-            <strong>Metodologia rozkładu (prosto):</strong><br>
+            <strong>Metodologia rozkładu:</strong><br>
+            Rozkład dotyczy <strong>realnych odsetek z rat</strong> (bez prowizji bankowej).<br>
+            Metoda działa tak samo dla rat równych i malejących.<br>
             Realne odsetki dzielimy na dwie części:<br>
             1) <em>Wkład marży banku</em> — ile kosztuje sama marża (porównanie z symulacją: marża = 0%).<br>
             2) <em>Efekt relacji WIBOR−CPI</em> — wpływ warunków rynkowych, bez marży.<br>
             Jeśli efekt WIBOR−CPI jest ujemny, inflacja obniża realny koszt kredytu.<br>
-            Efekt wydłużenia (A − B) pokazuje, ile realnie dopłacasz za dłuższy okres spłaty.
+            Efekt wydłużenia (A − B) pokazuje, ile realnie dopłacasz za dłuższy okres spłaty.<br>
+            Prowizja jest kosztem jednorazowym i jest pokazywana osobno w podsumowaniu kosztów całkowitych.
           </div>
         </div>
       </div>
@@ -327,7 +389,7 @@
         </button>
         <div class="explainer-body" id="metodyka_body" hidden>
           <p class="explainer-lead">
-            Ten panel pokazuje obliczenia prostym językiem. Przykład jest liczony na Twoich bieżących ustawieniach dla
+            Ten panel pokazuje obliczenia. Przykład jest liczony na Twoich bieżących ustawieniach dla
             <strong>wariantu A</strong> (pierwsze miesiące harmonogramu).
           </p>
 
@@ -343,10 +405,13 @@
           </div>
 
           <div class="explainer-block">
-            <div class="explainer-title">Krok 2: Rata miesięczna (annuitet)</div>
-            <p>Rata jest stała między fixingami WIBOR i zależy głównie od kwoty, stopy miesięcznej i liczby rat.</p>
+            <div class="explainer-title">Krok 2: Rata miesięczna (równa lub malejąca)</div>
+            <p><strong>Rata równa (annuitet):</strong> stała rata między fixingami WIBOR.</p>
             <div class="formula-line"><code>rata = K × r × (1 + r)^n / ((1 + r)^n − 1)</code></div>
+            <p style="margin-top:8px"><strong>Rata malejąca:</strong> stała część kapitałowa, malejące odsetki.</p>
+            <div class="formula-line"><code>kapitał = saldo / n_pozostałych, odsetki = saldo × r, rata = kapitał + odsetki</code></div>
             <div class="explainer-kv">
+              <div class="explainer-kv-row"><span>Wybrany rodzaj rat</span><strong id="exp_rate_type">—</strong></div>
               <div class="explainer-kv-row"><span>K (kwota kredytu)</span><strong id="exp_kwota">—</strong></div>
               <div class="explainer-kv-row"><span>r (miesięczna stopa)</span><strong id="exp_r_monthly">—</strong></div>
               <div class="explainer-kv-row"><span>n (wariant A / B)</span><strong><span id="exp_n_a">—</span> / <span id="exp_n_b">—</span></strong></div>
@@ -381,18 +446,32 @@
           </div>
 
           <div class="explainer-block">
-            <div class="explainer-title">Krok 5: Porównanie wariantów A i B</div>
-            <p>Oba warianty liczymy tak samo. Różnica wynika głównie z liczby rat i czasu działania inflacji.</p>
-            <div class="formula-line"><code>realne_odsetki = suma_rat_realnych − kwota_kredytu</code></div>
+            <div class="explainer-title">Krok 5: Prowizja banku (koszt jednorazowy)</div>
+            <p>Prowizja jest doliczana jako koszt na starcie kredytu. Nie zwiększa salda, więc nie nalicza odsetek.</p>
+            <div class="formula-line"><code>prowizja = kwota_kredytu × stawka_prowizji</code></div>
+            <div class="formula-line"><code>prowizja_realna = prowizja × deflator_t0 = prowizja (bo deflator_t0 = 1)</code></div>
             <div class="explainer-kv">
-              <div class="explainer-kv-row"><span>Suma rat realnych (A / B)</span><strong><span id="exp_total_real_a">—</span> / <span id="exp_total_real_b">—</span></strong></div>
+              <div class="explainer-kv-row"><span>Stawka prowizji</span><strong id="exp_prowizja_pct">—</strong></div>
+              <div class="explainer-kv-row"><span>Prowizja nominalna (A / B)</span><strong><span id="exp_prowizja_nom_a">—</span> / <span id="exp_prowizja_nom_b">—</span></strong></div>
+              <div class="explainer-kv-row"><span>Prowizja realna (A / B)</span><strong><span id="exp_prowizja_real_a">—</span> / <span id="exp_prowizja_real_b">—</span></strong></div>
+            </div>
+          </div>
+
+          <div class="explainer-block">
+            <div class="explainer-title">Krok 6: Porównanie wariantów A i B</div>
+            <p>Oba warianty liczymy tak samo. Różnica wynika z liczby rat, czasu działania inflacji i kosztu prowizji.</p>
+            <div class="formula-line"><code>całkowita_kwota_realna = suma_rat_realnych + prowizja</code></div>
+            <div class="formula-line"><code>realne_odsetki = suma_rat_realnych − kwota_kredytu (bez prowizji)</code></div>
+            <div class="explainer-kv">
+              <div class="explainer-kv-row"><span>Suma rat realnych bez prowizji (A / B)</span><strong><span id="exp_total_real_a">—</span> / <span id="exp_total_real_b">—</span></strong></div>
+              <div class="explainer-kv-row"><span>Całkowita kwota realna z prowizją (A / B)</span><strong><span id="exp_total_real_with_fee_a">—</span> / <span id="exp_total_real_with_fee_b">—</span></strong></div>
               <div class="explainer-kv-row"><span>Realne odsetki (A / B)</span><strong><span id="exp_odsetki_real_a">—</span> / <span id="exp_odsetki_real_b">—</span></strong></div>
             </div>
           </div>
 
           <p class="explainer-lead">
             W skrócie: <strong>nominalnie</strong> widzisz faktycznie płacone kwoty, a <strong>realnie</strong> te same kwoty
-            po uwzględnieniu inflacji. Dlatego długi okres często wygląda taniej realnie niż nominalnie.
+            po uwzględnieniu inflacji. Prowizja jest kosztem jednorazowym na starcie, więc ma tę samą wartość nominalną i realną.
           </p>
         </div>
       </div>
@@ -408,9 +487,8 @@
           <div class="table-scroll"><table id="tableA"></table></div>
           <div class="note" style="margin-top:10px">
             <strong>Źródła danych o wynagrodzeniach (wybierane z listy po lewej):</strong>
-            <br>1) sektor prywatny: API DBW GUS (zmienna 398, przekrój 688 „Polska; Sektor własności”, pozycja „sektor prywatny”, 2020+), z uzupełnieniem historycznym dla 2000–2019;
-            <br>2) przeciętne wynagrodzenie (ogółem): BDL GUS (zmienna 64428) + dane ZUS dla 2000–2001;
-            <br>3) wynagrodzenie minimalne: ZUS (od 2003 roku) + dane historyczne 2000–2002.
+            <br>1) przeciętne wynagrodzenie (ogółem): BDL GUS (zmienna 64428) + dane ZUS dla 2000–2001;
+            <br>2) wynagrodzenie minimalne: ZUS (od 2003 roku) + dane historyczne 2000–2002.
             <strong>Kolor komórek Stosunek raty do wynagrodzenia:</strong> <span style="color:#70c997">zielony &lt;35%</span>, <span style="color:#c8a96e">żółty 35–50%</span>, <span style="color:#e07070">czerwony &gt;50%</span> wynagrodzenia.
           </div>
         </div>
@@ -418,9 +496,8 @@
           <div class="table-scroll"><table id="tableB"></table></div>
           <div class="note" style="margin-top:10px">
             <strong>Źródła danych o wynagrodzeniach (wybierane z listy po lewej):</strong>
-            <br>1) sektor prywatny: API DBW GUS (zmienna 398, przekrój 688 „Polska; Sektor własności”, pozycja „sektor prywatny”, 2020+), z uzupełnieniem historycznym dla 2000–2019;
-            <br>2) przeciętne wynagrodzenie (ogółem): BDL GUS (zmienna 64428) + dane ZUS dla 2000–2001;
-            <br>3) wynagrodzenie minimalne: ZUS (od 2003 roku) + dane historyczne 2000–2002.
+            <br>1) przeciętne wynagrodzenie (ogółem): BDL GUS (zmienna 64428) + dane ZUS dla 2000–2001;
+            <br>2) wynagrodzenie minimalne: ZUS (od 2003 roku) + dane historyczne 2000–2002.
             <strong>Kolor komórek Stosunek raty do wynagrodzenia:</strong> <span style="color:#70c997">zielony &lt;35%</span>, <span style="color:#c8a96e">żółty 35–50%</span>, <span style="color:#e07070">czerwony &gt;50%</span> wynagrodzenia.
           </div>
         </div>
@@ -433,9 +510,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="data-wibor6m.js"></script>
 <script src="data-wibor3m.js"></script>
+<script src="data-wibor1m.js"></script>
 <script src="data-cpi-annual.js"></script>
 <script src="data-cpi-monthly.js"></script>
-<script src="data-wynagrodzenia-prywatny.js"></script>
 <script src="data-wynagrodzenia-przecietne.js"></script>
 <script src="data-wynagrodzenia-minimalne.js"></script>
 <script src="kalkulator-kredytu.js"></script>

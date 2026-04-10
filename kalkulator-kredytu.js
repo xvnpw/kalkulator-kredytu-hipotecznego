@@ -2,39 +2,21 @@
 // STALE I DANE POMOCNICZE
 // ==========================================
 
-const DEFAULT_FUTURE_WIBOR = 4.5;
-const DEFAULT_FUTURE_CPI   = 3.5;
+const DEFAULT_FUTURE_WIBOR = 3.0;
+const DEFAULT_FUTURE_CPI   = 3.0;
+const DEFAULT_FUTURE_SALARY_GROWTH = 3.5;
 const DEFAULT_FUTURE_CPI_MONTHLY = (Math.pow(1 + DEFAULT_FUTURE_CPI / 100, 1 / 12) - 1) * 100;
 const EPSILON = 1e-12;
-
-// Uzupełnienie historyczne dla wariantu "sektor prywatny"
-// (2000-2019: seria sektora przedsiębiorstw, użyta dla ciągłości długich horyzontów)
-const WYNAGRODZENIA_SEKTOR_HIST = {
-  2000: 1893, 2001: 2061, 2002: 2133, 2003: 2201, 2004: 2289,
-  2005: 2380, 2006: 2477, 2007: 2691, 2008: 3024, 2009: 3103,
-  2010: 3225, 2011: 3474, 2012: 3522, 2013: 3650, 2014: 3783,
-  2015: 3899, 2016: 4048, 2017: 4277, 2018: 4585, 2019: 5169
-};
-
-const WYNAGRODZENIA_SEKTOR_PRYWATNY = {
-  ...WYNAGRODZENIA_SEKTOR_HIST,
-  ...WYNAGRODZENIA_PRYWATNY_2020
-};
+let futureWibor = DEFAULT_FUTURE_WIBOR;
+let futureCpi = DEFAULT_FUTURE_CPI;
+let futureSalaryGrowth = DEFAULT_FUTURE_SALARY_GROWTH;
 
 const SALARY_SOURCE_CONFIG = {
-  private: {
-    chartLabel: 'sektor prywatny',
-    tableHeader: 'Wynagrodzenie sektora',
-    tableTitle: 'Przeciętne miesięczne wynagrodzenie brutto - sektor prywatny (GUS)',
-    ratioHeader: 'Rata / wynagrodzenie sektora',
-    ratioTitle: 'Rata jako % wynagrodzenia sektora prywatnego',
-    data: WYNAGRODZENIA_SEKTOR_PRYWATNY
-  },
   average: {
     chartLabel: 'przeciętne',
-    tableHeader: 'Wynagrodzenie przeciętne',
+    tableHeader: 'Wyn. przeciętne',
     tableTitle: 'Przeciętne miesięczne wynagrodzenie brutto - ogółem (GUS)',
-    ratioHeader: 'Rata / wynagrodzenie przeciętne',
+    ratioHeader: 'Rata / wyn. przeciętne',
     ratioTitle: 'Rata jako % przeciętnego wynagrodzenia',
     data: WYNAGRODZENIA_PRZECIETNE
   },
@@ -53,7 +35,7 @@ Object.values(SALARY_SOURCE_CONFIG).forEach(function(cfg) {
 });
 
 function getSalaryMeta() {
-  return SALARY_SOURCE_CONFIG[salarySource] || SALARY_SOURCE_CONFIG.private;
+  return SALARY_SOURCE_CONFIG[salarySource] || SALARY_SOURCE_CONFIG.average;
 }
 
 function getWynagr(year) {
@@ -63,7 +45,7 @@ function getWynagr(year) {
   const firstYear = meta.years[0];
   const lastYear = meta.years[meta.years.length - 1];
   if (year < firstYear) return data[firstYear];
-  return Math.round(data[lastYear] * Math.pow(1.07, year - lastYear));
+  return Math.round(data[lastYear] * Math.pow(1 + futureSalaryGrowth / 100, year - lastYear));
 }
 
 // ==========================================
@@ -71,15 +53,18 @@ function getWynagr(year) {
 // ==========================================
 const WIBOR6M_ANNUAL = {};
 const WIBOR3M_ANNUAL = {};
+const WIBOR1M_ANNUAL = {};
 for (let y = 1995; y <= 2026; y++) {
-  const v6 = [], v3 = [];
+  const v6 = [], v3 = [], v1 = [];
   for (let m = 1; m <= 12; m++) {
     const k = y + '-' + String(m).padStart(2, '0');
     if (WIBOR6M_MONTHLY[k] !== undefined) v6.push(WIBOR6M_MONTHLY[k]);
     if (WIBOR3M_MONTHLY[k] !== undefined) v3.push(WIBOR3M_MONTHLY[k]);
+    if (typeof WIBOR1M_MONTHLY !== 'undefined' && WIBOR1M_MONTHLY[k] !== undefined) v1.push(WIBOR1M_MONTHLY[k]);
   }
   if (v6.length) WIBOR6M_ANNUAL[y] = +(v6.reduce((a,b)=>a+b)/v6.length).toFixed(2);
   if (v3.length) WIBOR3M_ANNUAL[y] = +(v3.reduce((a,b)=>a+b)/v3.length).toFixed(2);
+  if (v1.length) WIBOR1M_ANNUAL[y] = +(v1.reduce((a,b)=>a+b)/v1.length).toFixed(2);
 }
 
 const HIST_MIN_YEAR = 2000;
@@ -93,17 +78,28 @@ const LAST_HIST_CPI_MONTHLY = 2026;
 
 function getWibor(year, month, mode) {
   const key = year + '-' + String(month).padStart(2, '0');
-  const val = mode === '3M' ? WIBOR3M_MONTHLY[key] : WIBOR6M_MONTHLY[key];
-  return val !== undefined ? val : DEFAULT_FUTURE_WIBOR;
+  let val;
+  if (mode === '1M') {
+    val = typeof WIBOR1M_MONTHLY !== 'undefined' ? WIBOR1M_MONTHLY[key] : undefined;
+  } else if (mode === '3M') {
+    val = WIBOR3M_MONTHLY[key];
+  } else {
+    val = WIBOR6M_MONTHLY[key];
+  }
+  return val !== undefined ? val : futureWibor;
 }
 
 function getCpiAnnual(year) {
-  return CPI_ANNUAL[year] !== undefined ? CPI_ANNUAL[year] : DEFAULT_FUTURE_CPI;
+  return CPI_ANNUAL[year] !== undefined ? CPI_ANNUAL[year] : futureCpi;
+}
+
+function getFutureCpiMonthly() {
+  return (Math.pow(1 + futureCpi / 100, 1 / 12) - 1) * 100;
 }
 
 function getCpiMonthly(year, month) {
   const key = year + '-' + String(month).padStart(2, '0');
-  return CPI_MONTHLY[key] !== undefined ? CPI_MONTHLY[key] : DEFAULT_FUTURE_CPI_MONTHLY;
+  return CPI_MONTHLY[key] !== undefined ? CPI_MONTHLY[key] : getFutureCpiMonthly();
 }
 
 function annualizeMonthlyCpi(cpiMonthlyPct) {
@@ -151,34 +147,50 @@ function calcAvgStats(rows) {
 
 // Pelny harmonogram - fixing WIBOR co N miesiecy od dnia startu kredytu.
 // Brak stalych dat fixingowych (np. maj/listopad) - termin wynika wylacznie
-// z miesiaca startowego i interwalu (3M lub 6M).
-function calcHarmonogram(kwota, rokStart, startMonth, latKredytu, marza, wiborMode, cpiMode) {
+// z miesiaca startowego i interwalu (1M, 3M lub 6M).
+function calcHarmonogram(kwota, rokStart, startMonth, latKredytu, marza, wiborMode, cpiMode, rateTypeArg) {
   const nMonths = latKredytu * 12;
-  const fixInterval = wiborMode === '3M' ? 3 : 6;
+  const fixInterval = wiborMode === '1M' ? 1 : (wiborMode === '3M' ? 3 : 6);
   const MIESIAC_NAZWY = ['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'];
+  const selectedRateType = rateTypeArg || 'rowna';
 
   let saldo = kwota;
   let rows = [];
   let cumulativeDeflator = 1.0;
   let currentRata = 0, currentWibor = 0, currentStopa = 0;
+  let czescKapitalowa = 0;
 
   for (let m = 0; m < nMonths; m++) {
     const calMonthAbs = (startMonth - 1) + m;
     const calYear  = rokStart + Math.floor(calMonthAbs / 12);
     const calMonth = calMonthAbs % 12;
+    const remaining = nMonths - m;
 
     const isFix = (m % fixInterval === 0);
     if (isFix) {
       currentWibor = getWibor(calYear, calMonth + 1, wiborMode);
       currentStopa = currentWibor + marza;
-      currentRata  = calcRata(saldo, calcMonthlyRate(currentWibor, marza), nMonths - m);
+      const rFix = calcMonthlyRate(currentWibor, marza);
+      if (selectedRateType === 'malejaca') {
+        czescKapitalowa = saldo / remaining;
+      } else {
+        currentRata = calcRata(saldo, rFix, remaining);
+      }
     }
 
-    const odsetki = saldo * calcMonthlyRate(currentWibor, marza);
-    const kapital = Math.min(currentRata - odsetki, saldo);
+    const rMonthly = calcMonthlyRate(currentWibor, marza);
+    const odsetki = saldo * rMonthly;
+    let kapital, rata;
+    if (selectedRateType === 'malejaca') {
+      kapital = Math.min(czescKapitalowa, saldo);
+      rata = kapital + odsetki;
+    } else {
+      rata = currentRata;
+      kapital = Math.min(rata - odsetki, saldo);
+    }
     saldo = Math.max(0, saldo - kapital);
 
-    const rataReal = currentRata * cumulativeDeflator;
+    const rataReal = rata * cumulativeDeflator;
 
     rows.push({
       rok: calYear, calMonth,
@@ -186,7 +198,7 @@ function calcHarmonogram(kwota, rokStart, startMonth, latKredytu, marza, wiborMo
       dataLabel: MIESIAC_NAZWY[calMonth] + ' ' + calYear,
       miesiac: m + 1, isFix,
       wibor: currentWibor, stopa: currentStopa,
-      rata: currentRata, odsetki, kapital, saldo,
+      rata, odsetki, kapital, saldo,
       deflator: cumulativeDeflator, rataReal
     });
 
@@ -222,9 +234,10 @@ function aggregateYearly(rows) {
 let myChart = null;
 let currentTab = 'nominal';
 let currentData = {};
-let wiborMode = '6M';
+let wiborMode = '3M';
 let cpiMode = 'annual';
-let salarySource = 'private';
+let salarySource = 'average';
+let rateType = 'rowna';
 let methodologyOpen = false;
 let themeMode = 'dark';
 
@@ -265,6 +278,8 @@ function setWiborMode(mode) {
   wiborMode = mode;
   document.getElementById('btn_wibor6m').classList.toggle('active', mode === '6M');
   document.getElementById('btn_wibor3m').classList.toggle('active', mode === '3M');
+  const btn1m = document.getElementById('btn_wibor1m');
+  if (btn1m) btn1m.classList.toggle('active', mode === '1M');
   calculate();
 }
 
@@ -272,6 +287,13 @@ function setCpiMode(mode) {
   cpiMode = mode;
   document.getElementById('btn_cpi_annual').classList.toggle('active', mode === 'annual');
   document.getElementById('btn_cpi_monthly').classList.toggle('active', mode === 'monthly');
+  calculate();
+}
+
+function setRateType(type) {
+  rateType = type;
+  document.getElementById('btn_rowna').classList.toggle('active', type === 'rowna');
+  document.getElementById('btn_malejaca').classList.toggle('active', type === 'malejaca');
   calculate();
 }
 
@@ -339,7 +361,11 @@ function updateMethodologyPanel(data) {
   const deflatorFormula = data.cpiMode === 'monthly'
     ? 'deflator miesięczny = 1 / (1 + CPI miesięczne miesiąc do miesiąca)'
     : 'deflator miesięczny = 1 / (1 + CPI roczne)^(1/12)';
+  const rateTypeLabel = data.rateType === 'malejaca'
+    ? 'Rata malejąca'
+    : 'Rata równa (annuitet)';
 
+  setMethodValue('exp_rate_type', rateTypeLabel);
   setMethodValue('exp_wibor', fmtPct(data.wiborStart));
   setMethodValue('exp_marza', fmtPct(data.marza));
   setMethodValue('exp_stopa_nom', fmtPct(rowA0.stopa));
@@ -360,8 +386,15 @@ function updateMethodologyPanel(data) {
   setMethodValue('exp_deflator_1', fmt(deflator1, 6));
   setMethodValue('exp_rata_nom_2', fmtPLN(rowA1.rata));
   setMethodValue('exp_rata_real_2', fmtPLN(rowA1.rataReal));
-  setMethodValue('exp_total_real_a', fmtPLN(data.totRealA));
-  setMethodValue('exp_total_real_b', fmtPLN(data.totRealB));
+  setMethodValue('exp_prowizja_pct', fmt(data.prowizjaPct, 1) + '%');
+  setMethodValue('exp_prowizja_nom_a', fmtPLN(data.prowizjaA));
+  setMethodValue('exp_prowizja_nom_b', fmtPLN(data.prowizjaB));
+  setMethodValue('exp_prowizja_real_a', fmtPLN(data.prowizjaA));
+  setMethodValue('exp_prowizja_real_b', fmtPLN(data.prowizjaB));
+  setMethodValue('exp_total_real_a', fmtPLN(data.ratyRealA));
+  setMethodValue('exp_total_real_b', fmtPLN(data.ratyRealB));
+  setMethodValue('exp_total_real_with_fee_a', fmtPLN(data.totRealWithProwizjaA));
+  setMethodValue('exp_total_real_with_fee_b', fmtPLN(data.totRealWithProwizjaB));
   setMethodValue('exp_odsetki_real_a', fmtPLN(data.odsetRealA));
   setMethodValue('exp_odsetki_real_b', fmtPLN(data.odsetRealB));
 }
@@ -392,13 +425,23 @@ function fmtPct(n) { return fmt(n, 2) + '%'; }
 // ==========================================
 function calculate() {
   const kwota      = parseFloat(document.getElementById('kwota').value)    || 350000;
-  const rokStart   = parseInt(document.getElementById('rok_start').value)  || 2021;
-  const startMonth = parseInt(document.getElementById('miesiac_start').value) || 5;
-  salarySource     = document.getElementById('salary_source').value || 'private';
-  const marza      = parseFloat(document.getElementById('marza').value)    || 1.85;
+  const rokStart   = parseInt(document.getElementById('rok_start').value)  || 2010;
+  const startMonth = parseInt(document.getElementById('miesiac_start').value) || 1;
+  salarySource     = document.getElementById('salary_source').value || 'average';
+  const futureWiborInput = parseFloat(document.getElementById('future_wibor').value);
+  const futureCpiInput = parseFloat(document.getElementById('future_cpi').value);
+  const futureSalaryInput = parseFloat(document.getElementById('future_salary').value);
+  futureWibor = Number.isFinite(futureWiborInput) ? futureWiborInput : DEFAULT_FUTURE_WIBOR;
+  futureCpi = Number.isFinite(futureCpiInput) ? futureCpiInput : DEFAULT_FUTURE_CPI;
+  futureSalaryGrowth = Number.isFinite(futureSalaryInput) ? futureSalaryInput : DEFAULT_FUTURE_SALARY_GROWTH;
+  const futureCpiMonthly = getFutureCpiMonthly();
+  const marzaInput = parseFloat(document.getElementById('marza').value);
+  const marza      = Number.isFinite(marzaInput) ? marzaInput : 2;
+  const prowizjaInput = parseFloat(document.getElementById('prowizja').value);
+  const prowizjaPct = Number.isFinite(prowizjaInput) ? prowizjaInput : 2;
   const latA       = parseInt(document.getElementById('lat_A').value)      || 30;
   const latB       = parseInt(document.getElementById('lat_B').value)      || 10;
-  const fixInterval = wiborMode === '3M' ? 3 : 6;
+  const fixInterval = wiborMode === '1M' ? 1 : (wiborMode === '3M' ? 3 : 6);
 
   const wiborStart = getWibor(rokStart, startMonth, wiborMode);
   const cpiStartRaw   = cpiMode === 'monthly'
@@ -442,12 +485,17 @@ function calculate() {
     tagCpiEl.textContent = 'Inflacja CPI · GUS Polska (roczna)';
     tagCpiEl.title = 'Inflacja CPI (roczna)';
   }
+  const tagProjectionEl = document.getElementById('tag_projection');
+  tagProjectionEl.textContent =
+    'Projekcja 2027+ · WIBOR ' + fmt(futureWibor, 1) + '% · CPI ' + fmt(futureCpi, 1) +
+    '% (≈ ' + fmt(futureCpiMonthly, 2) + '% m/m) · wzrost wynagrodzeń ' + fmt(futureSalaryGrowth, 1) + '%';
+  tagProjectionEl.title = 'Stała projekcja dla lat bez danych historycznych';
 
   document.getElementById('card_la').textContent = latA;
   document.getElementById('card_lb').textContent = latB;
 
-  const rowsA = calcHarmonogram(kwota, rokStart, startMonth, latA, marza, wiborMode, cpiMode);
-  const rowsB = calcHarmonogram(kwota, rokStart, startMonth, latB, marza, wiborMode, cpiMode);
+  const rowsA = calcHarmonogram(kwota, rokStart, startMonth, latA, marza, wiborMode, cpiMode, rateType);
+  const rowsB = calcHarmonogram(kwota, rokStart, startMonth, latB, marza, wiborMode, cpiMode, rateType);
   const yearA = aggregateYearly(rowsA);
   const yearB = aggregateYearly(rowsB);
 
@@ -457,14 +505,20 @@ function calculate() {
   document.getElementById('rata_B').textContent = fmt(Math.round(rata1B));
   document.getElementById('diff_rata').textContent = fmt(Math.round(rata1B - rata1A));
 
-  const totNomA   = rowsA.reduce(function(s,r){ return s + r.rata; }, 0);
-  const totNomB   = rowsB.reduce(function(s,r){ return s + r.rata; }, 0);
-  const totRealA  = rowsA.reduce(function(s,r){ return s + r.rataReal; }, 0);
-  const totRealB  = rowsB.reduce(function(s,r){ return s + r.rataReal; }, 0);
-  const odsetNomA  = totNomA - kwota;
-  const odsetNomB  = totNomB - kwota;
-  const odsetRealA = totRealA - kwota;
-  const odsetRealB = totRealB - kwota;
+  const ratyNomA = rowsA.reduce(function(s,r){ return s + r.rata; }, 0);
+  const ratyNomB = rowsB.reduce(function(s,r){ return s + r.rata; }, 0);
+  const ratyRealA = rowsA.reduce(function(s,r){ return s + r.rataReal; }, 0);
+  const ratyRealB = rowsB.reduce(function(s,r){ return s + r.rataReal; }, 0);
+  const prowizjaA = kwota * prowizjaPct / 100;
+  const prowizjaB = kwota * prowizjaPct / 100;
+  const totNomA   = ratyNomA + prowizjaA;
+  const totNomB   = ratyNomB + prowizjaB;
+  const totRealA  = ratyRealA + prowizjaA;
+  const totRealB  = ratyRealB + prowizjaB;
+  const odsetNomA  = ratyNomA - kwota;
+  const odsetNomB  = ratyNomB - kwota;
+  const odsetRealA = ratyRealA - kwota;
+  const odsetRealB = ratyRealB - kwota;
   const infZyskA   = totNomA - totRealA;
   const infZyskB   = totNomB - totRealB;
 
@@ -476,11 +530,13 @@ function calculate() {
   document.getElementById('cB_lata').textContent = latB;
   document.getElementById('cA_nom').textContent          = fmtPLN(totNomA);
   document.getElementById('cA_odsetki').textContent      = fmtPLN(odsetNomA);
+  document.getElementById('cA_prowizje').textContent     = fmtPLN(prowizjaA);
   document.getElementById('cA_real').textContent         = fmtPLN(totRealA);
   document.getElementById('cA_real_odsetki').textContent = fmtPLN(odsetRealA);
   document.getElementById('cA_inflacja_zysk').textContent = fmtPLN(infZyskA);
   document.getElementById('cB_nom').textContent          = fmtPLN(totNomB);
   document.getElementById('cB_odsetki').textContent      = fmtPLN(odsetNomB);
+  document.getElementById('cB_prowizje').textContent     = fmtPLN(prowizjaB);
   document.getElementById('cB_real').textContent         = fmtPLN(totRealB);
   document.getElementById('cB_real_odsetki').textContent = fmtPLN(odsetRealB);
   document.getElementById('cB_inflacja_zysk').textContent = fmtPLN(infZyskB);
@@ -497,6 +553,9 @@ function calculate() {
   const realDiff = totRealA - totRealB;
   const verdictEl = document.getElementById('verdict_text');
   if (realDiff > 0) {
+    const rataDiffText = rateType === 'malejaca'
+      ? ' <strong>wyższa rata początkowa</strong> (' + fmtPLN(rata1B - rata1A) + ' więcej na starcie).'
+      : ' <strong>wyższa rata miesięczna</strong> (' + fmtPLN(rata1B - rata1A) + ' więcej).';
     verdictEl.innerHTML =
       'Wariant <strong>' + latA + '-letni</strong> kosztuje nominalnie <strong>' + fmtPLN(nomDiff) +
       '</strong> więcej niż ' + latB + '-letni. W złotówkach z <strong>' + dataWyceny +
@@ -504,7 +563,7 @@ function calculate() {
       'Inflacja "zjada" ' + fmtPLN(infZyskA - infZyskB) +
       ' z tej różnicy — długi kredyt jest realnie <strong>tańszy niż wynika z nominałów</strong>.' +
       ' Mimo to wariant ' + latB + '-letni pozostaje tańszy nawet po inflacji — ale cena to' +
-      ' <strong>wyższa rata miesięczna</strong> (' + fmtPLN(rata1B - rata1A) + ' więcej).';
+      rataDiffText;
   } else {
     verdictEl.innerHTML =
       'W złotówkach z <strong>' + dataWyceny + '</strong> wariant <strong>' + latA +
@@ -522,19 +581,27 @@ function calculate() {
     '2) Dane WIBOR to historyczne notowania miesięczne (zamknięcia miesiąca). Inflacja CPI pochodzi z GUS' +
     (cpiMode === 'monthly' ? ' (miesięczna, miesiąc do miesiąca).' : ' (roczna).') +
     '<br>3) Dane historyczne: WIBOR do ' + LAST_HIST_WIBOR_YEAR + ', CPI do ' + lastHistCPI +
-    '. Dla kolejnych lat przyjmujemy stałą projekcję: WIBOR ' + DEFAULT_FUTURE_WIBOR +
-    '%, inflacja ' + DEFAULT_FUTURE_CPI + '%.<br>' +
-    '4) To model poglądowy — nie obejmuje kosztów dodatkowych (np. prowizji i ubezpieczenia).';
+    '. Dla kolejnych lat przyjmujemy stałą projekcję: WIBOR ' + fmt(futureWibor, 1) +
+    '%, inflacja ' + fmt(futureCpi, 1) + '%' +
+    (cpiMode === 'monthly' ? ' (≈ ' + fmt(futureCpiMonthly, 2) + '% m/m)' : '') +
+    ', wzrost wynagrodzeń ' + fmt(futureSalaryGrowth, 1) + '%.<br>' +
+    '4) Prowizję banku (' + fmt(prowizjaPct, 1) + '%) doliczamy jako koszt jednorazowy na starcie — bez zwiększania salda kredytu. W wartości realnej prowizja ma ten sam poziom, bo jest kosztem w miesiącu 0 (deflator = 1).<br>' +
+    '5) Realne odsetki i rozkład czynników liczymy od samych rat (bez prowizji), aby oddzielić koszt finansowania od opłaty jednorazowej.<br>' +
+    '6) Rodzaj rat: ' + (rateType === 'malejaca' ? 'malejące' : 'równe (annuitet)') + '.';
 
   updateMethodologyPanel({
-    kwota, rokStart, startMonth, latA, latB, marza, cpiMode,
+    kwota, rokStart, startMonth, latA, latB, marza, cpiMode, rateType,
     wiborStart, cpiStartRaw, cpiStartComparable,
-    rowsA, rowsB, totRealA, totRealB, odsetRealA, odsetRealB
+    rowsA, rowsB,
+    prowizjaPct, prowizjaA, prowizjaB,
+    ratyRealA, ratyRealB,
+    totRealWithProwizjaA: totRealA, totRealWithProwizjaB: totRealB,
+    odsetRealA, odsetRealB
   });
 
   // ---- Rozklad czynnikow realnego kosztu ----
-  const rowsA0 = calcHarmonogram(kwota, rokStart, startMonth, latA, 0, wiborMode, cpiMode);
-  const rowsB0 = calcHarmonogram(kwota, rokStart, startMonth, latB, 0, wiborMode, cpiMode);
+  const rowsA0 = calcHarmonogram(kwota, rokStart, startMonth, latA, 0, wiborMode, cpiMode, rateType);
+  const rowsB0 = calcHarmonogram(kwota, rokStart, startMonth, latB, 0, wiborMode, cpiMode, rateType);
   const totReal0A = rowsA0.reduce(function(s,r){ return s + r.rataReal; }, 0);
   const totReal0B = rowsB0.reduce(function(s,r){ return s + r.rataReal; }, 0);
   const wiborCpiContribA = totReal0A - kwota;
@@ -581,7 +648,7 @@ function calculate() {
   durEffectEl.textContent = fmtPLN(durationEffect);
   durEffectEl.className = 'val ' + (durationEffect >= 0 ? 'highlight-negative' : 'highlight-positive');
 
-  currentData = { rowsA, rowsB, yearA, yearB, kwota, rokStart, startMonth, latA, latB, marza };
+  currentData = { rowsA, rowsB, yearA, yearB, kwota, rokStart, startMonth, latA, latB, marza, rateType, prowizjaPct };
   renderChart();
   renderTable('tableA', rowsA, kwota);
   renderTable('tableB', rowsB, kwota);
@@ -644,6 +711,9 @@ function renderChart() {
             borderWidth: 2, pointRadius: 2, tension: 0.3, fill: false },
           { label: 'WIBOR 3M (%)', data: years.map(function(y){ return WIBOR3M_ANNUAL[y] !== undefined ? WIBOR3M_ANNUAL[y] : null; }),
             borderColor: '#7eb8c9', backgroundColor: 'rgba(126,184,201,0.07)',
+            borderWidth: 2, pointRadius: 2, tension: 0.3, fill: false },
+          { label: 'WIBOR 1M (%)', data: years.map(function(y){ return WIBOR1M_ANNUAL[y] !== undefined ? WIBOR1M_ANNUAL[y] : null; }),
+            borderColor: '#c97eb8', backgroundColor: 'rgba(201,126,184,0.07)',
             borderWidth: 2, pointRadius: 2, tension: 0.3, fill: false },
           { label: 'Inflacja CPI (%)', data: years.map(function(y){ return CPI_ANNUAL[y] !== undefined ? CPI_ANNUAL[y] : null; }),
             borderColor: '#70c997', backgroundColor: 'rgba(112,201,151,0.07)',
@@ -729,7 +799,7 @@ function renderTable(tableId, rows, kwota) {
   const wynagrCache = {};
   const header = '<thead><tr>' +
     '<th>#</th><th>Data</th>' +
-    '<th title="Fixing WIBOR w tym miesiącu">Fixing WIBOR</th>' +
+    '<th title="Fixing WIBOR w tym miesiącu">Fixing</th>' +
     '<th>WIBOR ' + wiborMode + '</th><th>Stopa</th><th>Rata</th>' +
     '<th>Odsetki</th><th>Kapitał</th>' +
     '<th title="Rata w złotówkach z dnia zaciągnięcia kredytu (zdyskontowana CPI)">Rata realna</th>' +
@@ -774,6 +844,21 @@ function bindInputs() {
     ['kwota',    'kwota_r',  'kwota_rv',  function(v){ return fmt(parseFloat(v)) + ' PLN'; }],
     ['rok_start','rok_r',    'rok_rv',    function(v){ return v; }],
     ['marza',    'marza_r',  'marza_rv',  function(v){ return parseFloat(v).toFixed(1) + '%'; }],
+    ['prowizja', 'prowizja_r', 'prowizja_rv', function(v){ return parseFloat(v).toFixed(1) + '%'; }],
+    ['future_wibor', 'future_wibor_r', 'future_wibor_rv', function(v){
+      const futureVal = parseFloat(v);
+      return fmt(Number.isFinite(futureVal) ? futureVal : DEFAULT_FUTURE_WIBOR, 1) + '%';
+    }],
+    ['future_cpi', 'future_cpi_r', 'future_cpi_rv', function(v){
+      const annualVal = parseFloat(v);
+      const annual = Number.isFinite(annualVal) ? annualVal : DEFAULT_FUTURE_CPI;
+      const monthly = (Math.pow(1 + annual / 100, 1 / 12) - 1) * 100;
+      return fmt(annual, 1) + '% rocznie (≈ ' + fmt(monthly, 2) + '% m/m)';
+    }],
+    ['future_salary', 'future_salary_r', 'future_salary_rv', function(v){
+      const futureVal = parseFloat(v);
+      return fmt(Number.isFinite(futureVal) ? futureVal : DEFAULT_FUTURE_SALARY_GROWTH, 1) + '%';
+    }],
     ['lat_A',    'lat_A_r',  'lat_A_rv',  function(v){ return '<span class="badge badge-gold">' + v + ' lat</span>'; }],
     ['lat_B',    'lat_B_r',  'lat_B_rv',  function(v){ return '<span class="badge badge-blue">' + v + ' lat</span>'; }],
   ];

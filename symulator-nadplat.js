@@ -2,31 +2,18 @@
 // STALE I DANE POMOCNICZE
 // ==========================================
 
-const DEFAULT_FUTURE_WIBOR = 4.5;
-const DEFAULT_FUTURE_CPI   = 3.5;
-const DEFAULT_FUTURE_CPI_MONTHLY = (Math.pow(1 + DEFAULT_FUTURE_CPI / 100, 1 / 12) - 1) * 100;
+// Projekcje przyszłe — odczytywane z pól UI (fallback gdy brak DOM)
+function getFutureWibor() { var el = document.getElementById('future_wibor'); return el ? (parseFloat(el.value) || 3.0) : 3.0; }
+function getFutureCpi() { var el = document.getElementById('future_cpi'); return el ? (parseFloat(el.value) || 3.0) : 3.0; }
+function getFutureCpiMonthly() { return (Math.pow(1 + getFutureCpi() / 100, 1 / 12) - 1) * 100; }
+function getFutureSalaryGrowth() { var el = document.getElementById('future_salary'); return el ? (parseFloat(el.value) || 3.5) : 3.5; }
+function getFutureStockReturn() { var el = document.getElementById('future_stock_return'); return el ? (parseFloat(el.value) || 5.0) : 5.0; }
+function getFutureDepositRate() { var el = document.getElementById('future_deposit_rate'); return el ? (parseFloat(el.value) || 3.0) : 3.0; }
+function getFutureUsdPln() { var el = document.getElementById('future_usdpln'); return el ? (parseFloat(el.value) || 3.5) : 3.5; }
+
 const EPSILON = 1e-12;
 
-const WYNAGRODZENIA_SEKTOR_HIST = {
-  2000: 1893, 2001: 2061, 2002: 2133, 2003: 2201, 2004: 2289,
-  2005: 2380, 2006: 2477, 2007: 2691, 2008: 3024, 2009: 3103,
-  2010: 3225, 2011: 3474, 2012: 3522, 2013: 3650, 2014: 3783,
-  2015: 3899, 2016: 4048, 2017: 4277, 2018: 4585, 2019: 5169
-};
-const WYNAGRODZENIA_SEKTOR_PRYWATNY = {
-  ...WYNAGRODZENIA_SEKTOR_HIST,
-  ...WYNAGRODZENIA_PRYWATNY_2020
-};
-
 const SALARY_SOURCE_CONFIG = {
-  private: {
-    chartLabel: 'sektor prywatny',
-    tableHeader: 'Wynagrodzenie sektora',
-    tableTitle: 'Przeciętne miesięczne wynagrodzenie brutto - sektor prywatny (GUS)',
-    ratioHeader: 'Rata / wynagrodzenie',
-    ratioTitle: 'Rata jako % wynagrodzenia sektora prywatnego',
-    data: WYNAGRODZENIA_SEKTOR_PRYWATNY
-  },
   average: {
     chartLabel: 'przeciętne',
     tableHeader: 'Wynagrodzenie przeciętne',
@@ -49,7 +36,7 @@ Object.values(SALARY_SOURCE_CONFIG).forEach(function(cfg) {
 });
 
 function getSalaryMeta() {
-  return SALARY_SOURCE_CONFIG[salarySource] || SALARY_SOURCE_CONFIG.private;
+  return SALARY_SOURCE_CONFIG[salarySource] || SALARY_SOURCE_CONFIG.average;
 }
 function getWynagr(year) {
   var meta = getSalaryMeta();
@@ -58,7 +45,7 @@ function getWynagr(year) {
   var firstYear = meta.years[0];
   var lastYear = meta.years[meta.years.length - 1];
   if (year < firstYear) return data[firstYear];
-  return Math.round(data[lastYear] * Math.pow(1.07, year - lastYear));
+  return Math.round(data[lastYear] * Math.pow(1 + getFutureSalaryGrowth() / 100, year - lastYear));
 }
 
 // ==========================================
@@ -66,15 +53,18 @@ function getWynagr(year) {
 // ==========================================
 var WIBOR6M_ANNUAL = {};
 var WIBOR3M_ANNUAL = {};
+var WIBOR1M_ANNUAL = {};
 for (var y = 1995; y <= 2026; y++) {
-  var v6 = [], v3 = [];
+  var v6 = [], v3 = [], v1 = [];
   for (var m = 1; m <= 12; m++) {
     var k = y + '-' + String(m).padStart(2, '0');
     if (WIBOR6M_MONTHLY[k] !== undefined) v6.push(WIBOR6M_MONTHLY[k]);
     if (WIBOR3M_MONTHLY[k] !== undefined) v3.push(WIBOR3M_MONTHLY[k]);
+    if (WIBOR1M_MONTHLY[k] !== undefined) v1.push(WIBOR1M_MONTHLY[k]);
   }
   if (v6.length) WIBOR6M_ANNUAL[y] = +(v6.reduce(function(a,b){return a+b;}) / v6.length).toFixed(2);
   if (v3.length) WIBOR3M_ANNUAL[y] = +(v3.reduce(function(a,b){return a+b;}) / v3.length).toFixed(2);
+  if (v1.length) WIBOR1M_ANNUAL[y] = +(v1.reduce(function(a,b){return a+b;}) / v1.length).toFixed(2);
 }
 
 var HIST_MIN_YEAR = 2000;
@@ -87,15 +77,18 @@ var LAST_HIST_CPI_MONTHLY = 2026;
 // ==========================================
 function getWibor(year, month, mode) {
   var key = year + '-' + String(month).padStart(2, '0');
-  var val = mode === '3M' ? WIBOR3M_MONTHLY[key] : WIBOR6M_MONTHLY[key];
-  return val !== undefined ? val : DEFAULT_FUTURE_WIBOR;
+  var val;
+  if (mode === '1M') val = WIBOR1M_MONTHLY[key];
+  else if (mode === '3M') val = WIBOR3M_MONTHLY[key];
+  else val = WIBOR6M_MONTHLY[key];
+  return val !== undefined ? val : getFutureWibor();
 }
 function getCpiAnnual(year) {
-  return CPI_ANNUAL[year] !== undefined ? CPI_ANNUAL[year] : DEFAULT_FUTURE_CPI;
+  return CPI_ANNUAL[year] !== undefined ? CPI_ANNUAL[year] : getFutureCpi();
 }
 function getCpiMonthly(year, month) {
   var key = year + '-' + String(month).padStart(2, '0');
-  return CPI_MONTHLY[key] !== undefined ? CPI_MONTHLY[key] : DEFAULT_FUTURE_CPI_MONTHLY;
+  return CPI_MONTHLY[key] !== undefined ? CPI_MONTHLY[key] : getFutureCpiMonthly();
 }
 function annualizeMonthlyCpi(cpiMonthlyPct) {
   return (Math.pow(1 + cpiMonthlyPct / 100, 12) - 1) * 100;
@@ -124,7 +117,7 @@ var MIESIAC_NAZWY = ['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź
 
 // Harmonogram bazowy (bez zdarzen)
 function calcHarmonogram(kwota, rokStart, startMonth, nMonths, marza, wiborMode, cpiModeArg, rateType) {
-  var fixInterval = wiborMode === '3M' ? 3 : 6;
+  var fixInterval = wiborMode === '1M' ? 1 : (wiborMode === '3M' ? 3 : 6);
   var saldo = kwota;
   var rows = [];
   var cumulativeDeflator = 1.0;
@@ -181,7 +174,7 @@ function calcHarmonogram(kwota, rokStart, startMonth, nMonths, marza, wiborMode,
 
 // Harmonogram z wydarzeniami
 function calcHarmonogramWithEvents(kwota, rokStart, startMonth, nMonths, marza, wiborMode, cpiModeArg, rateType, events, prowizjaPct) {
-  var fixInterval = wiborMode === '3M' ? 3 : 6;
+  var fixInterval = wiborMode === '1M' ? 1 : (wiborMode === '3M' ? 3 : 6);
   var saldo = kwota;
   var rows = [];
   var cumulativeDeflator = 1.0;
@@ -245,7 +238,7 @@ function calcHarmonogramWithEvents(kwota, rokStart, startMonth, nMonths, marza, 
         currentMarza = ev.nowaMarza;
         if (ev.nowyWibor !== 'bez_zmian') {
           currentWiborMode = ev.nowyWibor;
-          fixInterval = currentWiborMode === '3M' ? 3 : 6;
+          fixInterval = currentWiborMode === '1M' ? 1 : (currentWiborMode === '3M' ? 3 : 6);
         }
         // Prowizja refinansowania
         var prowRefNom = saldo * (ev.prowizjaRef || 0) / 100;
@@ -438,9 +431,9 @@ function calcAvgStats(rows) {
 var myChart = null;
 var currentTab = 'nominal';
 var currentData = {};
-var wiborMode = '6M';
+var wiborMode = '3M';
 var cpiMode = 'annual';
-var salarySource = 'private';
+var salarySource = 'average';
 var rateType = 'rowna';
 var methodologyOpen = false;
 var themeMode = 'dark';
@@ -497,6 +490,8 @@ function setWiborMode(mode) {
   wiborMode = mode;
   document.getElementById('btn_wibor6m').classList.toggle('active', mode === '6M');
   document.getElementById('btn_wibor3m').classList.toggle('active', mode === '3M');
+  var btn1m = document.getElementById('btn_wibor1m');
+  if (btn1m) btn1m.classList.toggle('active', mode === '1M');
   calculate();
 }
 function setCpiMode(mode) {
@@ -513,7 +508,7 @@ function setRateType(type) {
 }
 function switchTab(tab) {
   currentTab = tab;
-  var tabs = ['nominal', 'real', 'saldo', 'wibor', 'affordability'];
+  var tabs = ['nominal', 'real', 'saldo', 'wibor', 'affordability', 'investment'];
   document.querySelectorAll('#chart-tab-row .tab-btn').forEach(function(b, i) {
     b.classList.toggle('active', tabs[i] === tab);
   });
@@ -553,7 +548,7 @@ function syncHistoricalRanges() {
 function addEvent(type) {
   if (events.length >= 20) return;
   var id = ++eventIdCounter;
-  var rokStart = parseInt(document.getElementById('rok_start').value) || 2021;
+  var rokStart = parseInt(document.getElementById('rok_start').value) || 2010;
   var ev = {
     id: id,
     type: type || 'nadplata',
@@ -584,8 +579,8 @@ function removeEvent(id) {
 function updateEvent(id, field, value) {
   var ev = events.find(function(e) { return e.id === id; });
   if (!ev) return;
-  if (field === 'type') {
-    ev.type = value;
+  if (field === 'type' || field === 'doKonca') {
+    ev[field] = value;
     renderEvents();
   } else {
     ev[field] = value;
@@ -639,7 +634,7 @@ function renderEvents() {
     if (ev.type === 'cykliczna') {
       html += '<div class="field"><label>Od</label><div class="field-pair">' + monthSelect +
         '<input type="number" value="' + ev.year + '" min="2000" max="2060" ' +
-        'onchange="updateEvent(' + ev.id + ',\'year\',parseInt(this.value)||2021)"></div></div>';
+        'onchange="updateEvent(' + ev.id + ',\'year\',parseInt(this.value)||2010)"></div></div>';
 
       // Do kiedy
       var doCheckbox = '<div class="checkbox-row"><input type="checkbox" id="doKonca_' + ev.id + '" ' +
@@ -661,7 +656,7 @@ function renderEvents() {
     } else {
       html += '<div class="field"><label>Data</label><div class="field-pair">' + monthSelect +
         '<input type="number" value="' + ev.year + '" min="2000" max="2060" ' +
-        'onchange="updateEvent(' + ev.id + ',\'year\',parseInt(this.value)||2021)"></div></div>';
+        'onchange="updateEvent(' + ev.id + ',\'year\',parseInt(this.value)||2010)"></div></div>';
     }
 
     // Efekt nadpłaty
@@ -729,17 +724,143 @@ function expandEvents(rawEvents, rokStart, startMonth, nMonths) {
 }
 
 // ==========================================
+// SILNIK INWESTYCYJNY (opportunity cost)
+// ==========================================
+function getInvestmentType() {
+  var el = document.getElementById('investment_type');
+  return el ? el.value : 'none';
+}
+
+function getIndexValue(type, year, month) {
+  var key = year + '-' + String(month).padStart(2, '0');
+  if (type === 'wig30') return WIG30_MONTHLY[key];
+  if (type === 'wig') return WIG_MONTHLY[key];
+  if (type === 'sp500') {
+    var spx = SPX_MONTHLY[key];
+    if (spx === undefined) return undefined;
+    var usd = USDPLN_MONTHLY[key];
+    if (usd === undefined) usd = getFutureUsdPln();
+    return spx * usd;
+  }
+  return undefined;
+}
+
+function getMonthlyInvestmentReturn(type, year, month) {
+  if (type === 'gotowka') return 0;
+  if (type === 'lokata') {
+    var key = year + '-' + String(month).padStart(2, '0');
+    var rate = NBP_RATE_MONTHLY[key];
+    if (rate === undefined) rate = getFutureDepositRate();
+    return rate / 12 / 100;
+  }
+  // Akcje: WIG30, WIG, SP500
+  var prevMonth = month - 1, prevYear = year;
+  if (prevMonth < 1) { prevMonth = 12; prevYear--; }
+  var cur = getIndexValue(type, year, month);
+  var prev = getIndexValue(type, prevYear, prevMonth);
+  if (cur !== undefined && prev !== undefined && prev > 0) {
+    return cur / prev - 1;
+  }
+  // Fallback: stopa roczna / 12
+  return getFutureStockReturn() / 12 / 100;
+}
+
+function calcInvestmentPortfolio(overpayments, rokStart, startMonth, nMonths, cpiModeArg, investmentType) {
+  if (investmentType === 'none' || overpayments.length === 0) {
+    return null;
+  }
+
+  // Buduj mapę nadpłat: klucz = numer miesiąca (0-based) → kwota
+  var overpayMap = {};
+  var totalWplaty = 0;
+  overpayments.forEach(function(op) {
+    var m = op.month;
+    overpayMap[m] = (overpayMap[m] || 0) + op.kwota;
+    totalWplaty += op.kwota;
+  });
+
+  var monthly = [];
+  var portfolio = 0;
+  var cumulativeDeflator = 1.0;
+  var totalWplatyReal = 0;
+
+  for (var m = 0; m <= nMonths; m++) {
+    var calMonth = ((startMonth - 1 + m) % 12) + 1;
+    var calYear = rokStart + Math.floor((startMonth - 1 + m) / 12);
+
+    // Wpłata na początku miesiąca
+    var wplata = overpayMap[m] || 0;
+    portfolio += wplata;
+    totalWplatyReal += wplata * cumulativeDeflator;
+
+    // Wzrost portfela
+    var stopa = 0;
+    var zyskNomMies = 0;
+    if (m > 0 || wplata > 0) {
+      stopa = getMonthlyInvestmentReturn(investmentType, calYear, calMonth);
+      if (m > 0) {
+        zyskNomMies = portfolio * stopa;
+        portfolio += zyskNomMies;
+      }
+    }
+    var zyskRealMies = zyskNomMies * cumulativeDeflator;
+
+    monthly.push({
+      wartoscNom: portfolio,
+      wartoscReal: portfolio * cumulativeDeflator,
+      wplata: wplata,
+      stopaZwrotu: stopa * 100,
+      zyskNomMies: zyskNomMies,
+      zyskRealMies: zyskRealMies,
+      deflator: cumulativeDeflator
+    });
+
+    // Deflator CPI aktualizowany co miesiąc (spójnie z harmonogramem kredytu)
+    var monthlyDeflatorFactor = getMonthlyDeflatorFactor(calYear, calMonth, cpiModeArg);
+    cumulativeDeflator *= monthlyDeflatorFactor;
+  }
+
+  var zyskBrutto = portfolio - totalWplaty;
+  var podatekBelki = Math.max(0, zyskBrutto) * 0.19;
+  var portfolioNetto = portfolio - podatekBelki;
+  var zyskNetto = portfolioNetto - totalWplaty;
+  var finalDeflator = monthly.length ? monthly[monthly.length - 1].deflator : 1;
+  var portfolioRealBrutto = portfolio * finalDeflator;
+  var portfolioRealNetto = portfolioNetto * finalDeflator;
+  var podatekBelkiReal = podatekBelki * finalDeflator;
+  var zyskRealBrutto = portfolioRealBrutto - totalWplatyReal;
+  var zyskRealNetto = portfolioRealNetto - totalWplatyReal;
+
+  return {
+    monthly: monthly,
+    totalWplaty: totalWplaty,
+    totalWplatyReal: totalWplatyReal,
+    portfolioBrutto: portfolio,
+    portfolioNetto: portfolioNetto,
+    zyskBrutto: zyskBrutto,
+    zyskNetto: zyskNetto,
+    podatekBelki: podatekBelki,
+    podatekBelkiReal: podatekBelkiReal,
+    portfolioRealBrutto: portfolioRealBrutto,
+    portfolioRealNetto: portfolioRealNetto,
+    zyskRealBrutto: zyskRealBrutto,
+    zyskRealNetto: zyskRealNetto,
+    investmentType: investmentType
+  };
+}
+
+// ==========================================
 // GLOWNA KALKULACJA
 // ==========================================
 function calculate() {
   var kwota      = parseFloat(document.getElementById('kwota').value) || 350000;
-  var rokStart   = parseInt(document.getElementById('rok_start').value) || 2021;
-  var startMonth = parseInt(document.getElementById('miesiac_start').value) || 5;
-  salarySource   = document.getElementById('salary_source').value || 'private';
-  var marza      = parseFloat(document.getElementById('marza').value) || 1.85;
+  var rokStart   = parseInt(document.getElementById('rok_start').value) || 2010;
+  var startMonth = parseInt(document.getElementById('miesiac_start').value) || 1;
+  salarySource   = document.getElementById('salary_source').value || 'average';
+  var marza      = parseFloat(document.getElementById('marza').value) || 2;
   var prowizjaPct = parseFloat(document.getElementById('prowizja').value) || 0;
-  var nMonths    = parseInt(document.getElementById('okres').value) || 300;
-  var fixInterval = wiborMode === '3M' ? 3 : 6;
+  var nMonths    = parseInt(document.getElementById('okres').value) || 360;
+  var fixInterval = wiborMode === '1M' ? 1 : (wiborMode === '3M' ? 3 : 6);
 
   var wiborStart = getWibor(rokStart, startMonth, wiborMode);
   var cpiStartRaw = cpiMode === 'monthly' ? getCpiMonthly(rokStart, startMonth) : getCpiAnnual(rokStart);
@@ -865,6 +986,21 @@ function calculate() {
     if (resultB.totalProwizjeNom > prowizjaA) {
       txt += ' Łączne prowizje w wariancie z nadpłatami: <strong>' + fmtPLN(resultB.totalProwizjeNom) + '</strong>.';
     }
+    // Dopisz informację o inwestycji do werdyktu
+    var INVESTMENT_LABELS = {wig30:'WIG30', wig:'WIG', sp500:'S&P 500 w PLN', lokata:'Lokata bankowa', gotowka:'Gotówka'};
+    if (investmentData && investmentType !== 'none') {
+      var invLabel = INVESTMENT_LABELS[investmentType] || investmentType;
+      var bilansNom = savedNom - investmentData.zyskNetto;
+      if (bilansNom >= 0) {
+        txt += ' Gdyby te same pieniądze trafiły do ' + invLabel + ', portfel byłby wart <strong>' + fmtPLN(investmentData.portfolioNetto) + '</strong> netto';
+        txt += ' (zysk netto <strong>' + fmtPLN(investmentData.zyskNetto) + '</strong> po 19% podatku Belki).';
+        txt += ' <strong>Bilans: nadpłata lepsza o ' + fmtPLN(bilansNom) + '</strong> nominalnie.';
+      } else {
+        txt += ' ⚠ Gdyby zamiast nadpłacić, zainwestować w ' + invLabel + ', zysk netto wyniósłby <strong>' + fmtPLN(investmentData.zyskNetto) + '</strong>';
+        txt += ' — o <strong>' + fmtPLN(Math.abs(bilansNom)) + '</strong> więcej niż oszczędność na odsetkach.';
+        txt += ' Nadpłata to realnie utracona korzyść.';
+      }
+    }
     verdictEl.innerHTML = txt || 'Brak istotnych różnic między wariantami.';
   }
 
@@ -875,16 +1011,88 @@ function calculate() {
     'Fixing WIBOR ' + wiborMode + ' co ' + fixInterval + ' miesięcy od startu. ' +
     'Rodzaj rat: ' + (rateType === 'malejaca' ? 'malejące' : 'równe (annuitet)') + '. ' +
     'Dane historyczne: WIBOR do ' + LAST_HIST_WIBOR_YEAR + ', CPI do ' + lastHistCPI +
-    '. Projekcja: WIBOR ' + DEFAULT_FUTURE_WIBOR + '%, inflacja ' + DEFAULT_FUTURE_CPI + '%.';
+    '. Projekcja: WIBOR ' + getFutureWibor() + '%, inflacja ' + getFutureCpi() + '%, wzrost wynagrodzeń ' + getFutureSalaryGrowth() + '%.';
+  // Portfel inwestycyjny (opportunity cost)
+  var investmentType = getInvestmentType();
+  var investmentData = null;
+  var overpayments = [];
+
+  // Zbierz nadpłaty z harmonogramu B
+  if (investmentType !== 'none') {
+    rowsB.forEach(function(r) {
+      if (r.nadplata > 0) {
+        overpayments.push({ month: r.miesiac - 1, kwota: r.nadplata });
+      }
+    });
+    investmentData = calcInvestmentPortfolio(overpayments, rokStart, startMonth, rowsB.length - 1, cpiMode, investmentType);
+  }
+
+  // Aktualizuj kartę inwestycyjną i sekcję porównania
+  var INVESTMENT_LABELS = {wig30:'WIG30', wig:'WIG', sp500:'S&P 500 w PLN', lokata:'Lokata bankowa', gotowka:'Gotówka'};
+  var cardInv = document.getElementById('card_investment');
+  var compSection = document.getElementById('investment_comparison');
+  if (cardInv) {
+    if (investmentData && investmentType !== 'none') {
+      var bilansNom = savedNom - investmentData.zyskNetto;
+      cardInv.style.display = '';
+      var balEl = document.getElementById('investment_balance');
+      var balSubEl = document.getElementById('investment_balance_sub');
+      balEl.textContent = (bilansNom >= 0 ? '+' : '') + fmt(Math.round(bilansNom)) + ' PLN';
+      balEl.style.color = bilansNom >= 0 ? 'var(--success)' : 'var(--danger)';
+      balSubEl.textContent = bilansNom >= 0 ? 'nadpłata lepsza (vs ' + (INVESTMENT_LABELS[investmentType] || investmentType) + ')' : 'inwestycja lepsza (vs ' + (INVESTMENT_LABELS[investmentType] || investmentType) + ')';
+    } else {
+      cardInv.style.display = 'none';
+    }
+  }
+  if (compSection) {
+    if (investmentData && investmentType !== 'none') {
+      var invLabel = INVESTMENT_LABELS[investmentType] || investmentType;
+      var bilansNom = savedNom - investmentData.zyskNetto;
+      var savedRealOdsetki = (rowsA.reduce(function(s,r){return s+r.rataReal;},0)) - (rowsB.reduce(function(s,r){return s+r.rataReal;},0) + resultB.totalNadplatyReal);
+      var invRealZysk = investmentData.zyskRealNetto;
+      var bilansReal = savedRealOdsetki - invRealZysk;
+      var wniosekNom = bilansNom >= 0
+        ? 'Nominalnie: nadpłata opłaciła się bardziej niż ' + invLabel + '.'
+        : 'Nominalnie: inwestycja w ' + invLabel + ' byłaby bardziej opłacalna niż nadpłata.';
+      var wniosekReal = bilansReal >= 0
+        ? 'Realnie (po CPI): nadpłata opłaciła się bardziej.'
+        : 'Realnie (po CPI): inwestycja byłaby bardziej opłacalna.';
+      var wniosek = wniosekNom + ' ' + wniosekReal;
+      compSection.style.display = '';
+      compSection.innerHTML =
+        '<h3>Analiza kosztu alternatywnego (inwestycja vs nadpłata)</h3>' +
+        '<table class="comparison-table">' +
+        '<tr><td>Instrument inwestycyjny</td><td><strong>' + invLabel + '</strong></td></tr>' +
+        '<tr><td>Łączne wpłaty (= nadpłaty)</td><td>' + fmtPLN(investmentData.totalWplaty) + '</td></tr>' +
+        '<tr><td>Wartość portfela na koniec (brutto)</td><td>' + fmtPLN(investmentData.portfolioBrutto) + '</td></tr>' +
+        '<tr><td>Zysk z inwestycji (nom.)</td><td>' + fmtPLN(investmentData.zyskBrutto) + '</td></tr>' +
+        '<tr><td>Podatek Belki (19%)</td><td>' + fmtPLN(investmentData.podatekBelki) + '</td></tr>' +
+        '<tr><td>Zysk netto (po podatku)</td><td><strong>' + fmtPLN(investmentData.zyskNetto) + '</strong></td></tr>' +
+        '<tr><td>Zysk netto (real., po CPI)</td><td><strong>' + fmtPLN(investmentData.zyskRealNetto) + '</strong></td></tr>' +
+        '<tr><td>Oszczędność odsetek (nom.)</td><td><strong>' + fmtPLN(savedNom) + '</strong></td></tr>' +
+        '<tr><td>Oszczędność odsetek (real.)</td><td><strong>' + fmtPLN(savedRealOdsetki) + '</strong></td></tr>' +
+        '<tr class="separator"><td colspan="2"></td></tr>' +
+        '<tr><td>BILANS nominalny (nadpłata − inwest.)</td><td style="color:' + (bilansNom >= 0 ? 'var(--success)' : 'var(--danger)') + ';font-weight:700">' + (bilansNom >= 0 ? '+' : '') + fmtPLN(bilansNom) + '</td></tr>' +
+        '<tr><td>BILANS realny (nadpłata − inwest., po CPI)</td><td style="color:' + (bilansReal >= 0 ? 'var(--success)' : 'var(--danger)') + ';font-weight:700">' + (bilansReal >= 0 ? '+' : '') + fmtPLN(bilansReal) + '</td></tr>' +
+        '<tr><td colspan="2" style="padding-top:8px;font-style:italic">' + wniosek + '</td></tr>' +
+        '</table>';
+    } else {
+      compSection.style.display = 'none';
+      compSection.innerHTML = '';
+    }
+  }
 
   currentData = {
     rowsA: rowsA, rowsB: rowsB, yearA: yearA, yearB: yearB,
     kwota: kwota, rokStart: rokStart, startMonth: startMonth, nMonths: nMonths,
-    marza: marza, resultB: resultB, prowizjaA: prowizjaA
+    marza: marza, resultB: resultB, prowizjaA: prowizjaA,
+    investment: investmentData, investmentType: investmentType,
+    savedNom: savedNom, odsetNomA: odsetNomA, odsetNomB: odsetNomB
   };
   renderChart();
   renderTable('tableA', rowsA, kwota, false);
-  renderTable('tableB', rowsB, kwota, true);
+  var invMonthly = (investmentData && investmentType !== 'none') ? investmentData.monthly : null;
+  renderTable('tableB', rowsB, kwota, true, invMonthly);
 }
 
 // ==========================================
@@ -945,6 +1153,9 @@ function renderChart() {
           { label: 'WIBOR 3M (%)', data: years.map(function(y){ return WIBOR3M_ANNUAL[y] !== undefined ? WIBOR3M_ANNUAL[y] : null; }),
             borderColor: '#7eb8c9', backgroundColor: 'rgba(126,184,201,0.07)',
             borderWidth: 2, pointRadius: 2, tension: 0.3, fill: false },
+          { label: 'WIBOR 1M (%)', data: years.map(function(y){ return WIBOR1M_ANNUAL[y] !== undefined ? WIBOR1M_ANNUAL[y] : null; }),
+            borderColor: '#c97eb8', backgroundColor: 'rgba(201,126,184,0.07)',
+            borderWidth: 2, pointRadius: 2, tension: 0.3, fill: false },
           { label: 'Inflacja CPI (%)', data: years.map(function(y){ return CPI_ANNUAL[y] !== undefined ? CPI_ANNUAL[y] : null; }),
             borderColor: '#70c997', backgroundColor: 'rgba(112,201,151,0.07)',
             borderWidth: 1.5, borderDash: [4,3], pointRadius: 2, tension: 0.3, fill: false }
@@ -975,6 +1186,77 @@ function renderChart() {
             borderColor: '#c8a96e', borderWidth: 2, pointRadius: 2, tension: 0.35, fill: false },
           { label: 'Z nadpłatami – ' + salaryMeta.chartLabel, data: allYears.map(function(y){ return pct(mapB[y]); }),
             borderColor: '#7eb8c9', borderWidth: 2, pointRadius: 2, tension: 0.35, fill: false }
+        ]
+      },
+      options: opts
+    });
+    return;
+  }
+
+  if (currentTab === 'investment') {
+    var inv = d.investment;
+    if (!inv || d.investmentType === 'none') {
+      myChart = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [] }, options: makeChartOpts('PLN', function(){ return ''; }) });
+      return;
+    }
+    // Agreguj portfel inwestycyjny rocznie
+    var invYearMap = {};
+    var savingsYearMap = {};
+    for (var i = 0; i < d.rowsA.length; i++) {
+      var rA = d.rowsA[i];
+      var rB = i < d.rowsB.length ? d.rowsB[i] : null;
+      var yr = rA.rok;
+      if (!savingsYearMap[yr]) savingsYearMap[yr] = { nom: 0, real: 0 };
+      var diffNom = rA.odsetki - (rB ? rB.odsetki : 0);
+      var diffReal = rA.odsetki * rA.deflator - (rB ? rB.odsetki * rB.deflator : 0);
+      savingsYearMap[yr].nom += diffNom;
+      savingsYearMap[yr].real += diffReal;
+    }
+    // Roczne wartości portfela: bierz ostatni miesiąc każdego roku
+    inv.monthly.forEach(function(row, idx) {
+      var calMonth = ((d.startMonth - 1 + idx) % 12) + 1;
+      var calYear = d.rokStart + Math.floor((d.startMonth - 1 + idx) / 12);
+      invYearMap[calYear] = { nom: row.wartoscNom, real: row.wartoscReal };
+    });
+    var invYears = Object.keys(invYearMap).sort();
+    var lastInvYear = invYears.length ? invYears[invYears.length - 1] : null;
+    var cumSavNom = 0, cumSavReal = 0;
+    var savNomArr = [], savRealArr = [];
+    invYears.forEach(function(y) {
+      if (savingsYearMap[y]) { cumSavNom += savingsYearMap[y].nom; cumSavReal += savingsYearMap[y].real; }
+      savNomArr.push(Math.round(cumSavNom));
+      savRealArr.push(Math.round(cumSavReal));
+    });
+    var INVESTMENT_LABELS = {wig30:'WIG30', wig:'WIG', sp500:'S&P 500 w PLN', lokata:'Lokata bankowa', gotowka:'Gotówka'};
+    var invLabel = INVESTMENT_LABELS[d.investmentType] || d.investmentType;
+    var opts = makeChartOpts('PLN', function(c) {
+      var v = c.parsed.y;
+      return v !== null ? c.dataset.label + ': ' + fmt(Math.round(v)) + ' PLN' : '';
+    });
+    opts.scales.y.ticks.callback = function(v) { return (v/1000) + 'k'; };
+    myChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: invYears.map(String),
+        datasets: [
+          { label: 'Portfel ' + invLabel + ' (nom.)', data: invYears.map(function(y){
+              var val = (y === lastInvYear) ? inv.portfolioNetto : invYearMap[y].nom;
+              return Math.round(val);
+            }),
+            borderColor: '#e07070', backgroundColor: 'rgba(224,112,112,0.08)',
+            borderWidth: 2, pointRadius: 2, tension: 0.35, fill: false },
+          { label: 'Portfel ' + invLabel + ' (real.)', data: invYears.map(function(y){
+              var val = (y === lastInvYear) ? inv.portfolioRealNetto : invYearMap[y].real;
+              return Math.round(val);
+            }),
+            borderColor: '#e07070', backgroundColor: 'rgba(224,112,112,0.08)',
+            borderWidth: 1.5, borderDash: [4,3], pointRadius: 2, tension: 0.35, fill: false },
+          { label: 'Oszczędn. odsetek (nom.)', data: savNomArr,
+            borderColor: '#70c997', backgroundColor: 'rgba(112,201,151,0.08)',
+            borderWidth: 2, pointRadius: 2, tension: 0.35, fill: false },
+          { label: 'Oszczędn. odsetek (real.)', data: savRealArr,
+            borderColor: '#70c997', backgroundColor: 'rgba(112,201,151,0.08)',
+            borderWidth: 1.5, borderDash: [4,3], pointRadius: 2, tension: 0.35, fill: false }
         ]
       },
       options: opts
@@ -1050,11 +1332,12 @@ function renderChart() {
 // ==========================================
 // RENDER TABELI
 // ==========================================
-function renderTable(tableId, rows, kwota, showEvents) {
+function renderTable(tableId, rows, kwota, showEvents, investmentMonthly) {
   var t = document.getElementById(tableId);
   var salaryMeta = getSalaryMeta();
   var wynagrCache = {};
   var evCol = showEvents ? '<th>Nadpłata</th>' : '';
+  var invCols = investmentMonthly ? '<th title="Wartość portfela inwestycyjnego">Portfel inw.</th><th title="Miesięczna stopa zwrotu instrumentu">Stopa inw. %</th>' : '';
   var header = '<thead><tr>' +
     '<th>#</th><th>Data</th>' +
     '<th title="Fixing WIBOR">Fixing WIBOR</th>' +
@@ -1063,10 +1346,10 @@ function renderTable(tableId, rows, kwota, showEvents) {
     '<th title="Rata realna (PLN z dnia startu)">Rata realna</th>' +
     '<th title="' + salaryMeta.tableTitle + '">' + salaryMeta.tableHeader + '</th>' +
     '<th title="' + salaryMeta.ratioTitle + '">' + salaryMeta.ratioHeader + '</th>' +
-    '<th>Saldo</th>' +
+    '<th>Saldo</th>' + invCols +
     '</tr></thead>';
 
-  var body = rows.map(function(r) {
+  var body = rows.map(function(r, idx) {
     if (!wynagrCache[r.rok]) wynagrCache[r.rok] = getWynagr(r.rok);
     var wynagr = wynagrCache[r.rok];
     var pctS = r.rata / wynagr * 100;
@@ -1087,6 +1370,14 @@ function renderTable(tableId, rows, kwota, showEvents) {
       else if (r.event === 'splata') evCell = '<td data-label="Nadpłata" style="color:var(--danger);font-size:10px">spłata</td>';
       else evCell = '<td data-label="Nadpłata"></td>';
     }
+    var invCells = '';
+    if (investmentMonthly && investmentMonthly[idx]) {
+      var im = investmentMonthly[idx];
+      invCells = '<td data-label="Portfel inw." style="color:#e07070">' + fmt(Math.round(im.wartoscNom)) + '</td>' +
+        '<td data-label="Stopa inw. %">' + im.stopaZwrotu.toFixed(2) + '%</td>';
+    } else if (investmentMonthly) {
+      invCells = '<td data-label="Portfel inw.">—</td><td data-label="Stopa inw. %">—</td>';
+    }
     return '<tr class="' + rowClass + '" style="' + rowStyle + '">' +
       '<td data-label="#" style="color:var(--muted)">' + r.miesiac + '</td>' +
       '<td data-label="Data" style="white-space:nowrap">' + r.dataLabel + '</td>' +
@@ -1099,7 +1390,7 @@ function renderTable(tableId, rows, kwota, showEvents) {
       '<td data-label="Rata realna" style="color:var(--accent2)">' + fmt(Math.round(r.rataReal)) + '</td>' +
       '<td data-label="' + salaryMeta.tableHeader + '">' + fmt(wynagr) + '</td>' +
       '<td data-label="' + salaryMeta.ratioHeader + '" style="color:' + colS + ';font-weight:600">' + pctS.toFixed(1) + '%</td>' +
-      '<td data-label="Saldo">' + fmt(Math.round(r.saldo)) + '</td>' +
+      '<td data-label="Saldo">' + fmt(Math.round(r.saldo)) + '</td>' + invCells +
       '</tr>';
   }).join('');
 
@@ -1128,6 +1419,29 @@ function bindInputs() {
   });
   document.getElementById('miesiac_start').addEventListener('change', function(){ calculate(); });
   document.getElementById('salary_source').addEventListener('change', function(){ calculate(); });
+
+  // Projekcje przyszłe — input+range pairs
+  var projPairs = [
+    ['future_wibor',        'future_wibor_r',        'future_wibor_rv',        function(v){ return parseFloat(v).toFixed(1) + '%'; }],
+    ['future_cpi',          'future_cpi_r',          'future_cpi_rv',          function(v){ return parseFloat(v).toFixed(1) + '%'; }],
+    ['future_salary',       'future_salary_r',       'future_salary_rv',       function(v){ return parseFloat(v).toFixed(1) + '%'; }],
+    ['future_stock_return', 'future_stock_return_r', 'future_stock_return_rv', function(v){ return parseFloat(v).toFixed(1) + '%'; }],
+    ['future_deposit_rate', 'future_deposit_rate_r', 'future_deposit_rate_rv', function(v){ return parseFloat(v).toFixed(1) + '%'; }],
+    ['future_usdpln',       'future_usdpln_r',       'future_usdpln_rv',       function(v){ return parseFloat(v).toFixed(2); }]
+  ];
+  projPairs.forEach(function(pair) {
+    var inp = document.getElementById(pair[0]);
+    var ran = document.getElementById(pair[1]);
+    var disp = document.getElementById(pair[2]);
+    if (!inp || !ran || !disp) return;
+    function sync(src) { ran.value = inp.value = src.value; disp.innerHTML = pair[3](src.value); calculate(); }
+    inp.addEventListener('input', function(){ sync(inp); });
+    ran.addEventListener('input', function(){ sync(ran); });
+  });
+
+  // Wybór instrumentu inwestycyjnego
+  var invSel = document.getElementById('investment_type');
+  if (invSel) invSel.addEventListener('change', function(){ calculate(); });
 }
 
 // ==========================================
