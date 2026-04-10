@@ -546,10 +546,30 @@
       <div class="field">
         <label>Rok zaciągnięcia kredytu</label>
         <div class="field-row">
-          <input type="number" id="rok_start" value="2021" min="2000" max="2024" step="1">
+          <input type="number" id="rok_start" value="2021" min="2000" max="2026" step="1">
         </div>
-        <input type="range" id="rok_r" min="2000" max="2024" step="1" value="2021">
+        <input type="range" id="rok_r" min="2000" max="2026" step="1" value="2021">
         <div class="range-val" id="rok_rv">2021</div>
+      </div>
+
+      <div class="field">
+        <label>Miesiąc startu kredytu</label>
+        <div class="field-row">
+          <select id="miesiac_start">
+            <option value="1">styczeń</option>
+            <option value="2">luty</option>
+            <option value="3">marzec</option>
+            <option value="4">kwiecień</option>
+            <option value="5" selected>maj</option>
+            <option value="6">czerwiec</option>
+            <option value="7">lipiec</option>
+            <option value="8">sierpień</option>
+            <option value="9">wrzesień</option>
+            <option value="10">październik</option>
+            <option value="11">listopad</option>
+            <option value="12">grudzień</option>
+          </select>
+        </div>
       </div>
 
       <div class="field">
@@ -690,6 +710,28 @@
           <p id="verdict_text">Trwa obliczanie...</p>
         </div>
 
+        <div class="note" style="margin-top:14px">
+          <strong>Uproszczony model (punkt 2):</strong> zakłada stałą roczną stopę realną
+          <code>(WIBOR start + marża − inflacja start)</code> przez cały okres i porównuje wynik
+          z pełnym harmonogramem (WIBOR refix co 6 miesięcy + miesięczny deflator CPI).
+          <div style="margin-top:8px" class="compare-row">
+            <span class="lbl" id="simple_label_A">Uproszczone całk. realne · wariant A</span>
+            <span class="val" id="simple_real_A">—</span>
+          </div>
+          <div class="compare-row">
+            <span class="lbl">Różnica vs harmonogram (A)</span>
+            <span class="val" id="simple_diff_A">—</span>
+          </div>
+          <div class="compare-row">
+            <span class="lbl" id="simple_label_B">Uproszczone całk. realne · wariant B</span>
+            <span class="val" id="simple_real_B">—</span>
+          </div>
+          <div class="compare-row">
+            <span class="lbl">Różnica vs harmonogram (B)</span>
+            <span class="val" id="simple_diff_B">—</span>
+          </div>
+        </div>
+
         <div class="note" style="margin-top:14px" id="note_extra"></div>
       </div>
 
@@ -808,6 +850,9 @@ for (let y = 1997; y <= 2026; y++) {
   if (h1 !== undefined && h2 !== undefined) WIBOR6M[y] = +((h1 + h2) / 2).toFixed(2);
   else if (h1 !== undefined) WIBOR6M[y] = h1;
 }
+const WIBOR_YEARS = Object.keys(WIBOR6M).map(Number).sort((a,b) => a - b);
+const MIN_WIBOR_YEAR = WIBOR_YEARS[0];
+const LAST_HIST_WIBOR_YEAR = WIBOR_YEARS[WIBOR_YEARS.length - 1];
 
 // Zwraca WIBOR 6M na dany moment (rok + półrocze 1 lub 2)
 // Dane historyczne z notowań rynkowych
@@ -829,16 +874,31 @@ const CPI = {
   2020: 3.4,  2021: 5.1,  2022: 14.4, 2023: 11.4, 2024: 3.6,
   2025: 3.6
 };
+const CPI_YEARS = Object.keys(CPI).map(Number).sort((a,b) => a - b);
+const MIN_CPI_YEAR = CPI_YEARS[0];
+const LAST_HIST_CPI_YEAR = CPI_YEARS[CPI_YEARS.length - 1];
+// UI i seria wynagrodzeń są przygotowane od 2000 r.
+const HIST_MIN_YEAR = Math.max(2000, Math.max(MIN_WIBOR_YEAR, MIN_CPI_YEAR));
 
 // Projekcja na lata przyszłe (po ostatnich danych historycznych)
 const DEFAULT_FUTURE_WIBOR = 4.5;
 const DEFAULT_FUTURE_CPI   = 3.5;
+const EPSILON = 1e-12;
 
 function getWibor(year) {
   return WIBOR6M[year] !== undefined ? WIBOR6M[year] : DEFAULT_FUTURE_WIBOR;
 }
 function getCpi(year) {
   return CPI[year] !== undefined ? CPI[year] : DEFAULT_FUTURE_CPI;
+}
+
+function getHalfForMonth(monthOneBased) {
+  return monthOneBased <= 6 ? 1 : 2;
+}
+
+function normalizeStartMonth(value) {
+  const month = parseInt(value);
+  return Number.isFinite(month) && month >= 1 && month <= 12 ? month : 5;
 }
 
 // ==========================================
@@ -850,25 +910,37 @@ function calcMonthlyRate(wibor_pct, marza_pct) {
 }
 
 function calcRata(kwota, rMonthly, nMonths) {
-  if (rMonthly === 0) return kwota / nMonths;
+  if (Math.abs(rMonthly) < EPSILON) return kwota / nMonths;
   return kwota * rMonthly * Math.pow(1 + rMonthly, nMonths) /
          (Math.pow(1 + rMonthly, nMonths) - 1);
 }
 
+function calcSimpleRealTotal(kwota, latKredytu, nominalStopaPct, cpiPct) {
+  const nMonths = latKredytu * 12;
+  const realMonthlyRate = (nominalStopaPct - cpiPct) / 100 / 12;
+  const rataRealSimple = calcRata(kwota, realMonthlyRate, nMonths);
+  const totalRealSimple = rataRealSimple * nMonths;
+  return {
+    rataRealSimple,
+    totalRealSimple,
+    odsetkiRealSimple: totalRealSimple - kwota
+  };
+}
+
 // Oblicz pelny harmonogram z historycznym WIBOR 6M
 // WIBOR 6M z danych rynkowych (notowania zamknięcia miesięcznego)
-// Kredyt zaciagniety w MAJU danego roku.
+// Kredyt zaciagniety w wybranym miesiacu.
 // Fixing WIBOR 6M zawsze w MAJ i LISTOPAD:
 //   – maj  roku Y  -> WIBOR = notowanie zamknięcia maja Y
 //   – lis  roku Y  -> WIBOR = notowanie zamknięcia listopada Y
-// Deflator: miesiac 0 (maj roku startu) = 1.0 -> rata realna[0] == rata nominalna[0]
-function calcHarmonogram(kwota, rokStart, latKredytu, marza) {
+// Deflator: miesiac 0 (miesiac startu) = 1.0 -> rata realna[0] == rata nominalna[0]
+function calcHarmonogram(kwota, rokStart, startMonth, latKredytu, marza) {
   const nMonths = latKredytu * 12;
   let saldo = kwota;
   let rows = [];
   let cumulativeDeflator = 1.0;
 
-  const START_MONTH_IDX = 4; // maj = 0-based index 4
+  const START_MONTH_IDX = startMonth - 1;
   const MIESIAC_NAZWY = ['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paz','lis','gru'];
 
   let currentRata = 0;
@@ -883,7 +955,8 @@ function calcHarmonogram(kwota, rokStart, latKredytu, marza) {
     // Fixing w maju (calMonth==4) i listopadzie (calMonth==10)
     const isFix = (m === 0) || (calMonth === 4) || (calMonth === 10);
     if (isFix) {
-      const fixHalf = (calMonth === 4) ? 1 : 2;
+      // Gdy występuje fixing (miesiąc startu, maj, listopad), półrocze wybieramy wg kalendarza: I–VI => H1, VII–XII => H2.
+      const fixHalf = getHalfForMonth(calMonth + 1);
       currentWibor = getWiborSemi(calYear, fixHalf);
       currentStopa = currentWibor + marza;
       const rMonthly = calcMonthlyRate(currentWibor, marza);
@@ -974,6 +1047,22 @@ function switchTableTab(id) {
   document.getElementById(id).classList.add('active');
 }
 
+function syncHistoricalRanges() {
+  const minYear = HIST_MIN_YEAR;
+  const maxYear = LAST_HIST_WIBOR_YEAR;
+  const rokInput = document.getElementById('rok_start');
+  const rokRange = document.getElementById('rok_r');
+  rokInput.min = minYear;
+  rokInput.max = maxYear;
+  rokRange.min = minYear;
+  rokRange.max = maxYear;
+  if (parseInt(rokInput.value) > maxYear) {
+    rokInput.value = maxYear;
+    rokRange.value = maxYear;
+    document.getElementById('rok_rv').innerHTML = String(maxYear);
+  }
+}
+
 // ==========================================
 // FORMAT
 // ==========================================
@@ -989,11 +1078,15 @@ function fmtPct(n) { return fmt(n, 2) + '%'; }
 function calculate() {
   const kwota    = parseFloat(document.getElementById('kwota').value)    || 350000;
   const rokStart = parseInt(document.getElementById('rok_start').value)  || 2021;
+  const startMonthInput = document.getElementById('miesiac_start');
+  const startMonth = normalizeStartMonth(startMonthInput.value);
+  startMonthInput.value = String(startMonth);
   const marza    = parseFloat(document.getElementById('marza').value)    || 1.85;
   const latA     = parseInt(document.getElementById('lat_A').value)      || 30;
   const latB     = parseInt(document.getElementById('lat_B').value)      || 10;
 
-  const wiborStart = getWiborSemi(rokStart, 1); // fixing H1 roku startu
+  const startHalf = getHalfForMonth(startMonth);
+  const wiborStart = getWiborSemi(rokStart, startHalf);
   const cpiStart   = getCpi(rokStart);
   const stopaStart = wiborStart + marza;
   const realStopa  = stopaStart - cpiStart;
@@ -1010,8 +1103,8 @@ function calculate() {
   document.getElementById('card_lb').textContent = latB;
 
   // Harmonogramy
-  const rowsA = calcHarmonogram(kwota, rokStart, latA, marza);
-  const rowsB = calcHarmonogram(kwota, rokStart, latB, marza);
+  const rowsA = calcHarmonogram(kwota, rokStart, startMonth, latA, marza);
+  const rowsB = calcHarmonogram(kwota, rokStart, startMonth, latB, marza);
 
   const yearA = aggregateYearly(rowsA, kwota);
   const yearB = aggregateYearly(rowsB, kwota);
@@ -1036,8 +1129,15 @@ function calculate() {
   const infZyskA   = totNomA - totRealA; // ile "zaoszczędzono" dzięki inflacji
   const infZyskB   = totNomB - totRealB;
 
-  // Data wyceny realnej = dzien zaciagniecia kredytu = maj roku startu
-  const dataWyceny = `maj ${rokStart}`;
+  const MIESIAC_NAZWY_PL = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień'];
+  const dataWyceny = `${MIESIAC_NAZWY_PL[startMonth - 1]} ${rokStart}`;
+
+  const simpleA = calcSimpleRealTotal(kwota, latA, stopaStart, cpiStart);
+  const simpleB = calcSimpleRealTotal(kwota, latB, stopaStart, cpiStart);
+  const simpleDiffA = simpleA.totalRealSimple - totRealA;
+  const simpleDiffB = simpleB.totalRealSimple - totRealB;
+  const simpleDiffAPct = totRealA !== 0 ? (simpleDiffA / totRealA * 100) : 0;
+  const simpleDiffBPct = totRealB !== 0 ? (simpleDiffB / totRealB * 100) : 0;
 
   // Comparison panel
   document.getElementById('cA_lata').textContent = latA;
@@ -1052,6 +1152,17 @@ function calculate() {
   document.getElementById('cB_real').textContent      = fmtPLN(totRealB);
   document.getElementById('cB_real_odsetki').textContent = fmtPLN(odsetRealB);
   document.getElementById('cB_inflacja_zysk').textContent = fmtPLN(infZyskB);
+  document.getElementById('simple_label_A').textContent = `Uproszczone całk. realne · wariant A (${latA} lat)`;
+  document.getElementById('simple_label_B').textContent = `Uproszczone całk. realne · wariant B (${latB} lat)`;
+  document.getElementById('simple_real_A').textContent = fmtPLN(simpleA.totalRealSimple);
+  document.getElementById('simple_real_B').textContent = fmtPLN(simpleB.totalRealSimple);
+
+  const simpleDiffAEl = document.getElementById('simple_diff_A');
+  const simpleDiffBEl = document.getElementById('simple_diff_B');
+  simpleDiffAEl.textContent = `${fmtPLN(simpleDiffA)} (${fmt(simpleDiffAPct, 1)}%)`;
+  simpleDiffBEl.textContent = `${fmtPLN(simpleDiffB)} (${fmt(simpleDiffBPct, 1)}%)`;
+  simpleDiffAEl.className = `val ${simpleDiffA >= 0 ? 'highlight-negative' : 'highlight-positive'}`;
+  simpleDiffBEl.className = `val ${simpleDiffB >= 0 ? 'highlight-negative' : 'highlight-positive'}`;
 
   // Aktualizuj etykiety "realne" z data wyceny
   document.querySelectorAll('.real-date-label').forEach(el => {
@@ -1086,15 +1197,18 @@ function calculate() {
   }
 
   noteEl.innerHTML = `<strong>Metodologia:</strong> Rata przeliczana co 6 miesięcy — fixing WIBOR 6M na początku każdego półrocza
-  (H1: I–VI, H2: VII–XII). Przez kolejne 6 rat obowiązuje stała rata wyznaczona na bazie salda w dniu fixingu
+  (H1: I–VI, H2: VII–XII). W miesiącu startu stosowany jest WIBOR półrocza zgodny z wybranym miesiącem.
+  Przez kolejne 6 rat obowiązuje stała rata wyznaczona na bazie salda w dniu fixingu
   i nowego WIBOR 6M. Dane WIBOR 6M: historyczne notowania rynkowe (zamknięcie miesiąca).
   Inflacja CPI: GUS — roczne wskaźniki cen towarów i usług konsumpcyjnych.
-  Dla lat po 2026: projekcja WIBOR ${DEFAULT_FUTURE_WIBOR}%, inflacja ${DEFAULT_FUTURE_CPI}%.
+  Dane historyczne zaktualizowane z CSV: WIBOR do ${LAST_HIST_WIBOR_YEAR}, CPI do ${LAST_HIST_CPI_YEAR}.
+  Dla lat po ${LAST_HIST_WIBOR_YEAR}: projekcja WIBOR ${DEFAULT_FUTURE_WIBOR}%, inflacja ${DEFAULT_FUTURE_CPI}%.
+  Uproszczona kalkulacja (punkt 2): stała realna stopa = (WIBOR start + marża − inflacja start) dla całego okresu.
   Obliczenia mają charakter poglądowy — nie uwzględniają kosztów ubezpieczenia, prowizji ani efektu alternatywnego
   inwestowania różnicy w ratach.`;
 
   // Store for chart
-  currentData = { rowsA, rowsB, yearA, yearB, kwota, rokStart, latA, latB, marza };
+  currentData = { rowsA, rowsB, yearA, yearB, kwota, rokStart, startMonth, latA, latB, marza };
 
   renderChart();
   renderTable('tableA', rowsA, kwota);
@@ -1111,8 +1225,9 @@ function renderChart() {
   let labels, ds1, ds2, label1, label2, yTitle;
 
   if (currentTab === 'wibor') {
+    const startYear = HIST_MIN_YEAR;
     const years = [];
-    for (let y = 2000; y <= 2026; y++) years.push(y);
+    for (let y = startYear; y <= LAST_HIST_WIBOR_YEAR; y++) years.push(y);
     labels = years.map(String);
     ds1 = years.map(y => WIBOR6M[y] || null);
     ds2 = years.map(y => CPI[y] || null);
@@ -1374,6 +1489,9 @@ function bindInputs() {
     inp.addEventListener('input', () => sync(inp, ran));
     ran.addEventListener('input', () => sync(ran, inp));
   });
+
+  const miesiacStart = document.getElementById('miesiac_start');
+  miesiacStart.addEventListener('input', () => calculate());
 }
 
 function switchTableTab(id) {
@@ -1386,6 +1504,7 @@ function switchTableTab(id) {
 }
 
 // Init
+syncHistoricalRanges();
 bindInputs();
 calculate();
 </script>
