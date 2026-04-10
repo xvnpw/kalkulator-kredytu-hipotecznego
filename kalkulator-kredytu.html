@@ -850,6 +850,9 @@ for (let y = 1997; y <= 2026; y++) {
   if (h1 !== undefined && h2 !== undefined) WIBOR6M[y] = +((h1 + h2) / 2).toFixed(2);
   else if (h1 !== undefined) WIBOR6M[y] = h1;
 }
+const WIBOR_YEARS = Object.keys(WIBOR6M).map(Number).sort((a,b) => a - b);
+const MIN_WIBOR_YEAR = WIBOR_YEARS[0];
+const LAST_HIST_WIBOR_YEAR = WIBOR_YEARS[WIBOR_YEARS.length - 1];
 
 // Zwraca WIBOR 6M na dany moment (rok + półrocze 1 lub 2)
 // Dane historyczne z notowań rynkowych
@@ -871,6 +874,9 @@ const CPI = {
   2020: 3.4,  2021: 5.1,  2022: 14.4, 2023: 11.4, 2024: 3.6,
   2025: 3.6
 };
+const CPI_YEARS = Object.keys(CPI).map(Number).sort((a,b) => a - b);
+const MIN_CPI_YEAR = CPI_YEARS[0];
+const LAST_HIST_CPI_YEAR = CPI_YEARS[CPI_YEARS.length - 1];
 
 // Projekcja na lata przyszłe (po ostatnich danych historycznych)
 const DEFAULT_FUTURE_WIBOR = 4.5;
@@ -1028,6 +1034,22 @@ function switchTableTab(id) {
   document.getElementById(id).classList.add('active');
 }
 
+function syncHistoricalRanges() {
+  const minYear = Math.max(2000, Math.max(MIN_WIBOR_YEAR, MIN_CPI_YEAR));
+  const maxYear = LAST_HIST_WIBOR_YEAR;
+  const rokInput = document.getElementById('rok_start');
+  const rokRange = document.getElementById('rok_r');
+  rokInput.min = minYear;
+  rokInput.max = maxYear;
+  rokRange.min = minYear;
+  rokRange.max = maxYear;
+  if (parseInt(rokInput.value) > maxYear) {
+    rokInput.value = maxYear;
+    rokRange.value = maxYear;
+    document.getElementById('rok_rv').innerHTML = String(maxYear);
+  }
+}
+
 // ==========================================
 // FORMAT
 // ==========================================
@@ -1164,7 +1186,8 @@ function calculate() {
   Przez kolejne 6 rat obowiązuje stała rata wyznaczona na bazie salda w dniu fixingu
   i nowego WIBOR 6M. Dane WIBOR 6M: historyczne notowania rynkowe (zamknięcie miesiąca).
   Inflacja CPI: GUS — roczne wskaźniki cen towarów i usług konsumpcyjnych.
-  Dla lat po 2026: projekcja WIBOR ${DEFAULT_FUTURE_WIBOR}%, inflacja ${DEFAULT_FUTURE_CPI}%.
+  Dane historyczne zaktualizowane z CSV: WIBOR do ${LAST_HIST_WIBOR_YEAR}, CPI do ${LAST_HIST_CPI_YEAR}.
+  Dla lat po ${LAST_HIST_WIBOR_YEAR}: projekcja WIBOR ${DEFAULT_FUTURE_WIBOR}%, inflacja ${DEFAULT_FUTURE_CPI}%.
   Uproszczona kalkulacja (punkt 2): stała realna stopa = (WIBOR start + marża − inflacja start) dla całego okresu.
   Obliczenia mają charakter poglądowy — nie uwzględniają kosztów ubezpieczenia, prowizji ani efektu alternatywnego
   inwestowania różnicy w ratach.`;
@@ -1187,8 +1210,9 @@ function renderChart() {
   let labels, ds1, ds2, label1, label2, yTitle;
 
   if (currentTab === 'wibor') {
+    const startYear = Math.max(2000, Math.max(MIN_WIBOR_YEAR, MIN_CPI_YEAR));
     const years = [];
-    for (let y = 2000; y <= 2026; y++) years.push(y);
+    for (let y = startYear; y <= LAST_HIST_WIBOR_YEAR; y++) years.push(y);
     labels = years.map(String);
     ds1 = years.map(y => WIBOR6M[y] || null);
     ds2 = years.map(y => CPI[y] || null);
@@ -1465,6 +1489,7 @@ function switchTableTab(id) {
 }
 
 // Init
+syncHistoricalRanges();
 bindInputs();
 calculate();
 </script>
