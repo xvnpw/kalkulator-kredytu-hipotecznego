@@ -94,9 +94,12 @@ Dostępne instrumenty inwestycyjne:
 - **Gotówka** — zero zwrotu, traci na inflacji
 
 Zasady kalkulacji:
-- **Podatek Belki (19%)** naliczany na koniec okresu od zysku netto (nie miesięcznie)
+- Portfel liczony miesięcznie: `portfel[m] = (portfel[m-1] + wpłata[m]) × (1 + stopa_miesięczna[m])`
+- **Podatek Belki (19%)** naliczany na koniec okresu od zysku brutto (brak podatku przy stracie)
+- **Zysk realny netto** uwzględnia miesięczny deflator CPI zarówno dla wpłat, jak i wartości końcowej portfela
+- Bilans nominalny: `oszczędność_odsetek_nom − zysk_netto_nom`
+- Bilans realny: `oszczędność_odsetek_real − zysk_realny_netto`
 - Pominięte: koszty transakcyjne, prowizje, spread walutowy, dywidendy
-- Bilans: oszczędność z nadpłaty vs zysk netto z inwestycji (po podatku, w ujęciu realnym)
 
 ### Zdarzenia (do 20)
 Użytkownik dodaje zdarzenia modyfikujące harmonogram:
@@ -119,7 +122,7 @@ Użytkownik dodaje zdarzenia modyfikujące harmonogram:
 - **Saldo** — przebieg salda bazowego vs zmodyfikowanego
 - **WIBOR historia** — historyczne notowania WIBOR i CPI
 - **Rata vs zarobki** — rata jako % wynagrodzenia
-- **Inwestycja** — wartość portfela inwestycyjnego (nominalna i realna) vs skumulowane wpłaty
+- **Inwestycja** — wartość portfela inwestycyjnego (nominalna i realna, po Belce na końcu) vs skumulowane oszczędności odsetek
 
 ### Tabela miesięczna
 Harmonogram z wyróżnieniem miesięcy, w których wystąpiły zdarzenia (kolor, etykieta). Po wybraniu instrumentu inwestycyjnego tabela rozszerza się o kolumny: wartość portfela i stopa zwrotu.
@@ -173,6 +176,8 @@ Zestawy testów weryfikują poprawność obliczeń w `kalkulator-kredytu.js` i `
 ```bash
 node tests/run-tests.js          # Kalkulator kredytu
 node tests/run-tests-nadplat.js  # Symulator nadpłat
+# pełna regresja:
+node tests/run-tests.js && node tests/run-tests-nadplat.js
 ```
 
 ### Jak działają
@@ -222,7 +227,7 @@ Każdy test runner (`tests/run-tests.js`, `tests/run-tests-nadplat.js`) ładuje 
 | 37 | getMonthlyDeflatorFactor | Oba tryby CPI — wartości w rozsądnym zakresie |
 | 38 | aggregateYearly — wynagrodzenia | Pole wynagr zgodne z getWynagr() |
 
-### Symulator nadpłat (96 grup, 275 asercji)
+### Symulator nadpłat (97 grup, 279 asercji)
 
 | # | Grupa | Co weryfikuje |
 |---|---|---|
@@ -296,11 +301,13 @@ Każdy test runner (`tests/run-tests.js`, `tests/run-tests-nadplat.js`) ładuje 
 | 73–77 | getMonthlyInvestmentReturn | WIG30, S&P 500 w PLN, fallback dla przyszłości, lokata historyczna i fallback |
 | 78–83 | calcInvestmentPortfolio | Brak nadpłat → null; WIG30, lokata, gotówka, S&P 500, cykliczne nadpłaty |
 | 84–85 | Podatek Belki | 19% od zysku na koniec; brak podatku przy stracie |
-| 86 | Bilans: nadpłata vs inwestycja | Porównanie oszczędności z nadpłaty vs zysk netto z inwestycji |
+| 86 | Bilans: nadpłata vs inwestycja | Bilans nominalny = oszczędność odsetek nom. − zysk netto nom. |
 | 87–88 | Portfel realny | Wartość realna z deflatorem CPI, spójność wpłat |
 | 89 | investment_type = none | Brak instrumentu → null |
 | 90–91 | WIBOR 1M | fixInterval=1 (każdy miesiąc to fixing), roczne średnie |
 | 92–95 | Projekcje przyszłe | Fallback WIBOR/CPI/wynagrodzenia, stopa gotówki = 0 |
+| 96 | Deflator inwestycji (CPI miesięczne) | Iloczyn miesięcznych deflatorów CPI i zgodność portfela real netto |
+| 97 | Zysk realny netto inwestycji | Realne wpłaty `Σ(wpłata×deflator)` i bilans realny bez mieszania z nominalem |
 
 ## Ograniczenia
 

@@ -579,7 +579,8 @@
           <div class="explainer-block">
             <div class="explainer-title">Krok 7: Koszt alternatywny (opportunity cost)</div>
             <p>Dla każdej nadpłaty obliczamy, ile zarobiłaby na rynku:</p>
-            <div class="formula-line"><code>portfel[m] = portfel[m-1] × (1 + stopa_miesięczna) + wpłata[m]</code></div>
+            <div class="formula-line"><code>portfel[m] = (portfel[m-1] + wpłata[m]) × (1 + stopa_miesięczna[m])</code></div>
+            <div class="formula-line"><code>zysk_realny_mies[m] = zysk_nominalny_mies[m] × deflator_skumulowany[m]</code></div>
             <p style="margin-top:8px"><strong>Stopy miesięczne:</strong></p>
             <ul style="font-size:12px; line-height:1.7; color:var(--text-secondary)">
               <li><strong>WIG30/WIG:</strong> stopa = index[m] / index[m-1] − 1 (historyczna). Po wyczerpaniu danych: parametr „Przyszła stopa akcji".</li>
@@ -588,7 +589,9 @@
               <li><strong>Gotówka:</strong> stopa = 0 (traci tylko na inflacji).</li>
             </ul>
             <p style="margin-top:8px"><strong>Podatek Belki (19%):</strong> naliczany od łącznego zysku (wartość portfela − wpłaty) na koniec okresu. Brak podatku przy stracie.</p>
-            <div class="formula-line"><code>bilans = oszczędność_odsetki − zysk_netto_inwestycji</code></div>
+            <div class="formula-line"><code>zysk_realny_netto = (portfel_netto_koniec × deflator_koniec) − Σ(wpłata[m] × deflator[m])</code></div>
+            <div class="formula-line"><code>bilans_nom = oszczędność_odsetki_nom − zysk_netto_nom</code></div>
+            <div class="formula-line"><code>bilans_real = oszczędność_odsetki_real − zysk_realny_netto</code></div>
             <p style="margin-top:4px">Bilans &gt; 0 → nadpłata bardziej opłacalna. Bilans &lt; 0 → inwestycja bardziej opłacalna.</p>
             <p style="margin-top:4px; color:var(--muted); font-size:11px">Pomijamy: koszty transakcyjne, prowizje, spread walutowy, dywidendy. WIG30 i WIG to indeksy cenowe (nie uwzględniają dywidend).</p>
           </div>

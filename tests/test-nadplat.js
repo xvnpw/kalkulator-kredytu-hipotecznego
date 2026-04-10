@@ -1168,6 +1168,33 @@ group('95. getMonthlyInvestmentReturn() - gotowka');
 assertClose(getMonthlyInvestmentReturn('gotowka', 2020, 6), 0, 0.0001, 'Gotowka stopa = 0');
 
 // ============================================================================
+// 96. Deflator inwestycji - tryb CPI miesieczny
+// ============================================================================
+group('96. Deflator inwestycji - tryb CPI miesieczny');
+var invCpiMonthly = calcInvestmentPortfolio([{month: 0, kwota: 50000}], 2010, 1, 12, 'monthly', 'gotowka');
+assert(invCpiMonthly !== null, 'Portfel CPI miesieczny nie jest null');
+var expectedInvDeflator = 1;
+for (var mi = 0; mi < 12; mi++) {
+  var calMonth96 = ((1 - 1 + mi) % 12) + 1;
+  var calYear96 = 2010 + Math.floor((1 - 1 + mi) / 12);
+  expectedInvDeflator *= getMonthlyDeflatorFactor(calYear96, calMonth96, 'monthly');
+}
+assertClose(invCpiMonthly.monthly[12].deflator, expectedInvDeflator, 1e-9, 'Deflator portfela = iloczyn miesiecznych deflatorow CPI');
+assertClose(invCpiMonthly.portfolioRealNetto, invCpiMonthly.portfolioNetto * invCpiMonthly.monthly[12].deflator, 0.01, 'Portfel real netto skaluje sie finalnym deflatorem');
+
+// ============================================================================
+// 97. Zysk realny netto - wpłaty deflowane miesiecznie
+// ============================================================================
+group('97. Zysk realny netto - wplaty deflowane miesiecznie');
+var invStagger = calcInvestmentPortfolio([{month: 0, kwota: 10000}, {month: 12, kwota: 10000}], 2022, 1, 24, 'annual', 'gotowka');
+assert(invStagger !== null, 'Portfel z dwiema wplatami nie jest null');
+var expectedWplatyReal = invStagger.monthly.reduce(function(s, row) { return s + row.wplata * row.deflator; }, 0);
+assertClose(invStagger.totalWplatyReal, expectedWplatyReal, 0.01, 'Suma wplat realnych = suma (wplata × deflator)');
+assertClose(invStagger.zyskRealNetto, invStagger.portfolioRealNetto - invStagger.totalWplatyReal, 0.01, 'Zysk realny netto = portfel real netto - wplaty realne');
+var oldNominalInputStyle = invStagger.portfolioRealNetto - invStagger.totalWplaty;
+assert(Math.abs(invStagger.zyskRealNetto - oldNominalInputStyle) > 0.1, 'Zysk realny netto nie odejmuje wplat nominalnych');
+
+// ============================================================================
 // PODSUMOWANIE
 // ============================================================================
 process.stdout.write('\n=== WYNIK ===\n');

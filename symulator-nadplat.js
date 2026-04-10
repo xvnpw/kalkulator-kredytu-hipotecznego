@@ -782,6 +782,7 @@ function calcInvestmentPortfolio(overpayments, rokStart, startMonth, nMonths, cp
   var monthly = [];
   var portfolio = 0;
   var cumulativeDeflator = 1.0;
+  var totalWplatyReal = 0;
 
   for (var m = 0; m <= nMonths; m++) {
     var calMonth = ((startMonth - 1 + m) % 12) + 1;
@@ -790,51 +791,60 @@ function calcInvestmentPortfolio(overpayments, rokStart, startMonth, nMonths, cp
     // Wpłata na początku miesiąca
     var wplata = overpayMap[m] || 0;
     portfolio += wplata;
+    totalWplatyReal += wplata * cumulativeDeflator;
 
     // Wzrost portfela
     var stopa = 0;
+    var zyskNomMies = 0;
     if (m > 0 || wplata > 0) {
       stopa = getMonthlyInvestmentReturn(investmentType, calYear, calMonth);
       if (m > 0) {
-        portfolio *= (1 + stopa);
+        zyskNomMies = portfolio * stopa;
+        portfolio += zyskNomMies;
       }
     }
-
-    // Deflator CPI
-    var cpiVal = cpiModeArg === 'monthly'
-      ? getCpiMonthly(calYear, calMonth) / 100
-      : getCpiAnnual(calYear) / 100;
-    var monthlyInflation = Math.pow(1 + cpiVal, 1 / 12) - 1;
+    var zyskRealMies = zyskNomMies * cumulativeDeflator;
 
     monthly.push({
       wartoscNom: portfolio,
       wartoscReal: portfolio * cumulativeDeflator,
       wplata: wplata,
-      stopaZwrotu: stopa * 100
+      stopaZwrotu: stopa * 100,
+      zyskNomMies: zyskNomMies,
+      zyskRealMies: zyskRealMies,
+      deflator: cumulativeDeflator
     });
 
-    if (cpiModeArg === 'monthly') {
-      cumulativeDeflator *= 1 / (1 + cpiVal / 100);
-    } else {
-      cumulativeDeflator *= 1 / (1 + monthlyInflation);
-    }
+    // Deflator CPI aktualizowany co miesiąc (spójnie z harmonogramem kredytu)
+    var monthlyDeflatorFactor = getMonthlyDeflatorFactor(calYear, calMonth, cpiModeArg);
+    cumulativeDeflator *= monthlyDeflatorFactor;
   }
 
   var zyskBrutto = portfolio - totalWplaty;
   var podatekBelki = Math.max(0, zyskBrutto) * 0.19;
   var portfolioNetto = portfolio - podatekBelki;
   var zyskNetto = portfolioNetto - totalWplaty;
-  var portfolioRealNetto = portfolioNetto * cumulativeDeflator;
+  var finalDeflator = monthly.length ? monthly[monthly.length - 1].deflator : 1;
+  var portfolioRealBrutto = portfolio * finalDeflator;
+  var portfolioRealNetto = portfolioNetto * finalDeflator;
+  var podatekBelkiReal = podatekBelki * finalDeflator;
+  var zyskRealBrutto = portfolioRealBrutto - totalWplatyReal;
+  var zyskRealNetto = portfolioRealNetto - totalWplatyReal;
 
   return {
     monthly: monthly,
     totalWplaty: totalWplaty,
+    totalWplatyReal: totalWplatyReal,
     portfolioBrutto: portfolio,
     portfolioNetto: portfolioNetto,
     zyskBrutto: zyskBrutto,
     zyskNetto: zyskNetto,
     podatekBelki: podatekBelki,
+    podatekBelkiReal: podatekBelkiReal,
+    portfolioRealBrutto: portfolioRealBrutto,
     portfolioRealNetto: portfolioRealNetto,
+    zyskRealBrutto: zyskRealBrutto,
+    zyskRealNetto: zyskRealNetto,
     investmentType: investmentType
   };
 }
@@ -1039,11 +1049,15 @@ function calculate() {
       var invLabel = INVESTMENT_LABELS[investmentType] || investmentType;
       var bilansNom = savedNom - investmentData.zyskNetto;
       var savedRealOdsetki = (rowsA.reduce(function(s,r){return s+r.rataReal;},0)) - (rowsB.reduce(function(s,r){return s+r.rataReal;},0) + resultB.totalNadplatyReal);
-      var invRealZysk = investmentData.portfolioRealNetto - investmentData.totalWplaty;
+      var invRealZysk = investmentData.zyskRealNetto;
       var bilansReal = savedRealOdsetki - invRealZysk;
-      var wniosek = bilansNom >= 0
-        ? 'Nadpłata opłaciła się bardziej niż ' + invLabel + '.'
-        : 'Inwestycja w ' + invLabel + ' byłaby bardziej opłacalna niż nadpłata.';
+      var wniosekNom = bilansNom >= 0
+        ? 'Nominalnie: nadpłata opłaciła się bardziej niż ' + invLabel + '.'
+        : 'Nominalnie: inwestycja w ' + invLabel + ' byłaby bardziej opłacalna niż nadpłata.';
+      var wniosekReal = bilansReal >= 0
+        ? 'Realnie (po CPI): nadpłata opłaciła się bardziej.'
+        : 'Realnie (po CPI): inwestycja byłaby bardziej opłacalna.';
+      var wniosek = wniosekNom + ' ' + wniosekReal;
       compSection.style.display = '';
       compSection.innerHTML =
         '<h3>Analiza kosztu alternatywnego (inwestycja vs nadpłata)</h3>' +
@@ -1054,10 +1068,12 @@ function calculate() {
         '<tr><td>Zysk z inwestycji (nom.)</td><td>' + fmtPLN(investmentData.zyskBrutto) + '</td></tr>' +
         '<tr><td>Podatek Belki (19%)</td><td>' + fmtPLN(investmentData.podatekBelki) + '</td></tr>' +
         '<tr><td>Zysk netto (po podatku)</td><td><strong>' + fmtPLN(investmentData.zyskNetto) + '</strong></td></tr>' +
+        '<tr><td>Zysk netto (real., po CPI)</td><td><strong>' + fmtPLN(investmentData.zyskRealNetto) + '</strong></td></tr>' +
         '<tr><td>Oszczędność odsetek (nom.)</td><td><strong>' + fmtPLN(savedNom) + '</strong></td></tr>' +
+        '<tr><td>Oszczędność odsetek (real.)</td><td><strong>' + fmtPLN(savedRealOdsetki) + '</strong></td></tr>' +
         '<tr class="separator"><td colspan="2"></td></tr>' +
         '<tr><td>BILANS nominalny (nadpłata − inwest.)</td><td style="color:' + (bilansNom >= 0 ? 'var(--success)' : 'var(--danger)') + ';font-weight:700">' + (bilansNom >= 0 ? '+' : '') + fmtPLN(bilansNom) + '</td></tr>' +
-        '<tr><td>BILANS realny</td><td style="color:' + (bilansReal >= 0 ? 'var(--success)' : 'var(--danger)') + ';font-weight:700">' + (bilansReal >= 0 ? '+' : '') + fmtPLN(bilansReal) + '</td></tr>' +
+        '<tr><td>BILANS realny (nadpłata − inwest., po CPI)</td><td style="color:' + (bilansReal >= 0 ? 'var(--success)' : 'var(--danger)') + ';font-weight:700">' + (bilansReal >= 0 ? '+' : '') + fmtPLN(bilansReal) + '</td></tr>' +
         '<tr><td colspan="2" style="padding-top:8px;font-style:italic">' + wniosek + '</td></tr>' +
         '</table>';
     } else {
@@ -1203,6 +1219,7 @@ function renderChart() {
       invYearMap[calYear] = { nom: row.wartoscNom, real: row.wartoscReal };
     });
     var invYears = Object.keys(invYearMap).sort();
+    var lastInvYear = invYears.length ? invYears[invYears.length - 1] : null;
     var cumSavNom = 0, cumSavReal = 0;
     var savNomArr = [], savRealArr = [];
     invYears.forEach(function(y) {
@@ -1222,10 +1239,16 @@ function renderChart() {
       data: {
         labels: invYears.map(String),
         datasets: [
-          { label: 'Portfel ' + invLabel + ' (nom.)', data: invYears.map(function(y){ return Math.round(invYearMap[y].nom); }),
+          { label: 'Portfel ' + invLabel + ' (nom.)', data: invYears.map(function(y){
+              var val = (y === lastInvYear) ? inv.portfolioNetto : invYearMap[y].nom;
+              return Math.round(val);
+            }),
             borderColor: '#e07070', backgroundColor: 'rgba(224,112,112,0.08)',
             borderWidth: 2, pointRadius: 2, tension: 0.35, fill: false },
-          { label: 'Portfel ' + invLabel + ' (real.)', data: invYears.map(function(y){ return Math.round(invYearMap[y].real); }),
+          { label: 'Portfel ' + invLabel + ' (real.)', data: invYears.map(function(y){
+              var val = (y === lastInvYear) ? inv.portfolioRealNetto : invYearMap[y].real;
+              return Math.round(val);
+            }),
             borderColor: '#e07070', backgroundColor: 'rgba(224,112,112,0.08)',
             borderWidth: 1.5, borderDash: [4,3], pointRadius: 2, tension: 0.35, fill: false },
           { label: 'Oszczędn. odsetek (nom.)', data: savNomArr,

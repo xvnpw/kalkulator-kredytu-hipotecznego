@@ -2,7 +2,7 @@
 
 ## Architecture
 
-This repository contains **two browser applications** with **two HTML entry files**. There is no build step, package manager, or test suite.
+This repository contains **two browser applications** with **two HTML entry files**. There is no build step or package manager. Tests are plain Node.js scripts in `tests/`.
 
 | File | Purpose |
 |---|---|
@@ -100,15 +100,18 @@ The overpayment simulator (`symulator-nadplat.js`) additionally computes:
 - **Investment opportunity cost** — compares overpayment savings vs investing the same money:
   - Investment types: `wig30`, `wig`, `sp500`, `lokata`, `gotowka`, `none` (disabled).
   - `calcInvestmentPortfolio(overpayments, rokStart, startMonth, nMonths, cpiMode, investmentType)` builds a monthly portfolio from overpayment cash flows, applying instrument-specific monthly returns.
+  - Portfolio recurrence: `portfel[m] = (portfel[m-1] + wpłata[m]) × (1 + stopa_miesięczna[m])`.
   - S&P 500 returns are in PLN: `SPX[m] × USDPLN[m]` captures both stock return and currency effect.
   - `lokata` uses NBP reference rate / 12 as monthly return; `gotowka` uses 0.
   - **Belka tax (19%)** is applied once at the end: `max(0, portfolio - totalContributions) * 0.19`. No tax on losses.
-  - Bilans (balance) = savings from overpayment (real) minus net investment gain (real, after tax).
+  - Real investment gain uses monthly CPI deflator for both contributions and ending portfolio value: `zysk_realny_netto = (portfel_netto_koniec × deflator_koniec) − Σ(wpłata[m] × deflator[m])`.
+  - Bilans nominalny = `oszczędność_odsetek_nom − zysk_netto_nom`.
+  - Bilans realny = `oszczędność_odsetek_real − zysk_realny_netto`.
   - Positive bilans → overpayment better; negative → investment better.
   - The 4th summary card ("Bilans vs. inwestycja") shows/hides based on `investment_type !== 'none'`.
   - For dates beyond historical data, uses `getFutureStockReturn()`, `getFutureDepositRate()`, `getFutureUsdPln()`.
 - Chart tabs: `nominal`, `real`, `saldo`, `wibor`, `affordability`, `investment`.
-- The `investment` chart tab shows: portfolio nominal value, portfolio real value, and cumulative contributions over time.
+- The `investment` chart tab shows: portfolio nominal value, portfolio real value, and cumulative interest savings (nominal and real).
 - Colors: `var(--accent)` (gold) for base schedule, `var(--accent2)` (blue) for modified schedule.
 
 ## Shared UI conventions
@@ -128,7 +131,7 @@ UI text, variable names in comments, and all displayed strings are in **Polish**
 
 ```bash
 node tests/run-tests.js          # Calculator tests (38 groups, 101 assertions)
-node tests/run-tests-nadplat.js  # Overpayment simulator tests (96 groups, 275 assertions)
+node tests/run-tests-nadplat.js  # Overpayment simulator tests (97 groups, 279 assertions)
 ```
 
 No npm packages needed — only Node.js (built-in `vm` and `fs` modules).
@@ -170,7 +173,7 @@ Edge cases: 3-year and 35-year loans, high inflation (2022), provision identity,
 
 The overpayment simulator test runner (`tests/run-tests-nadplat.js`) loads data JS files (including 6 investment/projection data files) and `symulator-nadplat.js` into a VM sandbox with DOM stubs (default input values matching `symulator-nadplat.html`: kwota=350000, rok_start=2010, miesiac_start=1, okres=360, marża=2, prowizja=2, plus projection defaults: future_wibor=3.0, future_cpi=3.0, future_salary=3.5, future_stock_return=5.0, future_deposit_rate=3.0, future_usdpln=3.5, investment_type=none). It also provides `document.createElement()` and `document.querySelectorAll()` stubs since the simulator builds dynamic event UI.
 
-#### Test coverage areas (96 groups, 275 assertions)
+#### Test coverage areas (97 groups, 279 assertions)
 
 Core math: annuity formula (`calcRataRowna`), monthly rate, zero-rate edge case, declining installments, WIBOR fixing intervals (3M/6M).
 Harmonogram: base schedule convergence, row-level identity, saldo monotonicity, calendar month mapping, yearly aggregation.
@@ -186,4 +189,4 @@ Methodology verification: steps 1–6 (rate calculation, installment formula, re
 Table validation: all column fields present, event-specific fields populated.
 Comparison: modified schedule cheaper than base, CPI annual vs monthly modes.
 Edge cases: zero provision, date boundary filtering, formatting (`fmtOkres`), salary sources.
-Investment engine: data file spot-checks (WIG30, WIG, SPX, USDPLN, WIBOR1M, NBP_RATE), `getMonthlyInvestmentReturn()` for all instrument types with historical and fallback values, `calcInvestmentPortfolio()` for single/cyclic overpayments across all instruments, Belka tax (gain and loss scenarios), bilans comparison, real portfolio deflation, WIBOR 1M fixing interval, projection parameter getters.
+Investment engine: data file spot-checks (WIG30, WIG, SPX, USDPLN, WIBOR1M, NBP_RATE), `getMonthlyInvestmentReturn()` for all instrument types with historical and fallback values, `calcInvestmentPortfolio()` for single/cyclic overpayments across all instruments, Belka tax (gain and loss scenarios), bilans comparison, real portfolio deflation, CPI-monthly deflator compounding, real net gain with deflated contributions, WIBOR 1M fixing interval, projection parameter getters.
