@@ -11,6 +11,34 @@
 <style>
   /* Styl specyficzny dla symulatora nadplat */
   .events-section { margin-top: 14px; }
+  .comparison-table {
+    width: 100%;
+    font-size: 12px;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  .comparison-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+  .comparison-table td:last-child {
+    text-align: right;
+    font-family: var(--mono);
+    color: var(--text);
+  }
+  .comparison-table tr.separator td {
+    border-bottom: 2px solid var(--accent);
+    padding: 0;
+  }
+  .comparison-table h3,
+  #investment_comparison h3 {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+    margin: 0 0 8px;
+  }
   .event-card {
     background: var(--surface2);
     border: 1px solid var(--border);
@@ -255,6 +283,7 @@
       <div class="field">
         <label>Wskaźnik WIBOR</label>
         <div class="toggle-group">
+          <button class="toggle-btn" id="btn_wibor1m" onclick="setWiborMode('1M')">WIBOR 1M</button>
           <button class="toggle-btn active" id="btn_wibor3m" onclick="setWiborMode('3M')">WIBOR 3M</button>
           <button class="toggle-btn" id="btn_wibor6m" onclick="setWiborMode('6M')">WIBOR 6M</button>
         </div>
@@ -288,6 +317,86 @@
       <div class="info-row"><span>Realna stopa procentowa</span><span id="real_rate_display">—</span></div>
 
       <div class="separator" style="margin-top:14px"></div>
+      <div style="margin: 14px 0 10px; font-size: 12px; color: var(--muted); letter-spacing: 0.5px;">Projekcje przyszłe</div>
+
+      <div class="field">
+        <label>Przyszły WIBOR (%)</label>
+        <div class="field-row">
+          <input type="number" id="future_wibor" value="3.0" min="0.5" max="15" step="0.1">
+          <span class="unit">%</span>
+        </div>
+        <input type="range" id="future_wibor_r" min="0.5" max="15" step="0.1" value="3.0">
+        <div class="range-val" id="future_wibor_rv">3,0%</div>
+      </div>
+
+      <div class="field">
+        <label>Przyszła inflacja CPI (%)</label>
+        <div class="field-row">
+          <input type="number" id="future_cpi" value="3.0" min="0" max="20" step="0.1">
+          <span class="unit">%</span>
+        </div>
+        <input type="range" id="future_cpi_r" min="0" max="20" step="0.1" value="3.0">
+        <div class="range-val" id="future_cpi_rv">3,0%</div>
+      </div>
+
+      <div class="field">
+        <label>Przyszły wzrost wynagrodzeń (%)</label>
+        <div class="field-row">
+          <input type="number" id="future_salary" value="3.5" min="0" max="15" step="0.1">
+          <span class="unit">%</span>
+        </div>
+        <input type="range" id="future_salary_r" min="0" max="15" step="0.1" value="3.5">
+        <div class="range-val" id="future_salary_rv">3,5%</div>
+      </div>
+
+      <div class="field">
+        <label>Przyszła stopa zwrotu akcji (%/rok)</label>
+        <div class="field-row">
+          <input type="number" id="future_stock_return" value="5.0" min="-5" max="20" step="0.5">
+          <span class="unit">%</span>
+        </div>
+        <input type="range" id="future_stock_return_r" min="-5" max="20" step="0.5" value="5.0">
+        <div class="range-val" id="future_stock_return_rv">5,0%</div>
+      </div>
+
+      <div class="field">
+        <label>Przyszła stopa lokaty (%/rok)</label>
+        <div class="field-row">
+          <input type="number" id="future_deposit_rate" value="3.0" min="0" max="15" step="0.1">
+          <span class="unit">%</span>
+        </div>
+        <input type="range" id="future_deposit_rate_r" min="0" max="15" step="0.1" value="3.0">
+        <div class="range-val" id="future_deposit_rate_rv">3,0%</div>
+      </div>
+
+      <div class="field">
+        <label>Przyszły kurs USD/PLN</label>
+        <div class="field-row">
+          <input type="number" id="future_usdpln" value="3.5" min="1.0" max="8.0" step="0.1">
+          <span class="unit">PLN</span>
+        </div>
+        <input type="range" id="future_usdpln_r" min="1.0" max="8.0" step="0.1" value="3.5">
+        <div class="range-val" id="future_usdpln_rv">3,50</div>
+      </div>
+
+      <div class="separator" style="margin-top:14px"></div>
+      <div style="margin: 14px 0 10px; font-size: 12px; color: var(--muted); letter-spacing: 0.5px;">Inwestycja alternatywna</div>
+
+      <div class="field">
+        <label>Porównanie z inwestycją alternatywną</label>
+        <div class="field-row">
+          <select id="investment_type">
+            <option value="none">Brak (nie porównuj)</option>
+            <option value="wig30" selected>WIG30 (indeks giełdowy)</option>
+            <option value="wig">WIG (indeks szeroki rynku)</option>
+            <option value="sp500">S&amp;P 500 w PLN (indeks USA)</option>
+            <option value="lokata">Lokata bankowa (stopa NBP, po Belce 19%)</option>
+            <option value="gotowka">Gotówka (traci na inflacji)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="separator" style="margin-top:14px"></div>
 
       <!-- EVENTS SECTION -->
       <div class="events-section">
@@ -317,6 +426,11 @@
           <div class="card-val" id="saved_interest">—</div>
           <div class="card-sub">PLN (nominalnie)</div>
         </div>
+        <div class="card" id="card_investment" style="border-left: 2px solid var(--accent2); display: none">
+          <div class="card-label">Bilans vs. inwestycja</div>
+          <div class="card-val" id="investment_balance">—</div>
+          <div class="card-sub" id="investment_balance_sub">PLN</div>
+        </div>
       </div>
 
       <!-- Chart -->
@@ -328,6 +442,7 @@
           <button class="tab-btn" onclick="switchTab('saldo')">Saldo kredytu</button>
           <button class="tab-btn" onclick="switchTab('wibor')">WIBOR historia</button>
           <button class="tab-btn" onclick="switchTab('affordability')">Rata vs zarobki</button>
+          <button class="tab-btn" onclick="switchTab('investment')">Inwestycja</button>
         </div>
         <div class="chart-wrapper">
           <canvas id="myChart"></canvas>
@@ -409,6 +524,8 @@
           <p id="verdict_text">Dodaj zdarzenia (nadpłaty) aby zobaczyć porównanie.</p>
         </div>
         <div class="note" style="margin-top:14px" id="note_extra"></div>
+
+        <div id="investment_comparison" style="display:none; margin-top:18px; padding:16px; background:var(--surface2); border:1px solid var(--border); border-radius:10px;"></div>
       </div>
 
       <!-- Methodology -->
@@ -459,6 +576,23 @@
             <div class="explainer-title">Krok 6: Prowizje</div>
             <p>Prowizja początkowa i prowizja refinansowania są wliczone do łącznego kosztu kredytu, ale <strong>nie</strong> są dodawane do salda. Pojawiają się w podsumowaniu jako osobna pozycja.</p>
           </div>
+
+          <div class="explainer-block">
+            <div class="explainer-title">Krok 7: Koszt alternatywny (opportunity cost)</div>
+            <p>Dla każdej nadpłaty obliczamy, ile zarobiłaby na rynku:</p>
+            <div class="formula-line"><code>portfel[m] = portfel[m-1] × (1 + stopa_miesięczna) + wpłata[m]</code></div>
+            <p style="margin-top:8px"><strong>Stopy miesięczne:</strong></p>
+            <ul style="font-size:12px; line-height:1.7; color:var(--text-secondary)">
+              <li><strong>WIG30/WIG:</strong> stopa = index[m] / index[m-1] − 1 (historyczna). Po wyczerpaniu danych: parametr „Przyszła stopa akcji".</li>
+              <li><strong>S&amp;P 500 w PLN:</strong> stopa = (SPX[m]×USDPLN[m]) / (SPX[m-1]×USDPLN[m-1]) − 1. Uwzględnia zwrot indeksu + zmianę kursu walutowego.</li>
+              <li><strong>Lokata:</strong> stopa = stopa_NBP / 12. Po wyczerpaniu danych: parametr „Przyszła stopa lokaty".</li>
+              <li><strong>Gotówka:</strong> stopa = 0 (traci tylko na inflacji).</li>
+            </ul>
+            <p style="margin-top:8px"><strong>Podatek Belki (19%):</strong> naliczany od łącznego zysku (wartość portfela − wpłaty) na koniec okresu. Brak podatku przy stracie.</p>
+            <div class="formula-line"><code>bilans = oszczędność_odsetki − zysk_netto_inwestycji</code></div>
+            <p style="margin-top:4px">Bilans &gt; 0 → nadpłata bardziej opłacalna. Bilans &lt; 0 → inwestycja bardziej opłacalna.</p>
+            <p style="margin-top:4px; color:var(--muted); font-size:11px">Pomijamy: koszty transakcyjne, prowizje, spread walutowy, dywidendy. WIG30 i WIG to indeksy cenowe (nie uwzględniają dywidend).</p>
+          </div>
         </div>
       </div>
 
@@ -497,6 +631,12 @@
 <script src="data-wynagrodzenia-prywatny.js"></script>
 <script src="data-wynagrodzenia-przecietne.js"></script>
 <script src="data-wynagrodzenia-minimalne.js"></script>
+<script src="data-wig30.js"></script>
+<script src="data-wig.js"></script>
+<script src="data-spx.js"></script>
+<script src="data-usdpln.js"></script>
+<script src="data-wibor1m.js"></script>
+<script src="data-nbp-rate.js"></script>
 <script src="symulator-nadplat.js"></script>
 </body>
 </html>

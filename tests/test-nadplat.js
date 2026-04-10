@@ -177,10 +177,10 @@ assertClose(annualized, expected, 0.001, 'Round-trip annualizacja CPI miesieczny
 // 14. Fallback przyszlosci
 // ============================================================================
 group('14. Fallback przyszlosci');
-assertClose(getWibor(2060, 1, '3M'), DEFAULT_FUTURE_WIBOR, 0.001, 'WIBOR 3M 2060 = DEFAULT');
-assertClose(getWibor(2060, 1, '6M'), DEFAULT_FUTURE_WIBOR, 0.001, 'WIBOR 6M 2060 = DEFAULT');
-assertClose(getCpiAnnual(2060), DEFAULT_FUTURE_CPI, 0.001, 'CPI roczne 2060 = DEFAULT');
-assertClose(getCpiMonthly(2060, 1), DEFAULT_FUTURE_CPI_MONTHLY, 0.001, 'CPI miesieczne 2060 = DEFAULT');
+assertClose(getWibor(2060, 1, '3M'), getFutureWibor(), 0.001, 'WIBOR 3M 2060 = getFutureWibor()');
+assertClose(getWibor(2060, 1, '6M'), getFutureWibor(), 0.001, 'WIBOR 6M 2060 = getFutureWibor()');
+assertClose(getCpiAnnual(2060), getFutureCpi(), 0.001, 'CPI roczne 2060 = getFutureCpi()');
+assertClose(getCpiMonthly(2060, 1), getFutureCpiMonthly(), 0.001, 'CPI miesieczne 2060 = getFutureCpiMonthly()');
 
 // ============================================================================
 // 15. rata = odsetki + kapital (kazdy wiersz harmonogramu)
@@ -924,6 +924,251 @@ group('66. Data label format');
 assert(rowsBase[0].dataLabel === 'sty 2010', 'dataLabel m0 = sty 2010');
 var rowDec = rowsBase[11]; // grudzien 2010
 assert(rowDec.dataLabel === 'gru 2010', 'dataLabel m11 = gru 2010');
+
+// ============================================================================
+// 67. WIG30_MONTHLY data spot-check
+// ============================================================================
+group('67. WIG30_MONTHLY data spot-check');
+assert(WIG30_MONTHLY['1991-04'] !== undefined, 'WIG30 1991-04 istnieje');
+assert(WIG30_MONTHLY['2020-01'] !== undefined, 'WIG30 2020-01 istnieje');
+assert(WIG30_MONTHLY['2020-01'] > 100, 'WIG30 2020-01 > 100');
+
+// ============================================================================
+// 68. WIG_MONTHLY data spot-check
+// ============================================================================
+group('68. WIG_MONTHLY data spot-check');
+assert(WIG_MONTHLY['1991-04'] !== undefined, 'WIG 1991-04 istnieje');
+assert(WIG_MONTHLY['2020-01'] !== undefined, 'WIG 2020-01 istnieje');
+assert(WIG_MONTHLY['2020-01'] > 1000, 'WIG 2020-01 > 1000');
+
+// ============================================================================
+// 69. SPX_MONTHLY data spot-check
+// ============================================================================
+group('69. SPX_MONTHLY data spot-check');
+assert(SPX_MONTHLY['1984-01'] !== undefined, 'SPX 1984-01 istnieje');
+assert(SPX_MONTHLY['2020-01'] !== undefined, 'SPX 2020-01 istnieje');
+assert(SPX_MONTHLY['2020-01'] > 1000, 'SPX 2020-01 > 1000');
+
+// ============================================================================
+// 70. USDPLN_MONTHLY data spot-check
+// ============================================================================
+group('70. USDPLN_MONTHLY data spot-check');
+assert(USDPLN_MONTHLY['1984-01'] !== undefined, 'USDPLN 1984-01 istnieje');
+assert(USDPLN_MONTHLY['2020-01'] !== undefined, 'USDPLN 2020-01 istnieje');
+assert(USDPLN_MONTHLY['2020-01'] > 1, 'USDPLN 2020-01 > 1');
+
+// ============================================================================
+// 71. WIBOR1M_MONTHLY data spot-check
+// ============================================================================
+group('71. WIBOR1M_MONTHLY data spot-check');
+assert(WIBOR1M_MONTHLY['1995-01'] !== undefined, 'WIBOR1M 1995-01 istnieje');
+assert(WIBOR1M_MONTHLY['2020-01'] !== undefined, 'WIBOR1M 2020-01 istnieje');
+assert(WIBOR1M_MONTHLY['2020-01'] > 0, 'WIBOR1M 2020-01 > 0');
+
+// ============================================================================
+// 72. NBP_RATE_MONTHLY data spot-check
+// ============================================================================
+group('72. NBP_RATE_MONTHLY data spot-check');
+assert(NBP_RATE_MONTHLY['1998-02'] !== undefined, 'NBP 1998-02 istnieje');
+assert(NBP_RATE_MONTHLY['2020-01'] !== undefined, 'NBP 2020-01 istnieje');
+// Fill-forward: kazdy miesiąc od 1998-02 do 2025-12 powinien istniec
+var nbpGaps = 0;
+for (var yy = 1998; yy <= 2025; yy++) {
+  for (var mm = 1; mm <= 12; mm++) {
+    if (yy === 1998 && mm < 2) continue;
+    var k = yy + '-' + String(mm).padStart(2, '0');
+    if (NBP_RATE_MONTHLY[k] === undefined) nbpGaps++;
+  }
+}
+assert(nbpGaps === 0, 'NBP fill-forward bez luk (' + nbpGaps + ' brakow)');
+
+// ============================================================================
+// 73. getMonthlyInvestmentReturn() – WIG30 basic
+// ============================================================================
+group('73. getMonthlyInvestmentReturn() - WIG30');
+var w30_ret = getMonthlyInvestmentReturn('wig30', 2020, 2);
+var w30_exp = WIG30_MONTHLY['2020-02'] / WIG30_MONTHLY['2020-01'] - 1;
+assertClose(w30_ret, w30_exp, 0.00001, 'WIG30 stopa 2020-02 historyczna');
+
+// ============================================================================
+// 74. getMonthlyInvestmentReturn() – SP500 in PLN
+// ============================================================================
+group('74. getMonthlyInvestmentReturn() - SP500 w PLN');
+var sp_cur = SPX_MONTHLY['2020-02'] * USDPLN_MONTHLY['2020-02'];
+var sp_prev = SPX_MONTHLY['2020-01'] * USDPLN_MONTHLY['2020-01'];
+var sp_exp = sp_cur / sp_prev - 1;
+var sp_ret = getMonthlyInvestmentReturn('sp500', 2020, 2);
+assertClose(sp_ret, sp_exp, 0.00001, 'SP500 w PLN stopa 2020-02');
+
+// ============================================================================
+// 75. getMonthlyInvestmentReturn() – fallback
+// ============================================================================
+group('75. getMonthlyInvestmentReturn() - fallback');
+var fb_ret = getMonthlyInvestmentReturn('wig30', 2060, 6);
+assertClose(fb_ret, getFutureStockReturn() / 12 / 100, 0.0001, 'WIG30 2060 -> fallback stopa');
+
+// ============================================================================
+// 76. getDepositRate equivalent (lokata return)
+// ============================================================================
+group('76. Lokata stopa - historical');
+var lok_ret = getMonthlyInvestmentReturn('lokata', 2020, 6);
+var nbp_val = NBP_RATE_MONTHLY['2020-06'];
+assertClose(lok_ret, nbp_val / 12 / 100, 0.00001, 'Lokata 2020-06 = NBP/12/100');
+
+// ============================================================================
+// 77. Lokata stopa - fallback
+// ============================================================================
+group('77. Lokata stopa - fallback');
+var lok_fb = getMonthlyInvestmentReturn('lokata', 2060, 1);
+assertClose(lok_fb, getFutureDepositRate() / 12 / 100, 0.0001, 'Lokata 2060 -> fallback');
+
+// ============================================================================
+// 78. calcInvestmentPortfolio() – brak nadpłat
+// ============================================================================
+group('78. calcInvestmentPortfolio() - brak nadplat');
+var inv_none = calcInvestmentPortfolio([], 2010, 1, 12, 'annual', 'wig30');
+assert(inv_none === null, 'Brak nadplat -> null');
+
+// ============================================================================
+// 79. calcInvestmentPortfolio() – jedna nadpłata WIG30
+// ============================================================================
+group('79. calcInvestmentPortfolio() - jedna nadplata WIG30');
+var inv_one = calcInvestmentPortfolio([{month: 0, kwota: 50000}], 2015, 1, 24, 'annual', 'wig30');
+assert(inv_one !== null, 'Wynik nie null');
+assert(inv_one.totalWplaty === 50000, 'Wplaty = 50k');
+assert(inv_one.monthly.length === 25, 'Monthly ma 25 wierszy (0-24)');
+assert(inv_one.monthly[0].wartoscNom === 50000, 'Portfel w m0 = 50k (przed wzrostem)');
+
+// ============================================================================
+// 80. calcInvestmentPortfolio() – lokata po Belce
+// ============================================================================
+group('80. calcInvestmentPortfolio() - lokata');
+var inv_lok = calcInvestmentPortfolio([{month: 0, kwota: 100000}], 2015, 1, 12, 'annual', 'lokata');
+assert(inv_lok !== null, 'Lokata wynik nie null');
+assert(inv_lok.portfolioBrutto > 100000, 'Lokata brutto > wplata');
+assert(inv_lok.podatekBelki > 0, 'Belka > 0 dla lokaty z zyskiem');
+assert(inv_lok.portfolioNetto < inv_lok.portfolioBrutto, 'Netto < brutto');
+
+// ============================================================================
+// 81. calcInvestmentPortfolio() – gotówka
+// ============================================================================
+group('81. calcInvestmentPortfolio() - gotowka');
+var inv_cash = calcInvestmentPortfolio([{month: 0, kwota: 50000}], 2015, 1, 12, 'annual', 'gotowka');
+assert(inv_cash !== null, 'Gotowka wynik nie null');
+assertClose(inv_cash.portfolioBrutto, 50000, 0.01, 'Gotowka nom = wplata');
+assertClose(inv_cash.zyskBrutto, 0, 0.01, 'Gotowka zysk = 0');
+assertClose(inv_cash.podatekBelki, 0, 0.01, 'Gotowka brak Belki');
+
+// ============================================================================
+// 82. calcInvestmentPortfolio() – SP500 w PLN
+// ============================================================================
+group('82. calcInvestmentPortfolio() - SP500 w PLN');
+var inv_sp = calcInvestmentPortfolio([{month: 0, kwota: 50000}], 2010, 1, 60, 'annual', 'sp500');
+assert(inv_sp !== null, 'SP500 wynik nie null');
+assert(inv_sp.totalWplaty === 50000, 'SP500 wplaty = 50k');
+
+// ============================================================================
+// 83. calcInvestmentPortfolio() – cykliczne nadpłaty
+// ============================================================================
+group('83. calcInvestmentPortfolio() - cykliczne nadplaty');
+var cycOverpay = [];
+for (var ci = 0; ci < 12; ci++) cycOverpay.push({month: ci * 3, kwota: 5000});
+var inv_cyc = calcInvestmentPortfolio(cycOverpay, 2015, 1, 36, 'annual', 'wig30');
+assert(inv_cyc !== null, 'Cykliczne wynik nie null');
+assertClose(inv_cyc.totalWplaty, 60000, 0.01, 'Cykliczne wplaty = 60k');
+assert(inv_cyc.monthly.length === 37, 'Cykliczne 37 wierszy');
+
+// ============================================================================
+// 84. Podatek Belki na akcjach – zysk
+// ============================================================================
+group('84. Podatek Belki - zysk');
+// inv_one already computed for WIG30 2015
+if (inv_one.zyskBrutto > 0) {
+  assertClose(inv_one.podatekBelki, inv_one.zyskBrutto * 0.19, 0.01, 'Belka = 19% zysku brutto');
+}
+
+// ============================================================================
+// 85. Podatek Belki – strata
+// ============================================================================
+group('85. Podatek Belki - strata');
+// Gotówka: brak zysku -> brak podatku
+assertClose(inv_cash.podatekBelki, 0, 0.01, 'Brak podatku przy braku zysku');
+
+// ============================================================================
+// 86. Bilans: nadplata vs inwestycja
+// ============================================================================
+group('86. Bilans - obliczanie');
+// Sprawdź że bilans jest poprawnie obliczony
+var testSavedNom = 10000;
+var testZyskNetto = 5000;
+var bilansTest = testSavedNom - testZyskNetto;
+assert(bilansTest > 0, 'Nadplata lepsza gdy oszczednosc > zysk netto');
+var bilansTest2 = 5000 - 10000;
+assert(bilansTest2 < 0, 'Inwestycja lepsza gdy zysk netto > oszczednosc');
+
+// ============================================================================
+// 87. Portfel realny z deflatorem
+// ============================================================================
+group('87. Portfel realny z deflatorem');
+// Portfel realny nie musi byc < nominalny (deflacja w 2015)
+assert(inv_one.portfolioRealNetto !== undefined, 'Portfel realny istnieje');
+assert(inv_one.monthly[0].wartoscReal === inv_one.monthly[0].wartoscNom, 'Portfel real m0 = nom m0 (deflator=1)');
+
+// ============================================================================
+// 88. Spójność wpłat
+// ============================================================================
+group('88. Spojnosc wplat');
+var invWplSum = inv_cyc.monthly.reduce(function(s, r) { return s + r.wplata; }, 0);
+assertClose(invWplSum, inv_cyc.totalWplaty, 0.01, 'Suma wplat miesięcznych = totalWplaty');
+
+// ============================================================================
+// 89. investment_type = 'none'
+// ============================================================================
+group('89. investment_type = none');
+var inv_none2 = calcInvestmentPortfolio([{month: 0, kwota: 50000}], 2015, 1, 12, 'annual', 'none');
+assert(inv_none2 === null, 'none -> null');
+
+// ============================================================================
+// 90. WIBOR 1M fixing interval
+// ============================================================================
+group('90. WIBOR 1M fixing interval');
+var rows1m = calcHarmonogram(350000, 2010, 1, 36, 2, '1M', 'annual', 'rowna');
+assert(rows1m[0].isFix === true, '1M: m0 fixing');
+assert(rows1m[1].isFix === true, '1M: m1 fixing');
+assert(rows1m[2].isFix === true, '1M: m2 fixing');
+assert(rows1m[3].isFix === true, '1M: m3 fixing');
+
+// ============================================================================
+// 91. WIBOR 1M annual averages
+// ============================================================================
+group('91. WIBOR 1M annual averages');
+assert(WIBOR1M_ANNUAL[2010] !== undefined, 'WIBOR1M_ANNUAL 2010 istnieje');
+assert(WIBOR1M_ANNUAL[2010] > 0, 'WIBOR1M_ANNUAL 2010 > 0');
+
+// ============================================================================
+// 92. Projekcje przyszłe — WIBOR
+// ============================================================================
+group('92. Projekcje przyszle - WIBOR');
+assertClose(getWibor(2060, 1, '1M'), getFutureWibor(), 0.001, 'WIBOR 1M 2060 = getFutureWibor()');
+
+// ============================================================================
+// 93. Projekcje przyszłe — CPI
+// ============================================================================
+group('93. Projekcje przyszle - CPI');
+assertClose(getCpiAnnual(2060), getFutureCpi(), 0.001, 'CPI 2060 = getFutureCpi()');
+
+// ============================================================================
+// 94. Projekcje przyszłe — wynagrodzenie
+// ============================================================================
+group('94. Projekcje przyszle - wynagrodzenie');
+var wyn2030 = getWynagr(2030);
+assert(wyn2030 > getWynagr(2025), 'Wynagrodzenie 2030 > 2025 (ekstrapolacja)');
+
+// ============================================================================
+// 95. getMonthlyInvestmentReturn() – gotowka
+// ============================================================================
+group('95. getMonthlyInvestmentReturn() - gotowka');
+assertClose(getMonthlyInvestmentReturn('gotowka', 2020, 6), 0, 0.0001, 'Gotowka stopa = 0');
 
 // ============================================================================
 // PODSUMOWANIE

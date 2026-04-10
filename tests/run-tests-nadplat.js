@@ -37,7 +37,14 @@ var inputValues = {
   okres: '360',
   marza: '2',
   prowizja: '2',
-  salary_source: 'private'
+  salary_source: 'private',
+  future_wibor: '3.0',
+  future_cpi: '3.0',
+  future_salary: '3.5',
+  future_stock_return: '5.0',
+  future_deposit_rate: '3.0',
+  future_usdpln: '3.5',
+  investment_type: 'none'
 };
 
 const sandbox = vm.createContext({
@@ -84,6 +91,12 @@ var dataFiles = [
   'data-wynagrodzenia-prywatny.js',
   'data-wynagrodzenia-przecietne.js',
   'data-wynagrodzenia-minimalne.js',
+  'data-wig30.js',
+  'data-wig.js',
+  'data-spx.js',
+  'data-usdpln.js',
+  'data-wibor1m.js',
+  'data-nbp-rate.js',
   'symulator-nadplat.js'
 ];
 
