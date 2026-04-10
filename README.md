@@ -102,7 +102,7 @@ Harmonogram z wyróżnieniem miesięcy, w których wystąpiły zdarzenia (kolor,
 | `data-wynagrodzenia-prywatny.js` | Przeciętne miesięczne wynagrodzenie brutto — sektor prywatny (od 2020 r.) | API DBW GUS — zmienna 398, przekrój 688 „Polska; Sektor własności”, pozycja „sektor prywatny” |
 | `data-wynagrodzenia-przecietne.js` | Przeciętne miesięczne wynagrodzenie brutto (ogółem) | BDL GUS — zmienna 64428 + ZUS (lata 2000–2001) |
 | `data-wynagrodzenia-minimalne.js` | Minimalne wynagrodzenie za pracę (roczne) | ZUS (od 2003 r.) + dane historyczne 2000–2002 |
-| (in-script) | Uzupełnienie historyczne dla wariantu „sektor prywatny” (2000–2019) | GUS — dane roczne sektora przedsiębiorstw |
+| `kalkulator-kredytu.js` | Uzupełnienie historyczne dla wariantu „sektor prywatny” (2000–2019) i logika kalkulatora | GUS — dane roczne sektora przedsiębiorstw |
 
 Pliki CSV są wyłącznie źródłem referencyjnym — dane zostały wyekstrahowane do plików JS i nie są wczytywane w czasie wykonania.
 
