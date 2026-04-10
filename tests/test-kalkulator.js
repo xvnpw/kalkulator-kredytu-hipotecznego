@@ -156,6 +156,12 @@ assert(rows3m[0].isFix === true, '3M: m0 fixing');
 assert(rows3m[2].isFix === false, '3M: m2 nie jest fixingiem');
 assert(rows3m[3].isFix === true, '3M: m3 fixing');
 
+// WIBOR 1M
+var rows1m = calcHarmonogram(350000, 2010, 1, 30, 2, '1M', 'annual', 'rowna');
+assert(rows1m[0].isFix === true, '1M: m0 fixing');
+assert(rows1m[1].isFix === true, '1M: m1 fixing');
+assert(rows1m[2].isFix === true, '1M: m2 fixing');
+
 // ---------------------------------------------------------------------------
 // 13. Mapowanie miesiaca startowego na kalendarz
 // ---------------------------------------------------------------------------
@@ -194,6 +200,7 @@ assertClose(backToAnnual, cpiAnn, 0.001, 'Round-trip roczne -> miesieczne -> roc
 // 16. Fallback na domyslne wartosci przyszlosci
 // ---------------------------------------------------------------------------
 group('16. Domyslne wartosci przyszlosci');
+assertClose(getWibor(2050, 6, '1M'), DEFAULT_FUTURE_WIBOR, 0.01, 'WIBOR 1M 2050 = DEFAULT_FUTURE_WIBOR');
 assertClose(getWibor(2050, 6, '6M'), DEFAULT_FUTURE_WIBOR, 0.01, 'WIBOR 2050 = DEFAULT_FUTURE_WIBOR');
 assertClose(getCpiAnnual(2050), DEFAULT_FUTURE_CPI, 0.01, 'CPI 2050 = DEFAULT_FUTURE_CPI');
 assertClose(getCpiMonthly(2050, 1), DEFAULT_FUTURE_CPI_MONTHLY, 0.001, 'CPI m/m 2050 = DEFAULT_FUTURE_CPI_MONTHLY');
@@ -228,6 +235,7 @@ group('19. Spot-check danych');
 assert(CPI_ANNUAL[2022] !== undefined, 'CPI_ANNUAL[2022] istnieje');
 assert(CPI_ANNUAL[2022] > 10, 'CPI 2022 > 10% (got ' + CPI_ANNUAL[2022] + ')');
 assert(WIBOR6M_MONTHLY['2010-01'] !== undefined, 'WIBOR6M_MONTHLY 2010-01 istnieje');
+assert(WIBOR1M_MONTHLY['2010-01'] !== undefined, 'WIBOR1M_MONTHLY 2010-01 istnieje');
 
 salarySource = 'average';
 var wynagr2010 = getWynagr(2010);
@@ -237,9 +245,11 @@ assertClose(wynagr2010, 3435, 1.0, 'Wynagrodzenie przecietne 2010 = 3435 PLN');
 // 20. Srednie roczne WIBOR
 // ---------------------------------------------------------------------------
 group('20. Srednie roczne WIBOR');
+assert(WIBOR1M_ANNUAL[2010] !== undefined, 'WIBOR1M_ANNUAL[2010] wyliczone');
 assert(WIBOR6M_ANNUAL[2010] !== undefined, 'WIBOR6M_ANNUAL[2010] wyliczone');
 assert(WIBOR3M_ANNUAL[2010] !== undefined, 'WIBOR3M_ANNUAL[2010] wyliczone');
 assert(typeof WIBOR6M_ANNUAL[2010] === 'number', 'WIBOR6M_ANNUAL jest liczba');
+assert(typeof WIBOR1M_ANNUAL[2010] === 'number', 'WIBOR1M_ANNUAL jest liczba');
 
 // ---------------------------------------------------------------------------
 // 21. Cross-check annuitetowej raty ze znanymi wartosciami
@@ -288,12 +298,16 @@ assertClose(rows35y[419].saldo, 0, 1.0, 'Saldo koncowe 35y ~0');
 group('25. WIBOR 6M vs 3M - rozne harmonogramy');
 var rows6m = calcHarmonogram(350000, 2010, 1, 30, 2, '6M', 'annual', 'rowna');
 var rows3mComp = calcHarmonogram(350000, 2010, 1, 30, 2, '3M', 'annual', 'rowna');
+var rows1mComp = calcHarmonogram(350000, 2010, 1, 30, 2, '1M', 'annual', 'rowna');
 // Powinny miec ta sama liczbe wierszy
 assert(rows6m.length === rows3mComp.length, '6M i 3M maja tyle samo wierszy');
+assert(rows6m.length === rows1mComp.length, '6M i 1M maja tyle samo wierszy');
 // Raty moga sie roznic bo rozne fixing'i
 var totNom6m = rows6m.reduce(function(s,r){ return s+r.rata; }, 0);
 var totNom3m = rows3mComp.reduce(function(s,r){ return s+r.rata; }, 0);
+var totNom1m = rows1mComp.reduce(function(s,r){ return s+r.rata; }, 0);
 assert(Math.abs(totNom6m - totNom3m) < totNom6m * 0.1, 'Sumy nominalne 6M vs 3M w granicach 10%');
+assert(Math.abs(totNom6m - totNom1m) < totNom6m * 0.1, 'Sumy nominalne 6M vs 1M w granicach 10%');
 
 // ---------------------------------------------------------------------------
 // 26. Rozne miesiace startowe

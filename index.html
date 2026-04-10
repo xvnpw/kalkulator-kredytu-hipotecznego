@@ -19,14 +19,14 @@
       </button>
     </div>
     <h1>Rzeczywisty koszt kredytu<br>z uwzględnieniem <em>inflacji</em></h1>
-    <p>Kalkulator porównuje nominalny koszt kredytu z realnym — uwzględniając historyczne notowania WIBOR 3M/6M oraz wskaźnik CPI GUS od 2000 roku. Sprawdź, czy naprawdę lepiej spłacić kredyt wcześniej.</p>
+    <p>Kalkulator porównuje nominalny koszt kredytu z realnym — uwzględniając historyczne notowania WIBOR 1M/3M/6M oraz wskaźnik CPI GUS od 2000 roku. Sprawdź, czy naprawdę lepiej spłacić kredyt wcześniej.</p>
     <div class="quick-nav">
       <a class="quick-link" href="symulator-nadplat.html" target="_blank">Przejdź do symulatora nadpłat →</a>
     </div>
     <div style="margin-top:14px">
       <span class="data-tag" id="tag_wibor">WIBOR 3M · dane historyczne (notowania miesięczne)</span>
       <span class="data-tag" id="tag_cpi">Inflacja CPI · GUS Polska (roczna)</span>
-      <span class="data-tag">Projekcja 2027+ · średnia wieloletnia</span>
+      <span class="data-tag" id="tag_projection">Projekcja 2027+ · średnia wieloletnia</span>
     </div>
   </header>
 
@@ -105,6 +105,7 @@
       <div class="field">
         <label>Wskaźnik WIBOR</label>
         <div class="toggle-group">
+          <button class="toggle-btn" id="btn_wibor1m" onclick="setWiborMode('1M')">WIBOR 1M</button>
           <button class="toggle-btn active" id="btn_wibor3m" onclick="setWiborMode('3M')">WIBOR 3M</button>
           <button class="toggle-btn" id="btn_wibor6m" onclick="setWiborMode('6M')">WIBOR 6M</button>
         </div>
@@ -126,6 +127,39 @@
             <option value="minimum">Wynagrodzenie minimalne</option>
           </select>
         </div>
+      </div>
+
+      <div class="separator"></div>
+      <div style="margin: 14px 0 10px; font-size: 12px; color: var(--muted); letter-spacing: 0.5px;">Projekcje przyszłe</div>
+
+      <div class="field">
+        <label title="Stosowany dla WIBOR 1M, 3M i 6M">Przyszły WIBOR (%)</label>
+        <div class="field-row">
+          <input type="number" id="future_wibor" value="3.0" min="0" max="15" step="0.1">
+          <span class="unit">%</span>
+        </div>
+        <input type="range" id="future_wibor_r" min="0" max="15" step="0.1" value="3.0">
+        <div class="range-val" id="future_wibor_rv">3,0%</div>
+      </div>
+
+      <div class="field">
+        <label>Przyszła inflacja CPI (%)</label>
+        <div class="field-row">
+          <input type="number" id="future_cpi" value="3.0" min="-5" max="20" step="0.1">
+          <span class="unit">%</span>
+        </div>
+        <input type="range" id="future_cpi_r" min="-5" max="20" step="0.1" value="3.0">
+        <div class="range-val" id="future_cpi_rv">3,0% rocznie (≈ 0,25% m/m)</div>
+      </div>
+
+      <div class="field">
+        <label>Przyszły wzrost wynagrodzeń (%)</label>
+        <div class="field-row">
+          <input type="number" id="future_salary" value="3.5" min="0" max="15" step="0.1">
+          <span class="unit">%</span>
+        </div>
+        <input type="range" id="future_salary_r" min="0" max="15" step="0.1" value="3.5">
+        <div class="range-val" id="future_salary_rv">3,5%</div>
       </div>
 
       <div class="separator"></div>
@@ -476,6 +510,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="data-wibor6m.js"></script>
 <script src="data-wibor3m.js"></script>
+<script src="data-wibor1m.js"></script>
 <script src="data-cpi-annual.js"></script>
 <script src="data-cpi-monthly.js"></script>
 <script src="data-wynagrodzenia-przecietne.js"></script>

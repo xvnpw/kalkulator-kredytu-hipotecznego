@@ -2,17 +2,21 @@
 // STALE I DANE POMOCNICZE
 // ==========================================
 
-const DEFAULT_FUTURE_WIBOR = 4.5;
-const DEFAULT_FUTURE_CPI   = 3.5;
+const DEFAULT_FUTURE_WIBOR = 3.0;
+const DEFAULT_FUTURE_CPI   = 3.0;
+const DEFAULT_FUTURE_SALARY_GROWTH = 3.5;
 const DEFAULT_FUTURE_CPI_MONTHLY = (Math.pow(1 + DEFAULT_FUTURE_CPI / 100, 1 / 12) - 1) * 100;
 const EPSILON = 1e-12;
+let futureWibor = DEFAULT_FUTURE_WIBOR;
+let futureCpi = DEFAULT_FUTURE_CPI;
+let futureSalaryGrowth = DEFAULT_FUTURE_SALARY_GROWTH;
 
 const SALARY_SOURCE_CONFIG = {
   average: {
     chartLabel: 'przeciętne',
-    tableHeader: 'Wynagrodzenie przeciętne',
+    tableHeader: 'Wyn. przeciętne',
     tableTitle: 'Przeciętne miesięczne wynagrodzenie brutto - ogółem (GUS)',
-    ratioHeader: 'Rata / wynagrodzenie przeciętne',
+    ratioHeader: 'Rata / wyn. przeciętne',
     ratioTitle: 'Rata jako % przeciętnego wynagrodzenia',
     data: WYNAGRODZENIA_PRZECIETNE
   },
@@ -41,7 +45,7 @@ function getWynagr(year) {
   const firstYear = meta.years[0];
   const lastYear = meta.years[meta.years.length - 1];
   if (year < firstYear) return data[firstYear];
-  return Math.round(data[lastYear] * Math.pow(1.07, year - lastYear));
+  return Math.round(data[lastYear] * Math.pow(1 + futureSalaryGrowth / 100, year - lastYear));
 }
 
 // ==========================================
@@ -49,15 +53,18 @@ function getWynagr(year) {
 // ==========================================
 const WIBOR6M_ANNUAL = {};
 const WIBOR3M_ANNUAL = {};
+const WIBOR1M_ANNUAL = {};
 for (let y = 1995; y <= 2026; y++) {
-  const v6 = [], v3 = [];
+  const v6 = [], v3 = [], v1 = [];
   for (let m = 1; m <= 12; m++) {
     const k = y + '-' + String(m).padStart(2, '0');
     if (WIBOR6M_MONTHLY[k] !== undefined) v6.push(WIBOR6M_MONTHLY[k]);
     if (WIBOR3M_MONTHLY[k] !== undefined) v3.push(WIBOR3M_MONTHLY[k]);
+    if (typeof WIBOR1M_MONTHLY !== 'undefined' && WIBOR1M_MONTHLY[k] !== undefined) v1.push(WIBOR1M_MONTHLY[k]);
   }
   if (v6.length) WIBOR6M_ANNUAL[y] = +(v6.reduce((a,b)=>a+b)/v6.length).toFixed(2);
   if (v3.length) WIBOR3M_ANNUAL[y] = +(v3.reduce((a,b)=>a+b)/v3.length).toFixed(2);
+  if (v1.length) WIBOR1M_ANNUAL[y] = +(v1.reduce((a,b)=>a+b)/v1.length).toFixed(2);
 }
 
 const HIST_MIN_YEAR = 2000;
@@ -71,17 +78,28 @@ const LAST_HIST_CPI_MONTHLY = 2026;
 
 function getWibor(year, month, mode) {
   const key = year + '-' + String(month).padStart(2, '0');
-  const val = mode === '3M' ? WIBOR3M_MONTHLY[key] : WIBOR6M_MONTHLY[key];
-  return val !== undefined ? val : DEFAULT_FUTURE_WIBOR;
+  let val;
+  if (mode === '1M') {
+    val = typeof WIBOR1M_MONTHLY !== 'undefined' ? WIBOR1M_MONTHLY[key] : undefined;
+  } else if (mode === '3M') {
+    val = WIBOR3M_MONTHLY[key];
+  } else {
+    val = WIBOR6M_MONTHLY[key];
+  }
+  return val !== undefined ? val : futureWibor;
 }
 
 function getCpiAnnual(year) {
-  return CPI_ANNUAL[year] !== undefined ? CPI_ANNUAL[year] : DEFAULT_FUTURE_CPI;
+  return CPI_ANNUAL[year] !== undefined ? CPI_ANNUAL[year] : futureCpi;
+}
+
+function getFutureCpiMonthly() {
+  return (Math.pow(1 + futureCpi / 100, 1 / 12) - 1) * 100;
 }
 
 function getCpiMonthly(year, month) {
   const key = year + '-' + String(month).padStart(2, '0');
-  return CPI_MONTHLY[key] !== undefined ? CPI_MONTHLY[key] : DEFAULT_FUTURE_CPI_MONTHLY;
+  return CPI_MONTHLY[key] !== undefined ? CPI_MONTHLY[key] : getFutureCpiMonthly();
 }
 
 function annualizeMonthlyCpi(cpiMonthlyPct) {
@@ -129,10 +147,10 @@ function calcAvgStats(rows) {
 
 // Pelny harmonogram - fixing WIBOR co N miesiecy od dnia startu kredytu.
 // Brak stalych dat fixingowych (np. maj/listopad) - termin wynika wylacznie
-// z miesiaca startowego i interwalu (3M lub 6M).
+// z miesiaca startowego i interwalu (1M, 3M lub 6M).
 function calcHarmonogram(kwota, rokStart, startMonth, latKredytu, marza, wiborMode, cpiMode, rateTypeArg) {
   const nMonths = latKredytu * 12;
-  const fixInterval = wiborMode === '3M' ? 3 : 6;
+  const fixInterval = wiborMode === '1M' ? 1 : (wiborMode === '3M' ? 3 : 6);
   const MIESIAC_NAZWY = ['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'];
   const selectedRateType = rateTypeArg || 'rowna';
 
@@ -260,6 +278,8 @@ function setWiborMode(mode) {
   wiborMode = mode;
   document.getElementById('btn_wibor6m').classList.toggle('active', mode === '6M');
   document.getElementById('btn_wibor3m').classList.toggle('active', mode === '3M');
+  const btn1m = document.getElementById('btn_wibor1m');
+  if (btn1m) btn1m.classList.toggle('active', mode === '1M');
   calculate();
 }
 
@@ -408,12 +428,19 @@ function calculate() {
   const rokStart   = parseInt(document.getElementById('rok_start').value)  || 2010;
   const startMonth = parseInt(document.getElementById('miesiac_start').value) || 1;
   salarySource     = document.getElementById('salary_source').value || 'average';
+  const futureWiborInput = parseFloat(document.getElementById('future_wibor').value);
+  const futureCpiInput = parseFloat(document.getElementById('future_cpi').value);
+  const futureSalaryInput = parseFloat(document.getElementById('future_salary').value);
+  futureWibor = Number.isFinite(futureWiborInput) ? futureWiborInput : DEFAULT_FUTURE_WIBOR;
+  futureCpi = Number.isFinite(futureCpiInput) ? futureCpiInput : DEFAULT_FUTURE_CPI;
+  futureSalaryGrowth = Number.isFinite(futureSalaryInput) ? futureSalaryInput : DEFAULT_FUTURE_SALARY_GROWTH;
+  const futureCpiMonthly = getFutureCpiMonthly();
   const marza      = parseFloat(document.getElementById('marza').value)    || 2;
   const prowizjaInput = parseFloat(document.getElementById('prowizja').value);
   const prowizjaPct = Number.isFinite(prowizjaInput) ? prowizjaInput : 2;
   const latA       = parseInt(document.getElementById('lat_A').value)      || 30;
   const latB       = parseInt(document.getElementById('lat_B').value)      || 10;
-  const fixInterval = wiborMode === '3M' ? 3 : 6;
+  const fixInterval = wiborMode === '1M' ? 1 : (wiborMode === '3M' ? 3 : 6);
 
   const wiborStart = getWibor(rokStart, startMonth, wiborMode);
   const cpiStartRaw   = cpiMode === 'monthly'
@@ -457,6 +484,11 @@ function calculate() {
     tagCpiEl.textContent = 'Inflacja CPI · GUS Polska (roczna)';
     tagCpiEl.title = 'Inflacja CPI (roczna)';
   }
+  const tagProjectionEl = document.getElementById('tag_projection');
+  tagProjectionEl.textContent =
+    'Projekcja 2027+ · WIBOR ' + fmt(futureWibor, 1) + '% · CPI ' + fmt(futureCpi, 1) +
+    '% (≈ ' + fmt(futureCpiMonthly, 2) + '% m/m) · wzrost wynagrodzeń ' + fmt(futureSalaryGrowth, 1) + '%';
+  tagProjectionEl.title = 'Stała projekcja dla lat bez danych historycznych';
 
   document.getElementById('card_la').textContent = latA;
   document.getElementById('card_lb').textContent = latB;
@@ -548,8 +580,10 @@ function calculate() {
     '2) Dane WIBOR to historyczne notowania miesięczne (zamknięcia miesiąca). Inflacja CPI pochodzi z GUS' +
     (cpiMode === 'monthly' ? ' (miesięczna, miesiąc do miesiąca).' : ' (roczna).') +
     '<br>3) Dane historyczne: WIBOR do ' + LAST_HIST_WIBOR_YEAR + ', CPI do ' + lastHistCPI +
-    '. Dla kolejnych lat przyjmujemy stałą projekcję: WIBOR ' + DEFAULT_FUTURE_WIBOR +
-    '%, inflacja ' + DEFAULT_FUTURE_CPI + '%.<br>' +
+    '. Dla kolejnych lat przyjmujemy stałą projekcję: WIBOR ' + fmt(futureWibor, 1) +
+    '%, inflacja ' + fmt(futureCpi, 1) + '%' +
+    (cpiMode === 'monthly' ? ' (≈ ' + fmt(futureCpiMonthly, 2) + '% m/m)' : '') +
+    ', wzrost wynagrodzeń ' + fmt(futureSalaryGrowth, 1) + '%.<br>' +
     '4) Prowizję banku (' + fmt(prowizjaPct, 1) + '%) doliczamy jako koszt jednorazowy na starcie — bez zwiększania salda kredytu. W wartości realnej prowizja ma ten sam poziom, bo jest kosztem w miesiącu 0 (deflator = 1).<br>' +
     '5) Realne odsetki i rozkład czynników liczymy od samych rat (bez prowizji), aby oddzielić koszt finansowania od opłaty jednorazowej.<br>' +
     '6) Rodzaj rat: ' + (rateType === 'malejaca' ? 'malejące' : 'równe (annuitet)') + '.';
@@ -677,6 +711,9 @@ function renderChart() {
           { label: 'WIBOR 3M (%)', data: years.map(function(y){ return WIBOR3M_ANNUAL[y] !== undefined ? WIBOR3M_ANNUAL[y] : null; }),
             borderColor: '#7eb8c9', backgroundColor: 'rgba(126,184,201,0.07)',
             borderWidth: 2, pointRadius: 2, tension: 0.3, fill: false },
+          { label: 'WIBOR 1M (%)', data: years.map(function(y){ return WIBOR1M_ANNUAL[y] !== undefined ? WIBOR1M_ANNUAL[y] : null; }),
+            borderColor: '#c97eb8', backgroundColor: 'rgba(201,126,184,0.07)',
+            borderWidth: 2, pointRadius: 2, tension: 0.3, fill: false },
           { label: 'Inflacja CPI (%)', data: years.map(function(y){ return CPI_ANNUAL[y] !== undefined ? CPI_ANNUAL[y] : null; }),
             borderColor: '#70c997', backgroundColor: 'rgba(112,201,151,0.07)',
             borderWidth: 1.5, borderDash: [4,3], pointRadius: 2, tension: 0.3, fill: false }
@@ -761,7 +798,7 @@ function renderTable(tableId, rows, kwota) {
   const wynagrCache = {};
   const header = '<thead><tr>' +
     '<th>#</th><th>Data</th>' +
-    '<th title="Fixing WIBOR w tym miesiącu">Fixing WIBOR</th>' +
+    '<th title="Fixing WIBOR w tym miesiącu">Fixing</th>' +
     '<th>WIBOR ' + wiborMode + '</th><th>Stopa</th><th>Rata</th>' +
     '<th>Odsetki</th><th>Kapitał</th>' +
     '<th title="Rata w złotówkach z dnia zaciągnięcia kredytu (zdyskontowana CPI)">Rata realna</th>' +
@@ -807,6 +844,20 @@ function bindInputs() {
     ['rok_start','rok_r',    'rok_rv',    function(v){ return v; }],
     ['marza',    'marza_r',  'marza_rv',  function(v){ return parseFloat(v).toFixed(1) + '%'; }],
     ['prowizja', 'prowizja_r', 'prowizja_rv', function(v){ return parseFloat(v).toFixed(1) + '%'; }],
+    ['future_wibor', 'future_wibor_r', 'future_wibor_rv', function(v){
+      const futureVal = parseFloat(v);
+      return fmt(Number.isFinite(futureVal) ? futureVal : DEFAULT_FUTURE_WIBOR, 1) + '%';
+    }],
+    ['future_cpi', 'future_cpi_r', 'future_cpi_rv', function(v){
+      const annualVal = parseFloat(v);
+      const annual = Number.isFinite(annualVal) ? annualVal : DEFAULT_FUTURE_CPI;
+      const monthly = (Math.pow(1 + annual / 100, 1 / 12) - 1) * 100;
+      return fmt(annual, 1) + '% rocznie (≈ ' + fmt(monthly, 2) + '% m/m)';
+    }],
+    ['future_salary', 'future_salary_r', 'future_salary_rv', function(v){
+      const futureVal = parseFloat(v);
+      return fmt(Number.isFinite(futureVal) ? futureVal : DEFAULT_FUTURE_SALARY_GROWTH, 1) + '%';
+    }],
     ['lat_A',    'lat_A_r',  'lat_A_rv',  function(v){ return '<span class="badge badge-gold">' + v + ' lat</span>'; }],
     ['lat_B',    'lat_B_r',  'lat_B_rv',  function(v){ return '<span class="badge badge-blue">' + v + ' lat</span>'; }],
   ];

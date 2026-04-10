@@ -28,13 +28,14 @@ Na stronie startowej (`index.html`) jest wyróżniony skrót do symulatora nadp�
 - Marża banku (%)
 - Prowizja banku (%) — koszt jednorazowy (domyślnie 2,0%)
 - Typ raty: **rata równa** (annuitet) lub **rata malejąca**
-- Wybór wskaźnika: WIBOR 3M lub WIBOR 6M
+- Wybór wskaźnika: WIBOR 1M, WIBOR 3M lub WIBOR 6M
 - Wybór danych CPI: roczne (GUS) lub miesięczne m/m (GUS, „poprzedni miesiąc = 100”)
 - Wybór źródła danych wynagrodzeń: przeciętne wynagrodzenie / wynagrodzenie minimalne
+- Sekcja **„Projekcje przyszłe”**: przyszły WIBOR, przyszła inflacja CPI, przyszły wzrost wynagrodzeń
 - Dwa okresy kredytowania do porównania: **Wariant A** (długi) vs **Wariant B** (krótki)
 
 ### Obliczenia
-- **Harmonogram ratalny** z refixingiem WIBOR co 3 lub 6 miesięcy od daty startu, dla rat równych i malejących
+- **Harmonogram ratalny** z refixingiem WIBOR co 1, 3 lub 6 miesięcy od daty startu, dla rat równych i malejących
 - **Prowizja banku** jest doliczana jako koszt jednorazowy na starcie i nie zwiększa salda kredytu
 - **Realna wartość płatności** — każda rata dyskontowana skumulowanym deflaktorem CPI (deflator = 1,0 w miesiącu 0; dla CPI rocznego używany jest miesięczny pierwiastek 12., dla CPI m/m bezpośredni mnożnik miesięczny)
 - **Koszty realne**: całkowita kwota realna = suma rat realnych + prowizja; realne odsetki = suma rat realnych − kwota kredytu (bez prowizji)
@@ -54,7 +55,7 @@ Prowizja jest prezentowana osobno w podsumowaniu kosztu całkowitego (nominalneg
 ### Wykresy
 - **Nominalne** — skumulowane przepływy pieniężne (PLN nominalne)
 - **Realne (po inflacji)** — skumulowane przepływy zdyskontowane CPI
-- **WIBOR historia** — historyczne notowania WIBOR 3M/6M i inflacji CPI od 2000 r.
+- **WIBOR historia** — historyczne notowania WIBOR 1M/3M/6M i inflacji CPI od 2000 r.
 - **Rata vs zarobki** — rata jako % wybranego źródła wynagrodzeń
 
 ### Szczegółowa tabela miesięczna
@@ -75,7 +76,7 @@ Pełny harmonogram z kolumnami: WIBOR, stopa łączna, rata nominalna, rata real
 
 ### Projekcje przyszłe
 Konfigurowalne wartości domyślne dla okresów bez danych historycznych:
-- Przyszły WIBOR 3M/6M (domyślnie 3,0%)
+- Przyszły WIBOR 1M/3M/6M (domyślnie 3,0%)
 - Przyszła inflacja CPI (domyślnie 3,0%)
 - Przyszły wzrost wynagrodzeń (domyślnie 3,5%)
 - Przyszła stopa zwrotu z akcji (domyślnie 5,0%)
@@ -149,9 +150,10 @@ Pliki CSV są wyłącznie źródłem referencyjnym — dane zostały wyekstrahow
 ## Projekcja przyszłości
 
 ### Kalkulator kredytu (`index.html`)
-Stałe wartości domyślne:
-- `DEFAULT_FUTURE_WIBOR = 4.5%`
-- `DEFAULT_FUTURE_CPI = 3.5%`
+Konfigurowalne parametry z poziomu interfejsu (sekcja „Projekcje przyszłe"):
+- Przyszły WIBOR (domyślnie 3,0%) — stosowany dla WIBOR 1M, 3M i 6M
+- Przyszła inflacja CPI (domyślnie 3,0%); w trybie CPI m/m przeliczana automatycznie
+- Przyszły wzrost wynagrodzeń (domyślnie 3,5%)
 
 ### Symulator nadpłat (`symulator-nadplat.html`)
 Konfigurowalne parametry z poziomu interfejsu (sekcja „Projekcje przyszłe"):
@@ -177,7 +179,7 @@ node tests/run-tests-nadplat.js  # Symulator nadpłat
 
 Każdy test runner (`tests/run-tests.js`, `tests/run-tests-nadplat.js`) ładuje pliki danych i odpowiedni skrypt JS do piaskownicy `vm.createContext()` z zaślepkami DOM/Chart.js, a następnie wykonuje plik testowy wewnątrz tego kontekstu. Dzięki temu testy mają bezpośredni dostęp do wszystkich `const`/`let`/`function` z kodu źródłowego.
 
-### Kalkulator kredytu (38 grup, 92 asercje)
+### Kalkulator kredytu (38 grup, 101 asercji)
 
 | # | Grupa | Co weryfikuje |
 |---|---|---|
@@ -192,20 +194,20 @@ Każdy test runner (`tests/run-tests.js`, `tests/run-tests-nadplat.js`) ładuje 
 | 9 | Sumy nominalne | Odsetki = suma rat − kapitał |
 | 10 | Sumy realne i zysk inflacyjny | Realne < nominalne; dłuższy kredyt → większy zysk inflacyjny |
 | 11 | Dekompozycja czynników | marża\_contrib + wibor\_cpi\_contrib = odsetki realne |
-| 12 | Interwały fixingu WIBOR | 3M co 3 mies., 6M co 6 mies. |
+| 12 | Interwały fixingu WIBOR | 1M co 1 mies., 3M co 3 mies., 6M co 6 mies. |
 | 13 | Mapowanie miesiąca startowego | calMonth/rok przy starcie w lipcu |
 | 14 | Agregacja roczna | `aggregateYearly()` — suma roczna = suma miesięczna |
 | 15 | Annualizacja CPI | `annualizeMonthlyCpi()` — round-trip roczne↔miesięczne |
 | 16 | Fallback przyszłości | `DEFAULT_FUTURE_WIBOR/CPI/CPI_MONTHLY` |
 | 17 | Ujemne odsetki realne | Scenariusz 2021 z niską marżą → odsetki realne < 0 |
 | 18 | Malejące: przeliczenie przy fixingu | Część kapitałowa = saldo/remaining |
-| 19 | Spot-check danych | CPI 2022, WIBOR 2010, wynagrodzenia |
-| 20 | Średnie roczne WIBOR | `WIBOR6M_ANNUAL` / `WIBOR3M_ANNUAL` wyliczone |
+| 19 | Spot-check danych | CPI 2022, WIBOR 1M/6M 2010, wynagrodzenia |
+| 20 | Średnie roczne WIBOR | `WIBOR1M_ANNUAL` / `WIBOR6M_ANNUAL` / `WIBOR3M_ANNUAL` wyliczone |
 | 21 | Cross-check annuitet | Porównanie z ręcznie obliczonymi wartościami |
 | 22 | calcAvgStats | avgSpread = avgWibor − avgCpi |
 | 23 | Deflacja | CPI 2015 < 0 → deflator > 1 |
 | 24 | Edge cases: różne okresy | 3-letni i 35-letni kredyt |
-| 25 | WIBOR 6M vs 3M | Porównanie harmonogramów obu trybów |
+| 25 | WIBOR 6M vs 3M/1M | Porównanie harmonogramów trybów WIBOR |
 | 26 | Różne miesiące startowe | Styczeń vs październik |
 | 27 | rata = odsetki + kapitał | Każdy wiersz harmonogramu (annuitet i malejące) |
 | 28 | Saldo monotoniczne (annuitet) | Saldo nierosnące w każdym kroku |
@@ -230,7 +232,7 @@ Każdy test runner (`tests/run-tests.js`, `tests/run-tests-nadplat.js`) ładuje 
 | 4 | Harmonogram bazowy (annuitet) | Fixing, deflator m0=1, rata=odsetki+kapitał |
 | 5 | Zbieżność salda (annuitet) | Saldo → 0 po ostatniej racie, suma kapitału = kwota |
 | 6 | Raty malejące | Poprawność schematu malejącego, stała część kapitałowa między fixingami |
-| 7 | Interwały fixingu WIBOR | 3M co 3 mies., 6M co 6 mies., poprawne oznaczenie isFix |
+| 7 | Interwały fixingu WIBOR | 1M co 1 mies., 3M co 3 mies., 6M co 6 mies., poprawne oznaczenie isFix |
 | 8 | Deflator skumulowany (roczny) | Akumulacja deflatora przez 12+ miesięcy |
 | 9 | Deflator CPI miesięczny | Tryb m/m — deflator m1 z poprawnego miesiąca |
 | 10 | Sumy nominalne — spójność | Odsetki = suma rat − kapitał |
@@ -241,7 +243,7 @@ Każdy test runner (`tests/run-tests.js`, `tests/run-tests-nadplat.js`) ładuje 
 | 15 | rata = odsetki + kapitał | Tożsamość w każdym wierszu (annuitet i malejące) |
 | 16 | Saldo monotoniczne | Saldo nierosnące (annuitet i malejące) |
 | 17 | Wysoka inflacja 2022 | Deflator < 0.90 po 12 mies. |
-| 18 | Spot-check danych | CPI 2022, WIBOR 3M/6M styczeń 2010 |
+| 18 | Spot-check danych | CPI 2022, WIBOR 1M/3M/6M styczeń 2010 |
 | 19 | Kwota kredytu — różne wartości | 50k i 1.5M: saldo→0, większa kwota → większa rata |
 | 20 | Okres kredytu — różne wartości | 36 i 420 miesięcy: saldo→0, krótszy okres → wyższa rata |
 | 21 | Data startu — różne miesiące | Październik: calMonth, rok, przejście roku, nazwy |

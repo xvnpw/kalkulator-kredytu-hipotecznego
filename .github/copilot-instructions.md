@@ -17,6 +17,7 @@ Both share the same external CSS (`kalkulator-kredytu.css`) and a set of data JS
 |---|---|---|
 | `data-wibor6m.js` | `WIBOR6M_MONTHLY` | WIBOR 6M monthly closing values. Key: `"YYYY-MM"`, value: % rate. Source: `plopln6m_m.csv`. |
 | `data-wibor3m.js` | `WIBOR3M_MONTHLY` | WIBOR 3M monthly closing values. Key: `"YYYY-MM"`, value: % rate. Source: `plopln3m_m.csv`. |
+| `data-wibor1m.js` | `WIBOR1M_MONTHLY` | WIBOR 1M monthly closing values. Key: `"YYYY-MM"`, value: % rate. Source: `plopln1m_m.csv`. |
 | `data-cpi-annual.js` | `CPI_ANNUAL` | Annual Polish CPI as **percentage points** (e.g. `14.4` means 14.4%). Source: GUS annual series. |
 | `data-cpi-monthly.js` | `CPI_MONTHLY` | Monthly CPI m/m (previous month = 100, stored as `index - 100`). Key: `"YYYY-MM"`. Source: GUS monthly series. |
 | `data-wynagrodzenia-przecietne.js` | `WYNAGRODZENIA_PRZECIETNE` | Annual average monthly gross wage (PLN, overall). |
@@ -26,7 +27,6 @@ Both share the same external CSS (`kalkulator-kredytu.css`) and a set of data JS
 
 | File | Exported constant | Contents |
 |---|---|---|
-| `data-wibor1m.js` | `WIBOR1M_MONTHLY` | WIBOR 1M monthly closing values. Key: `"YYYY-MM"`, value: % rate. Source: `plopln1m_m.csv`. |
 | `data-nbp-rate.js` | `NBP_RATE_MONTHLY` | NBP reference rate — monthly fill-forward values. Key: `"YYYY-MM"`, value: % rate. Source: `inrtpl_m_m.csv`. |
 | `data-wig30.js` | `WIG30_MONTHLY` | WIG30 index monthly closing values. Key: `"YYYY-MM"`. Source: `wig30_m.csv`. |
 | `data-wig.js` | `WIG_MONTHLY` | WIG index monthly closing values. Key: `"YYYY-MM"`. Source: `wig_m.csv`. |
@@ -43,14 +43,13 @@ Both applications define similar constants in their `<script>` blocks:
 | Constant | Contents |
 |---|---|
 | `SALARY_SOURCE_CONFIG` | Salary source registry (`average`, `minimum`) with labels, tooltips, and yearly data maps. |
-| `WIBOR6M_ANNUAL` / `WIBOR3M_ANNUAL` | Annual averages computed at startup from `WIBOR6M_MONTHLY` / `WIBOR3M_MONTHLY`; used only for the WIBOR history chart. |
-| `DEFAULT_FUTURE_WIBOR` / `DEFAULT_FUTURE_CPI` / `DEFAULT_FUTURE_CPI_MONTHLY` | Fallback projection values; monthly CPI fallback is derived from annual CPI default. (index.html only — hardcoded constants) |
+| `WIBOR6M_ANNUAL` / `WIBOR3M_ANNUAL` / `WIBOR1M_ANNUAL` | Annual averages computed at startup from monthly WIBOR datasets; used only for the WIBOR history chart. |
+| `DEFAULT_FUTURE_WIBOR` / `DEFAULT_FUTURE_CPI` / `DEFAULT_FUTURE_CPI_MONTHLY` | Default fallback projection values. In `index.html` active future parameters are configurable from UI (`future_wibor`, `future_cpi`, `future_salary`) and monthly CPI fallback is derived from annual CPI. |
 
 The overpayment simulator (`symulator-nadplat.js`) additionally computes:
 
 | Constant / Function | Contents |
 |---|---|
-| `WIBOR1M_ANNUAL` | Annual averages from `WIBOR1M_MONTHLY`, computed at startup. |
 | `getFutureWibor()` | Dynamic getter — reads from `#future_wibor` input, default 3.0%. Replaces hardcoded `DEFAULT_FUTURE_WIBOR`. |
 | `getFutureCpi()` | Dynamic getter — reads from `#future_cpi` input, default 3.0%. |
 | `getFutureSalaryGrowth()` | Dynamic getter — reads from `#future_salary` input, default 3.5%. |
@@ -60,7 +59,7 @@ The overpayment simulator (`symulator-nadplat.js`) additionally computes:
 
 ## Shared calculation conventions
 
-- **WIBOR fixing** happens every `fixInterval` months from the loan start month (1 for WIBOR 1M, 3 for WIBOR 3M, 6 for WIBOR 6M). There are no fixed calendar dates — the interval is purely relative to month index `m`: `isFix = (m % fixInterval === 0)`. WIBOR 1M is available only in the overpayment simulator.
+- **WIBOR fixing** happens every `fixInterval` months from the loan start month (1 for WIBOR 1M, 3 for WIBOR 3M, 6 for WIBOR 6M). There are no fixed calendar dates — the interval is purely relative to month index `m`: `isFix = (m % fixInterval === 0)`.
 - **Real payment** uses a **cumulative monthly deflator** that starts at `1.0` in month 0 (so `rataReal[0] === rata[0]`). The deflator is updated *after* each month: for annual CPI mode `cumulativeDeflator *= 1 / (1 + annualCPI/100)^(1/12)`, for monthly CPI mode `cumulativeDeflator *= 1 / (1 + monthlyCPI/100)`.
 - **Provision (`prowizja`)** is an off-balance one-time cost at month 0 (does not increase `saldo`). In real totals it is added 1:1 (month-0 deflator is `1.0`).
 - **Real interest** can legitimately be **negative** when high inflation deflates total real payments below the principal. Do not clamp with `Math.max(0, ...)`.
@@ -71,6 +70,7 @@ The overpayment simulator (`symulator-nadplat.js`) additionally computes:
 - Compares two variants: **A** (longer term) vs **B** (shorter term).
 - `index.html` includes a prominent header shortcut (`.quick-link`) to `symulator-nadplat.html`.
 - Supports two rate types via `rateType` + `setRateType()`: `rowna` (annuity) and `malejaca` (decreasing).
+- WIBOR toggle order in the UI is `WIBOR 1M` then `WIBOR 3M` (active by default) then `WIBOR 6M`.
 - Includes initial bank provision input (`prowizja`, default `2.0%`) with synced number/range controls.
 - Cost summary (`cA_*`, `cB_*`) shows provision separately; totals include provision.
 - In methodology: total real amount includes provision, but real-interest decomposition is computed from installments only (without provision).
@@ -127,7 +127,7 @@ UI text, variable names in comments, and all displayed strings are in **Polish**
 ### Running tests
 
 ```bash
-node tests/run-tests.js          # Calculator tests (38 groups, 92 assertions)
+node tests/run-tests.js          # Calculator tests (38 groups, 101 assertions)
 node tests/run-tests-nadplat.js  # Overpayment simulator tests (96 groups, 275 assertions)
 ```
 
@@ -155,13 +155,13 @@ The sandbox needs minimal DOM stubs because `kalkulator-kredytu.js` calls `calcu
 5. Global mode variables (`wiborMode`, `cpiMode`, `salarySource`) can be set freely between tests
 6. Run `node tests/run-tests.js` to verify — exit code 0 = all pass, 1 = failures
 
-### Test coverage areas (38 groups, 92 assertions)
+### Test coverage areas (38 groups, 101 assertions)
 
 Core math: annuity formula, monthly rate, zero-rate edge case, declining installments.
 Harmonogram: first months, final balance convergence, row-level identity (rata = odsetki + kapitał), saldo monotonicity.
 Real values: cumulative deflator (annual and monthly CPI modes), inflation savings, year-boundary transitions, deflation handling, negative real interest scenario.
 Factor analysis: margin contribution + WIBOR-CPI contribution = real interest (via zero-margin harmonogram).
-WIBOR: fixing intervals (3M/6M), different start months, 6M vs 3M comparison.
+WIBOR: fixing intervals (1M/3M/6M), different start months, 6M vs 3M/1M comparison.
 Data integrity: spot-checks on CPI/WIBOR/salary data, annual averages, future fallbacks.
 Aggregation: yearly totals match monthly sums, salary fields populated correctly.
 Edge cases: 3-year and 35-year loans, high inflation (2022), provision identity, verdict direction logic.

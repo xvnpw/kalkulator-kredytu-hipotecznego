@@ -57,6 +57,7 @@ const sandbox = vm.createContext({
 var dataFiles = [
   'data-wibor6m.js',
   'data-wibor3m.js',
+  'data-wibor1m.js',
   'data-cpi-annual.js',
   'data-cpi-monthly.js',
   'data-wynagrodzenia-przecietne.js',
