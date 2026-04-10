@@ -60,7 +60,9 @@ Both applications define similar constants in their `<script>` blocks:
 ## symulator-nadplat.html specifics
 
 - Compares **base schedule** (no events) vs **modified schedule** (with overpayments/refinancing).
-- Loan duration is in **months** (36–420, default 300). Display shows "X lat Y mies." via `fmtOkres()`.
+- Loan duration is in **months** (36–420, default 360). Display shows "X lat Y mies." via `fmtOkres()`.
+- Default startup values in `symulator-nadplat.html`: year `2010`, month `styczeń` (`1`), margin `2.0%`, initial provision `2.0%`, and WIBOR mode `3M`.
+- WIBOR toggle order in the UI is `WIBOR 3M` (left, active by default) then `WIBOR 6M`.
 - Supports two rate types: **rata równa** (annuity) and **rata malejąca** (decreasing installments).
 - **Events system** — four event types stored in the `events` array:
   - `nadplata` — one-time overpayment (amount + date + effect: `nizsza_rata` / `krotszy_okres`)
@@ -85,3 +87,46 @@ Both applications define similar constants in their `<script>` blocks:
 ## Language
 
 UI text, variable names in comments, and all displayed strings are in **Polish**. Keep this consistent when adding new UI elements or comments.
+
+## Testing
+
+### Running tests
+
+```bash
+node tests/run-tests.js
+```
+
+No npm packages needed — only Node.js (built-in `vm` and `fs` modules).
+
+### How it works
+
+The test runner (`tests/run-tests.js`) loads all data JS files and `kalkulator-kredytu.js` into a Node.js `vm.createContext()` sandbox with DOM/Chart.js stubs. The actual test assertions live in `tests/test-kalkulator.js`, which runs **inside** the VM context — this is critical because `const`/`let` declarations in a VM context are NOT accessible as properties on the sandbox object, but code executed inside the context can reference them directly.
+
+### DOM mocking pattern
+
+The sandbox needs minimal DOM stubs because `kalkulator-kredytu.js` calls `calculate()` at init:
+- `document.getElementById()` → returns mock elements with `.value`, `.textContent`, `.classList.toggle()`, `.getContext()`, etc.
+- `Chart` → constructor function mock with `this.destroy = ()=>{}`
+- `localStorage` → `getItem()` returns `null`, `setItem()` is no-op
+- `window.matchMedia` → returns `{ matches: false }`
+- `getComputedStyle` → returns stub with `getPropertyValue()` returning `''`
+
+### Adding new tests
+
+1. Open `tests/test-kalkulator.js`
+2. Add a new `group('N. Name')` section
+3. Use `assert(cond, msg)` for boolean checks or `assertClose(a, b, tol, msg)` for numeric tolerance
+4. All functions/constants from `kalkulator-kredytu.js` and data files are available in scope
+5. Global mode variables (`wiborMode`, `cpiMode`, `salarySource`) can be set freely between tests
+6. Run `node tests/run-tests.js` to verify — exit code 0 = all pass, 1 = failures
+
+### Test coverage areas (38 groups, 92 assertions)
+
+Core math: annuity formula, monthly rate, zero-rate edge case, declining installments.
+Harmonogram: first months, final balance convergence, row-level identity (rata = odsetki + kapitał), saldo monotonicity.
+Real values: cumulative deflator (annual and monthly CPI modes), inflation savings, year-boundary transitions, deflation handling, negative real interest scenario.
+Factor analysis: margin contribution + WIBOR-CPI contribution = real interest (via zero-margin harmonogram).
+WIBOR: fixing intervals (3M/6M), different start months, 6M vs 3M comparison.
+Data integrity: spot-checks on CPI/WIBOR/salary data, annual averages, future fallbacks.
+Aggregation: yearly totals match monthly sums, salary fields populated correctly.
+Edge cases: 3-year and 35-year loans, high inflation (2022), provision identity, verdict direction logic.

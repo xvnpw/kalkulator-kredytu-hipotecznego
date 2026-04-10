@@ -69,8 +69,9 @@ Pełny harmonogram z kolumnami: WIBOR, stopa łączna, rata nominalna, rata real
 - Okres kredytowania w **miesiącach** (36–420, wyświetlany jako „X lat Y mies.")
 - Typ raty: **rata równa** (annuitet) lub **rata malejąca**
 - Marża banku (%), prowizja początkowa (%)
-- Wybór wskaźnika: WIBOR 3M lub WIBOR 6M
+- Wybór wskaźnika: WIBOR 3M lub WIBOR 6M (domyślnie WIBOR 3M)
 - Wybór danych CPI i źródła wynagrodzeń (jak w kalkulatorze)
+- Domyślne wartości startowe: rok **2010**, miesiąc **styczeń**, okres **360 miesięcy**, marża **2,0%**, prowizja **2,0%**
 
 ### Zdarzenia (do 20)
 Użytkownik dodaje zdarzenia modyfikujące harmonogram:
@@ -121,6 +122,63 @@ Dla miesięcy poza zakresem danych historycznych stosowane są stałe wartości 
 - `DEFAULT_FUTURE_CPI = 3.5%`
 
 W trybie CPI m/m fallback jest automatycznie wyliczany miesięcznie z `DEFAULT_FUTURE_CPI` (annual → monthly).
+
+## Testy
+
+Zestaw testów weryfikuje poprawność obliczeń w `kalkulator-kredytu.js`. Testy nie wymagają żadnych zależności poza Node.js.
+
+### Uruchomienie
+
+```bash
+node tests/run-tests.js
+```
+
+### Jak działają
+
+Plik `tests/run-tests.js` ładuje pliki danych i `kalkulator-kredytu.js` do piaskownicy `vm.createContext()` z zaślepkami DOM/Chart.js, a następnie wykonuje `tests/test-kalkulator.js` wewnątrz tego kontekstu. Dzięki temu testy mają bezpośredni dostęp do wszystkich `const`/`let`/`function` z kodu źródłowego.
+
+### Grupy testowe (38 grup, 92 asercje)
+
+| # | Grupa | Co weryfikuje |
+|---|---|---|
+| 1 | Stopa miesięczna | `calcMonthlyRate()` — poprawność konwersji roczna→miesięczna |
+| 2 | Wzór annuitetowy | `calcRata()` — porównanie z wartościami referencyjnymi |
+| 3 | Zerowa stopa | Edge case: stopa 0% → rata = kwota/n |
+| 4 | Harmonogram pierwsze miesiące | Fixing, deflator m0=1, rata=odsetki+kapitał |
+| 5 | Zbieżność salda | Saldo → 0 po ostatniej racie, suma kapitału = kwota |
+| 6 | Raty malejące | Poprawność schematu malejącego, saldo końcowe |
+| 7 | Deflator skumulowany (roczny) | Akumulacja deflatora przez 12+ miesięcy |
+| 8 | Deflator CPI miesięczny | Tryb m/m — deflator m1 z poprawnego miesiąca |
+| 9 | Sumy nominalne | Odsetki = suma rat − kapitał |
+| 10 | Sumy realne i zysk inflacyjny | Realne < nominalne; dłuższy kredyt → większy zysk inflacyjny |
+| 11 | Dekompozycja czynników | marża\_contrib + wibor\_cpi\_contrib = odsetki realne |
+| 12 | Interwały fixingu WIBOR | 3M co 3 mies., 6M co 6 mies. |
+| 13 | Mapowanie miesiąca startowego | calMonth/rok przy starcie w lipcu |
+| 14 | Agregacja roczna | `aggregateYearly()` — suma roczna = suma miesięczna |
+| 15 | Annualizacja CPI | `annualizeMonthlyCpi()` — round-trip roczne↔miesięczne |
+| 16 | Fallback przyszłości | `DEFAULT_FUTURE_WIBOR/CPI/CPI_MONTHLY` |
+| 17 | Ujemne odsetki realne | Scenariusz 2021 z niską marżą → odsetki realne < 0 |
+| 18 | Malejące: przeliczenie przy fixingu | Część kapitałowa = saldo/remaining |
+| 19 | Spot-check danych | CPI 2022, WIBOR 2010, wynagrodzenia |
+| 20 | Średnie roczne WIBOR | `WIBOR6M_ANNUAL` / `WIBOR3M_ANNUAL` wyliczone |
+| 21 | Cross-check annuitet | Porównanie z ręcznie obliczonymi wartościami |
+| 22 | calcAvgStats | avgSpread = avgWibor − avgCpi |
+| 23 | Deflacja | CPI 2015 < 0 → deflator > 1 |
+| 24 | Edge cases: różne okresy | 3-letni i 35-letni kredyt |
+| 25 | WIBOR 6M vs 3M | Porównanie harmonogramów obu trybów |
+| 26 | Różne miesiące startowe | Styczeń vs październik |
+| 27 | rata = odsetki + kapitał | Każdy wiersz harmonogramu (annuitet i malejące) |
+| 28 | Saldo monotoniczne (annuitet) | Saldo nierosnące w każdym kroku |
+| 29 | Saldo monotoniczne (malejące) | Saldo nierosnące w każdym kroku |
+| 30 | Wysoka inflacja 2022 | Deflator < 0.90 po 12 mies. przy CPI 14.4% |
+| 31 | Prowizja | 2% z kwoty; realna = nominalna (deflator=1 w m0) |
+| 32 | Werdykt — kierunek | 30-letni realnie droższy od 10-letniego przy marży 2% |
+| 33 | Granica roku — deflator | Przejście deflatora na styku lat (CPI roku bieżącego) |
+| 34 | WIBOR 6M w harmonogramie | Wartość z `getWibor()`, brak fixingu między interwałami |
+| 35 | Wskaźnik przystępności | rata / wynagrodzenie w rozsądnym zakresie |
+| 36 | getWynagr fallback | Rok przed zakresem i ekstrapolacja 7% |
+| 37 | getMonthlyDeflatorFactor | Oba tryby CPI — wartości w rozsądnym zakresie |
+| 38 | aggregateYearly — wynagrodzenia | Pole wynagr zgodne z getWynagr() |
 
 ## Ograniczenia
 
