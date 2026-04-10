@@ -6,524 +6,17 @@
 <title>Kalkulator Kredytu – Rzeczywisty Koszt vs Inflacja</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #0d0f14;
-    --surface: #13161d;
-    --surface2: #1a1e28;
-    --border: #252a38;
-    --accent: #c8a96e;
-    --accent2: #7eb8c9;
-    --danger: #e07070;
-    --success: #70c997;
-    --text: #e8eaf0;
-    --muted: #6b7385;
-    --serif: 'DM Serif Display', serif;
-    --mono: 'DM Mono', monospace;
-    --sans: 'Inter', sans-serif;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* Decorative background */
-  body::before {
-    content: '';
-    position: fixed;
-    top: -30%;
-    right: -20%;
-    width: 700px;
-    height: 700px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(200,169,110,0.06) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  body::after {
-    content: '';
-    position: fixed;
-    bottom: -20%;
-    left: -15%;
-    width: 500px;
-    height: 500px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(126,184,201,0.05) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .wrapper {
-    position: relative;
-    z-index: 1;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 40px 24px 80px;
-  }
-
-  header {
-    margin-bottom: 48px;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 32px;
-  }
-
-  header .eyebrow {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 12px;
-  }
-
-  header h1 {
-    font-family: var(--serif);
-    font-size: clamp(28px, 4vw, 48px);
-    line-height: 1.15;
-    color: var(--text);
-    font-weight: 400;
-  }
-
-  header h1 em {
-    color: var(--accent);
-    font-style: italic;
-  }
-
-  header p {
-    margin-top: 12px;
-    color: var(--muted);
-    font-size: 14px;
-    max-width: 560px;
-    line-height: 1.6;
-  }
-
-  /* Layout */
-  .grid {
-    display: grid;
-    grid-template-columns: 340px 1fr;
-    gap: 24px;
-    align-items: start;
-  }
-
-  @media (max-width: 900px) {
-    .grid { grid-template-columns: 1fr; }
-  }
-
-  /* Panels */
-  .panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px;
-  }
-
-  .panel-title {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 20px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  /* Form inputs */
-  .field {
-    margin-bottom: 20px;
-  }
-
-  .field label {
-    display: block;
-    font-size: 12px;
-    color: var(--muted);
-    margin-bottom: 6px;
-    letter-spacing: 0.5px;
-  }
-
-  .field-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-
-  input[type="number"], input[type="range"] {
-    width: 100%;
-  }
-
-  input[type="number"] {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 15px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  input[type="number"]:focus {
-    border-color: var(--accent);
-  }
-
-  input[type="range"] {
-    -webkit-appearance: none;
-    background: var(--border);
-    height: 4px;
-    border-radius: 4px;
-    outline: none;
-    margin-top: 8px;
-  }
-
-  input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
-    background: var(--accent);
-    border-radius: 50%;
-    cursor: pointer;
-    border: 2px solid var(--bg);
-  }
-
-  .unit {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
-    white-space: nowrap;
-    min-width: 32px;
-  }
-
-  .range-val {
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--accent);
-    text-align: right;
-    margin-top: 4px;
-  }
-
-  /* Right column */
-  .right-col {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  /* Summary cards */
-  .cards-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-  }
-
-  @media (max-width: 700px) {
-    .cards-row { grid-template-columns: 1fr 1fr; }
-  }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 18px 16px;
-  }
-
-  .card-label {
-    font-size: 10px;
-    font-family: var(--mono);
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 8px;
-  }
-
-  .card-val {
-    font-family: var(--serif);
-    font-size: 22px;
-    color: var(--text);
-    line-height: 1;
-  }
-
-  .card-sub {
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 4px;
-    font-family: var(--mono);
-  }
-
-  .card.accent { border-color: rgba(200,169,110,0.3); }
-  .card.accent .card-val { color: var(--accent); }
-  .card.blue { border-color: rgba(126,184,201,0.3); }
-  .card.blue .card-val { color: var(--accent2); }
-  .card.green { border-color: rgba(112,201,151,0.3); }
-  .card.green .card-val { color: var(--success); }
-
-  /* Comparison section */
-  .compare-panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px;
-  }
-
-  .compare-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-top: 20px;
-  }
-
-  @media (max-width: 600px) {
-    .compare-grid { grid-template-columns: 1fr; }
-  }
-
-  .compare-col {
-    background: var(--surface2);
-    border-radius: 12px;
-    padding: 20px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .compare-col::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-  }
-
-  .compare-col.col-25::before { background: var(--accent); }
-  .compare-col.col-10::before { background: var(--accent2); }
-
-  .compare-year {
-    font-family: var(--serif);
-    font-size: 36px;
-    color: var(--muted);
-    margin-bottom: 4px;
-  }
-
-  .compare-col.col-25 .compare-year { color: var(--accent); }
-  .compare-col.col-10 .compare-year { color: var(--accent2); }
-
-  .compare-title {
-    font-size: 12px;
-    color: var(--muted);
-    margin-bottom: 16px;
-  }
-
-  .compare-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-  }
-
-  .compare-row:last-child { border-bottom: none; }
-
-  .compare-row .lbl { color: var(--muted); }
-  .compare-row .val {
-    font-family: var(--mono);
-    font-weight: 500;
-  }
-
-  .big-verdict {
-    margin-top: 20px;
-    background: var(--surface2);
-    border-radius: 12px;
-    padding: 20px;
-    border-left: 3px solid var(--success);
-  }
-
-  .big-verdict .v-label {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 10px;
-  }
-
-  .big-verdict p {
-    font-size: 14px;
-    line-height: 1.65;
-    color: #b0b8cc;
-  }
-
-  .big-verdict strong {
-    color: var(--success);
-    font-weight: 600;
-  }
-
-  /* Chart */
-  .chart-panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px;
-  }
-
-  .chart-wrapper {
-    position: relative;
-    height: 220px;
-    margin-top: 20px;
-  }
-
-  canvas {
-    width: 100% !important;
-    height: 100% !important;
-  }
-
-  /* Data source tag */
-  .data-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 4px 12px;
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--muted);
-    margin-top: 8px;
-    margin-right: 6px;
-  }
-
-  .data-tag::before {
-    content: '●';
-    color: var(--accent);
-    font-size: 7px;
-  }
-
-  /* Table */
-  .table-scroll {
-    overflow-x: auto;
-    margin-top: 16px;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 12px;
-    font-family: var(--mono);
-  }
-
-  th {
-    background: var(--surface2);
-    color: var(--muted);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    font-size: 10px;
-    padding: 10px 12px;
-    text-align: right;
-    white-space: nowrap;
-  }
-
-  th:first-child { text-align: left; border-radius: 6px 0 0 6px; }
-  th:last-child { border-radius: 0 6px 6px 0; }
-
-  td {
-    padding: 8px 12px;
-    border-bottom: 1px solid rgba(37,42,56,0.6);
-    text-align: right;
-    color: #9098b0;
-  }
-
-  td:first-child { text-align: left; color: var(--text); }
-  tr:hover td { background: rgba(255,255,255,0.02); }
-
-  .tab-row {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-
-  .tab-btn {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--muted);
-    padding: 7px 16px;
-    font-size: 12px;
-    font-family: var(--mono);
-    cursor: pointer;
-    transition: all 0.2s;
-    letter-spacing: 0.5px;
-  }
-
-  .tab-btn.active {
-    background: rgba(200,169,110,0.15);
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-
-  .note {
-    margin-top: 12px;
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.6;
-    padding: 12px;
-    background: var(--surface2);
-    border-radius: 8px;
-    border-left: 2px solid var(--border);
-  }
-
-  .note strong { color: var(--text); }
-
-  .separator {
-    height: 1px;
-    background: var(--border);
-    margin: 6px 0;
-  }
-
-  .badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.5px;
-  }
-
-  .badge-gold { background: rgba(200,169,110,0.15); color: var(--accent); }
-  .badge-blue { background: rgba(126,184,201,0.15); color: var(--accent2); }
-
-  .highlight-positive { color: var(--success); }
-  .highlight-negative { color: var(--danger); }
-
-  .info-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    padding: 5px 0;
-    color: var(--muted);
-  }
-  .info-row span:last-child {
-    font-family: var(--mono);
-    color: var(--text);
-  }
-</style>
+<link rel="stylesheet" href="kalkulator-kredytu.css">
 </head>
 <body>
 <div class="wrapper">
   <header>
     <div class="eyebrow">Analiza finansowa · Kredyt hipoteczny PLN</div>
     <h1>Rzeczywisty koszt kredytu<br>z uwzględnieniem <em>inflacji</em></h1>
-    <p>Kalkulator porównuje nominalny koszt kredytu z realnym — uwzględniając historyczne notowania WIBOR 6M oraz wskaźnik CPI GUS od 2000 roku. Sprawdź, czy naprawdę lepiej spłacić kredyt wcześniej.</p>
+    <p>Kalkulator porównuje nominalny koszt kredytu z realnym — uwzględniając historyczne notowania WIBOR 3M/6M oraz wskaźnik CPI GUS od 2000 roku. Sprawdź, czy naprawdę lepiej spłacić kredyt wcześniej.</p>
     <div style="margin-top:14px">
-      <span class="data-tag">WIBOR 6M · dane historyczne (notowania miesięczne)</span>
-      <span class="data-tag">Inflacja CPI · GUS Polska (roczna)</span>
+      <span class="data-tag" id="tag_wibor">WIBOR 6M · dane historyczne (notowania miesięczne)</span>
+      <span class="data-tag" id="tag_cpi">Inflacja CPI · GUS Polska (roczna)</span>
       <span class="data-tag">Projekcja 2027+ · średnia wieloletnia</span>
     </div>
   </header>
@@ -582,11 +75,27 @@
         <div class="range-val" id="marza_rv">1,85%</div>
       </div>
 
+      <div class="field">
+        <label>Wskaźnik WIBOR</label>
+        <div class="toggle-group">
+          <button class="toggle-btn active" id="btn_wibor6m" onclick="setWiborMode('6M')">WIBOR 6M</button>
+          <button class="toggle-btn" id="btn_wibor3m" onclick="setWiborMode('3M')">WIBOR 3M</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Dane inflacji CPI</label>
+        <div class="toggle-group">
+          <button class="toggle-btn active" id="btn_cpi_annual" onclick="setCpiMode('annual')">Roczna (GUS)</button>
+          <button class="toggle-btn" id="btn_cpi_monthly" onclick="setCpiMode('monthly')">Miesięczna (m/m)</button>
+        </div>
+      </div>
+
       <div class="separator"></div>
       <div style="margin: 14px 0 10px; font-size: 12px; color: var(--muted); letter-spacing: 0.5px;">Okresy porównywane</div>
 
-      <div style="display:flex; gap: 12px;">
-        <div style="flex:1">
+      <div class="variants-row">
+        <div>
           <div class="field">
             <label>Wariant A – długi (lata)</label>
             <input type="number" id="lat_A" value="30" min="5" max="35" step="1">
@@ -594,7 +103,7 @@
             <div class="range-val" id="lat_A_rv"><span class="badge badge-gold">30 lat</span></div>
           </div>
         </div>
-        <div style="flex:1">
+        <div>
           <div class="field">
             <label>Wariant B – krótki (lata)</label>
             <input type="number" id="lat_B" value="10" min="3" max="30" step="1">
@@ -607,10 +116,10 @@
       <div class="separator"></div>
       <div style="margin-top:14px">
         <div class="panel-title" style="margin-bottom:12px">Oprocentowanie efektywne</div>
-        <div class="info-row"><span>WIBOR 6M (rok startu)</span><span id="wibor_display">—</span></div>
+        <div class="info-row"><span id="wibor_label">WIBOR 6M (rok startu)</span><span id="wibor_display">—</span></div>
         <div class="info-row"><span>Marża banku</span><span id="marza_display">—</span></div>
         <div class="info-row"><span style="color:var(--text)">Oprocentowanie łączne</span><span id="total_rate_display" style="color:var(--accent)">—</span></div>
-        <div class="info-row"><span>Inflacja w roku startu</span><span id="inf_display">—</span></div>
+        <div class="info-row"><span id="cpi_label">Inflacja w roku startu</span><span id="inf_display">—</span></div>
         <div class="info-row"><span>Realna stopa procentowa</span><span id="real_rate_display">—</span></div>
       </div>
     </div>
@@ -640,7 +149,7 @@
       <!-- Chart -->
       <div class="chart-panel">
         <div class="panel-title">Skumulowane przepływy pieniężne</div>
-        <div class="tab-row">
+        <div class="tab-row" id="chart-tab-row">
           <button class="tab-btn active" onclick="switchTab('nominal')">Nominalne</button>
           <button class="tab-btn" onclick="switchTab('real')">Realne (po inflacji)</button>
           <button class="tab-btn" onclick="switchTab('wibor')">WIBOR historia</button>
@@ -711,7 +220,7 @@
         </div>
 
         <div class="note" style="margin-top:14px">
-          <strong>Uproszczony model (punkt 2):</strong> zakłada stałą roczną stopę realną
+          Uproszczony model zakłada stałą roczną stopę realną
           <code>(WIBOR start + marża − inflacja start)</code> przez cały okres i porównuje wynik
           z pełnym harmonogramem (WIBOR refix co 6 miesięcy + miesięczny deflator CPI).
           <div style="margin-top:8px" class="compare-row">
@@ -733,6 +242,160 @@
         </div>
 
         <div class="note" style="margin-top:14px" id="note_extra"></div>
+
+        <!-- Rozklad czynnikow -->
+        <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:20px">
+          <div class="panel-title" style="margin-bottom:14px">Rozkład realnego kosztu wg czynników</div>
+          <div class="compare-grid">
+            <div class="compare-col col-25">
+              <div class="compare-year" id="fA_lata" style="font-size:24px; margin-bottom:2px">—</div>
+              <div class="compare-title">lat · Wariant A</div>
+              <div class="compare-row">
+                <span class="lbl">Realne odsetki łącznie</span>
+                <span class="val" id="fA_total">—</span>
+              </div>
+              <div class="compare-row">
+                <span class="lbl">↳ wkład marży banku</span>
+                <span class="val highlight-negative" id="fA_marza">—</span>
+              </div>
+              <div class="compare-row">
+                <span class="lbl">↳ efekt spreadu WIBOR−CPI</span>
+                <span class="val" id="fA_spread">—</span>
+              </div>
+              <div style="margin:10px 0 4px; font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase">Średnie w okresie kredytu</div>
+              <div class="compare-row">
+                <span class="lbl">WIBOR (śr.)</span>
+                <span class="val" id="fA_avgWibor">—</span>
+              </div>
+              <div class="compare-row">
+                <span class="lbl">CPI inflacja (śr.)</span>
+                <span class="val" id="fA_avgCpi">—</span>
+              </div>
+              <div class="compare-row">
+                <span class="lbl">Spread WIBOR−CPI (śr.)</span>
+                <span class="val" id="fA_avgSpread">—</span>
+              </div>
+            </div>
+            <div class="compare-col col-10">
+              <div class="compare-year" id="fB_lata" style="font-size:24px; margin-bottom:2px">—</div>
+              <div class="compare-title">lat · Wariant B</div>
+              <div class="compare-row">
+                <span class="lbl">Realne odsetki łącznie</span>
+                <span class="val" id="fB_total">—</span>
+              </div>
+              <div class="compare-row">
+                <span class="lbl">↳ wkład marży banku</span>
+                <span class="val highlight-negative" id="fB_marza">—</span>
+              </div>
+              <div class="compare-row">
+                <span class="lbl">↳ efekt spreadu WIBOR−CPI</span>
+                <span class="val" id="fB_spread">—</span>
+              </div>
+              <div style="margin:10px 0 4px; font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase">Średnie w okresie kredytu</div>
+              <div class="compare-row">
+                <span class="lbl">WIBOR (śr.)</span>
+                <span class="val" id="fB_avgWibor">—</span>
+              </div>
+              <div class="compare-row">
+                <span class="lbl">CPI inflacja (śr.)</span>
+                <span class="val" id="fB_avgCpi">—</span>
+              </div>
+              <div class="compare-row">
+                <span class="lbl">Spread WIBOR−CPI (śr.)</span>
+                <span class="val" id="fB_avgSpread">—</span>
+              </div>
+            </div>
+          </div>
+          <div class="compare-row" style="margin-top:12px; padding:10px 0; border-bottom:none">
+            <span class="lbl">Efekt wydłużenia (A − B) · dodatkowy realny koszt</span>
+            <span class="val" id="f_duration_effect">—</span>
+          </div>
+          <div class="note" style="margin-top:10px">
+            <strong>Metodologia rozkładu:</strong> Realne odsetki = <em>wkład marży</em> + <em>efekt spreadu WIBOR−CPI</em>.
+            Wkład marży = koszt realny (z marżą) − koszt realny przy marży 0%.
+            Efekt spreadu = koszt realny przy marży 0% — odzwierciedla wyłącznie relację WIBOR do inflacji.
+            Ujemny efekt spreadu oznacza, że inflacja „pracowała" na korzyść kredytobiorcy.
+            Efekt wydłużenia = różnica realnych odsetek między wariantem A a B.
+          </div>
+        </div>
+      </div>
+
+      <!-- Metodyka -->
+      <div class="chart-panel explainer-panel">
+        <div class="panel-title" style="margin-bottom:12px">Jak liczymy? (wzory i przykład krok po kroku)</div>
+        <button type="button" class="explainer-toggle" id="metodyka_toggle_btn" onclick="toggleMethodology()" aria-expanded="false" aria-controls="metodyka_body">
+          Pokaż metodykę i wzory
+        </button>
+        <div class="explainer-body" id="metodyka_body" hidden>
+          <p class="explainer-lead">
+            Ten panel pokazuje obliczenia prostym językiem. Przykład jest liczony na Twoich bieżących ustawieniach dla
+            <strong>wariantu A</strong> (pierwsze miesiące harmonogramu).
+          </p>
+
+          <div class="explainer-block">
+            <div class="explainer-title">Krok 1: Oprocentowanie nominalne</div>
+            <p>Bank liczy odsetki od stopy: WIBOR + marża.</p>
+            <div class="formula-line"><code>stopa_nominalna = WIBOR + marża</code></div>
+            <div class="explainer-kv">
+              <div class="explainer-kv-row"><span>WIBOR start</span><strong id="exp_wibor">—</strong></div>
+              <div class="explainer-kv-row"><span>Marża banku</span><strong id="exp_marza">—</strong></div>
+              <div class="explainer-kv-row"><span>Stopa nominalna roczna</span><strong id="exp_stopa_nom">—</strong></div>
+            </div>
+          </div>
+
+          <div class="explainer-block">
+            <div class="explainer-title">Krok 2: Rata miesięczna (annuitet)</div>
+            <p>Rata jest stała między fixingami WIBOR i zależy głównie od kwoty, stopy miesięcznej i liczby rat.</p>
+            <div class="formula-line"><code>rata = K × r × (1 + r)^n / ((1 + r)^n − 1)</code></div>
+            <div class="explainer-kv">
+              <div class="explainer-kv-row"><span>K (kwota kredytu)</span><strong id="exp_kwota">—</strong></div>
+              <div class="explainer-kv-row"><span>r (miesięczna stopa)</span><strong id="exp_r_monthly">—</strong></div>
+              <div class="explainer-kv-row"><span>n (wariant A / B)</span><strong><span id="exp_n_a">—</span> / <span id="exp_n_b">—</span></strong></div>
+              <div class="explainer-kv-row"><span>(1 + r)^n dla wariantu A</span><strong id="exp_pow_n">—</strong></div>
+              <div class="explainer-kv-row"><span>Rata 1 (wariant A / B)</span><strong><span id="exp_rata_a1">—</span> / <span id="exp_rata_b1">—</span></strong></div>
+            </div>
+          </div>
+
+          <div class="explainer-block">
+            <div class="explainer-title">Krok 3: Co jest w pierwszej racie?</div>
+            <p>Każda rata to suma odsetek i kapitału. Na początku odsetki są największe.</p>
+            <div class="formula-line"><code>odsetki = saldo × stopa_miesięczna, kapitał = rata − odsetki</code></div>
+            <div class="explainer-kv">
+              <div class="explainer-kv-row"><span>Odsetki w 1. racie (A)</span><strong id="exp_odsetki_1">—</strong></div>
+              <div class="explainer-kv-row"><span>Kapitał w 1. racie (A)</span><strong id="exp_kapital_1">—</strong></div>
+              <div class="explainer-kv-row"><span>Saldo po 1. racie (A)</span><strong id="exp_saldo_po_1">—</strong></div>
+            </div>
+          </div>
+
+          <div class="explainer-block">
+            <div class="explainer-title">Krok 4: Jak inflacja zmienia „realny” koszt?</div>
+            <p>Najpierw liczymy ratę nominalną, a potem przeliczamy ją na wartość pieniądza z dnia startu kredytu.</p>
+            <div class="formula-line"><code id="exp_deflator_formula">—</code></div>
+            <div class="formula-line"><code>rata_realna_t = rata_nominalna_t × skumulowany_deflator_t</code></div>
+            <div class="explainer-kv">
+              <div class="explainer-kv-row"><span>Tryb CPI</span><strong id="exp_cpi_mode">—</strong></div>
+              <div class="explainer-kv-row"><span id="exp_cpi_label">CPI użyte do deflatora</span><strong id="exp_cpi_value">—</strong></div>
+              <div class="explainer-kv-row"><span>Deflator dla 1. miesiąca</span><strong id="exp_deflator_1">—</strong></div>
+              <div class="explainer-kv-row"><span>Rata nominalna (2. miesiąc, A)</span><strong id="exp_rata_nom_2">—</strong></div>
+              <div class="explainer-kv-row"><span>Rata realna (2. miesiąc, A)</span><strong id="exp_rata_real_2">—</strong></div>
+            </div>
+          </div>
+
+          <div class="explainer-block">
+            <div class="explainer-title">Krok 5: Porównanie wariantów A i B</div>
+            <p>Oba warianty liczymy tak samo. Różnica wynika głównie z liczby rat i czasu działania inflacji.</p>
+            <div class="formula-line"><code>realne_odsetki = suma_rat_realnych − kwota_kredytu</code></div>
+            <div class="explainer-kv">
+              <div class="explainer-kv-row"><span>Suma rat realnych (A / B)</span><strong><span id="exp_total_real_a">—</span> / <span id="exp_total_real_b">—</span></strong></div>
+              <div class="explainer-kv-row"><span>Realne odsetki (A / B)</span><strong><span id="exp_odsetki_real_a">—</span> / <span id="exp_odsetki_real_b">—</span></strong></div>
+            </div>
+          </div>
+
+          <p class="explainer-lead">
+            W skrócie: <strong>nominalnie</strong> widzisz faktycznie płacone kwoty, a <strong>realnie</strong> te same kwoty
+            po uwzględnieniu inflacji. Dlatego długi okres często wygląda taniej realnie niż nominalnie.
+          </p>
+        </div>
       </div>
 
       <!-- Table -->
@@ -767,14 +430,22 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="data-wibor6m.js"></script>
+<script src="data-wibor3m.js"></script>
+<script src="data-cpi-annual.js"></script>
+<script src="data-cpi-monthly.js"></script>
 <script>
 // ==========================================
-// DANE HISTORYCZNE
+// STALE I DANE POMOCNICZE
 // ==========================================
 
-// Przeciętne miesięczne wynagrodzenie brutto w sektorze przedsiębiorstw (PLN)
-// Źródło: GUS – oficjalne komunikaty Prezesa GUS, dane roczne
-// Dla lat przyszłych: projekcja wg trendu wzrostowego ~8% r/r
+const DEFAULT_FUTURE_WIBOR = 4.5;
+const DEFAULT_FUTURE_CPI   = 3.5;
+const DEFAULT_FUTURE_CPI_MONTHLY = (Math.pow(1 + DEFAULT_FUTURE_CPI / 100, 1 / 12) - 1) * 100;
+const EPSILON = 1e-12;
+
+// Przecietne miesieczne wynagrodzenie brutto w sektorze przedsiebiorstw (PLN)
+// Zrodlo: GUS - oficjalne komunikaty Prezesa GUS, dane roczne
 const WYNAGRODZENIA = {
   2000: 1893, 2001: 2061, 2002: 2133, 2003: 2201, 2004: 2289,
   2005: 2380, 2006: 2477, 2007: 2691, 2008: 3024, 2009: 3103,
@@ -783,10 +454,6 @@ const WYNAGRODZENIA = {
   2020: 5411, 2021: 5901, 2022: 6736, 2023: 7540, 2024: 8182,
   2025: 8935
 };
-// Współczynnik IT vs sektor przedsiębiorstw (przybliżony)
-// GUS nie podaje historycznych danych IT od 2000 r. jako osobnej serii ciągłej.
-// Szacujemy na podstawie Sedlak&Sedlak / raportów branżowych: IT ≈ 1.5–2.0x średniej krajowej.
-// Stosujemy mnożnik zmienny w czasie (IT rosło szybciej w latach 2010–2020).
 const IT_MULTIPLIER = {
   2000: 1.50, 2001: 1.52, 2002: 1.53, 2003: 1.55, 2004: 1.57,
   2005: 1.59, 2006: 1.62, 2007: 1.65, 2008: 1.68, 2009: 1.70,
@@ -801,104 +468,65 @@ function getWynagr(year) {
     Math.round(WYNAGRODZENIA[2025] * Math.pow(1.07, year - 2025));
 }
 function getITWynagr(year) {
-  const mult = IT_MULTIPLIER[year] || 1.93;
-  return Math.round(getWynagr(year) * mult);
+  return Math.round(getWynagr(year) * (IT_MULTIPLIER[year] || 1.93));
 }
 
-// WIBOR 6M – historyczne notowania (zamknięcie miesiąca)
-// Źródło: dane rynkowe PLN PLN 6M (plopln6m_m.csv)
-// H1 = zamknięcie maja danego roku, H2 = zamknięcie listopada
-// Dla 2026: tylko H1 (zamknięcie kwietnia — ostatnie dostępne dane); H2 brak → projekcja DEFAULT_FUTURE_WIBOR
-const WIBOR6M_SEMI = {
-  "1997-H1": 22.80, "1997-H2": 25.43,
-  "1998-H1": 22.12, "1998-H2": 16.04,
-  "1999-H1": 13.10, "1999-H2": 18.26,
-  "2000-H1": 18.62, "2000-H2": 19.81,
-  "2001-H1": 16.53, "2001-H2": 12.00,
-  "2002-H1":  9.60, "2002-H2":  6.52,
-  "2003-H1":  5.19, "2003-H2":  6.02,
-  "2004-H1":  6.34, "2004-H2":  6.84,
-  "2005-H1":  5.37, "2005-H2":  4.69,
-  "2006-H1":  4.22, "2006-H2":  4.33,
-  "2007-H1":  4.62, "2007-H2":  5.84,
-  "2008-H1":  6.62, "2008-H2":  6.64,
-  "2009-H1":  4.71, "2009-H2":  4.30,
-  "2010-H1":  4.01, "2010-H2":  4.08,
-  "2011-H1":  4.61, "2011-H2":  4.97,
-  "2012-H1":  5.13, "2012-H2":  4.46,
-  "2013-H1":  2.66, "2013-H2":  2.70,
-  "2014-H1":  2.74, "2014-H2":  2.05,
-  "2015-H1":  1.76, "2015-H2":  1.80,
-  "2016-H1":  1.74, "2016-H2":  1.81,
-  "2017-H1":  1.81, "2017-H2":  1.81,
-  "2018-H1":  1.78, "2018-H2":  1.79,
-  "2019-H1":  1.79, "2019-H2":  1.79,
-  "2020-H1":  0.29, "2020-H2":  0.25,
-  "2021-H1":  0.25, "2021-H2":  2.38,
-  "2022-H1":  6.79, "2022-H2":  7.46,
-  "2023-H1":  6.95, "2023-H2":  5.83,
-  "2024-H1":  5.86, "2024-H2":  5.79,
-  "2025-H1":  5.03, "2025-H2":  4.08,
-  "2026-H1":  3.88
-};
-
-// Pomocnicze: roczna średnia (H1+H2)/2 do wyświetlenia w sidebarze i na wykresie
-const WIBOR6M = {};
-for (let y = 1997; y <= 2026; y++) {
-  const h1 = WIBOR6M_SEMI[`${y}-H1`];
-  const h2 = WIBOR6M_SEMI[`${y}-H2`];
-  if (h1 !== undefined && h2 !== undefined) WIBOR6M[y] = +((h1 + h2) / 2).toFixed(2);
-  else if (h1 !== undefined) WIBOR6M[y] = h1;
-}
-const WIBOR_YEARS = Object.keys(WIBOR6M).map(Number).sort((a,b) => a - b);
-const MIN_WIBOR_YEAR = WIBOR_YEARS[0];
-const LAST_HIST_WIBOR_YEAR = WIBOR_YEARS[WIBOR_YEARS.length - 1];
-
-// Zwraca WIBOR 6M na dany moment (rok + półrocze 1 lub 2)
-// Dane historyczne z notowań rynkowych
-// Kredyt zaciagniety w MAJU danego roku.
-function getWiborSemi(year, half) {
-  const key = `${year}-H${half}`;
-  return WIBOR6M_SEMI[key] !== undefined ? WIBOR6M_SEMI[key] : DEFAULT_FUTURE_WIBOR;
+// ==========================================
+// ROCZNE SREDNIE WIBOR (do wykresu historycznego)
+// ==========================================
+const WIBOR6M_ANNUAL = {};
+const WIBOR3M_ANNUAL = {};
+for (let y = 1995; y <= 2026; y++) {
+  const v6 = [], v3 = [];
+  for (let m = 1; m <= 12; m++) {
+    const k = y + '-' + String(m).padStart(2, '0');
+    if (WIBOR6M_MONTHLY[k] !== undefined) v6.push(WIBOR6M_MONTHLY[k]);
+    if (WIBOR3M_MONTHLY[k] !== undefined) v3.push(WIBOR3M_MONTHLY[k]);
+  }
+  if (v6.length) WIBOR6M_ANNUAL[y] = +(v6.reduce((a,b)=>a+b)/v6.length).toFixed(2);
+  if (v3.length) WIBOR3M_ANNUAL[y] = +(v3.reduce((a,b)=>a+b)/v3.length).toFixed(2);
 }
 
-// Inflacja CPI Polska – roczna (GUS)
-// Źródło: GUS – Roczne wskaźniki cen towarów i usług konsumpcyjnych od 1950 roku
-// Wartość = wskaźnik − 100 (np. wskaźnik 110.1 → inflacja 10.1%)
-const CPI = {
-  1997: 14.9, 1998: 11.8, 1999: 7.3,
-  2000: 10.1, 2001: 5.5,  2002: 1.9,  2003: 0.8,  2004: 3.5,
-  2005: 2.1,  2006: 1.0,  2007: 2.5,  2008: 4.2,  2009: 3.5,
-  2010: 2.6,  2011: 4.3,  2012: 3.7,  2013: 0.9,  2014: 0.0,
-  2015: -0.9, 2016: -0.6, 2017: 2.0,  2018: 1.6,  2019: 2.3,
-  2020: 3.4,  2021: 5.1,  2022: 14.4, 2023: 11.4, 2024: 3.6,
-  2025: 3.6
-};
-const CPI_YEARS = Object.keys(CPI).map(Number).sort((a,b) => a - b);
-const MIN_CPI_YEAR = CPI_YEARS[0];
-const LAST_HIST_CPI_YEAR = CPI_YEARS[CPI_YEARS.length - 1];
-// UI i seria wynagrodzeń są przygotowane od 2000 r.
-const HIST_MIN_YEAR = Math.max(2000, Math.max(MIN_WIBOR_YEAR, MIN_CPI_YEAR));
+const HIST_MIN_YEAR = 2000;
+const LAST_HIST_WIBOR_YEAR = 2026;
+const LAST_HIST_CPI_ANNUAL = Math.max(...Object.keys(CPI_ANNUAL).map(Number));
+const LAST_HIST_CPI_MONTHLY = 2026;
 
-// Projekcja na lata przyszłe (po ostatnich danych historycznych)
-const DEFAULT_FUTURE_WIBOR = 4.5;
-const DEFAULT_FUTURE_CPI   = 3.5;
-const EPSILON = 1e-12;
+// ==========================================
+// FUNKCJE DANYCH
+// ==========================================
 
-function getWibor(year) {
-  return WIBOR6M[year] !== undefined ? WIBOR6M[year] : DEFAULT_FUTURE_WIBOR;
-}
-function getCpi(year) {
-  return CPI[year] !== undefined ? CPI[year] : DEFAULT_FUTURE_CPI;
+function getWibor(year, month, mode) {
+  const key = year + '-' + String(month).padStart(2, '0');
+  const val = mode === '3M' ? WIBOR3M_MONTHLY[key] : WIBOR6M_MONTHLY[key];
+  return val !== undefined ? val : DEFAULT_FUTURE_WIBOR;
 }
 
-function getHalfForMonth(monthOneBased) {
-  return monthOneBased <= 6 ? 1 : 2;
+function getCpiAnnual(year) {
+  return CPI_ANNUAL[year] !== undefined ? CPI_ANNUAL[year] : DEFAULT_FUTURE_CPI;
 }
 
-function normalizeStartMonth(value) {
-  const month = parseInt(value);
-  return Number.isFinite(month) && month >= 1 && month <= 12 ? month : 5;
+function getCpiMonthly(year, month) {
+  const key = year + '-' + String(month).padStart(2, '0');
+  return CPI_MONTHLY[key] !== undefined ? CPI_MONTHLY[key] : DEFAULT_FUTURE_CPI_MONTHLY;
+}
+
+function annualizeMonthlyCpi(cpiMonthlyPct) {
+  return (Math.pow(1 + cpiMonthlyPct / 100, 12) - 1) * 100;
+}
+
+function getMonthlyDeflatorFactor(year, month, cpiMode) {
+  if (cpiMode === 'monthly') {
+    return 1 / (1 + getCpiMonthly(year, month) / 100);
+  }
+  return 1 / Math.pow(1 + getCpiAnnual(year) / 100, 1 / 12);
+}
+
+function getCpiComparableAnnual(year, month, cpiMode) {
+  if (cpiMode === 'monthly') {
+    return annualizeMonthlyCpi(getCpiMonthly(year, month));
+  }
+  return getCpiAnnual(year);
 }
 
 // ==========================================
@@ -920,105 +548,80 @@ function calcSimpleRealTotal(kwota, latKredytu, nominalStopaPct, cpiPct) {
   const realMonthlyRate = (nominalStopaPct - cpiPct) / 100 / 12;
   const rataRealSimple = calcRata(kwota, realMonthlyRate, nMonths);
   const totalRealSimple = rataRealSimple * nMonths;
-  return {
-    rataRealSimple,
-    totalRealSimple,
-    odsetkiRealSimple: totalRealSimple - kwota
-  };
+  return { rataRealSimple, totalRealSimple, odsetkiRealSimple: totalRealSimple - kwota };
 }
 
-// Oblicz pelny harmonogram z historycznym WIBOR 6M
-// WIBOR 6M z danych rynkowych (notowania zamknięcia miesięcznego)
-// Kredyt zaciagniety w wybranym miesiacu.
-// Fixing WIBOR 6M zawsze w MAJ i LISTOPAD:
-//   – maj  roku Y  -> WIBOR = notowanie zamknięcia maja Y
-//   – lis  roku Y  -> WIBOR = notowanie zamknięcia listopada Y
-// Deflator: miesiac 0 (miesiac startu) = 1.0 -> rata realna[0] == rata nominalna[0]
-function calcHarmonogram(kwota, rokStart, startMonth, latKredytu, marza) {
+// Srednie WIBOR i CPI dla okresu kredytowania (do analizy czynnikow)
+function calcAvgStats(rows) {
+  var sumWibor = 0, sumCpi = 0;
+  rows.forEach(function(r) {
+    sumWibor += r.wibor;
+    sumCpi += getCpiComparableAnnual(r.rok, r.calMonth + 1, cpiMode);
+  });
+  var n = rows.length;
+  return { avgWibor: sumWibor / n, avgCpi: sumCpi / n, avgSpread: (sumWibor - sumCpi) / n };
+}
+
+// Pelny harmonogram - fixing WIBOR co N miesiecy od dnia startu kredytu.
+// Brak stalych dat fixingowych (np. maj/listopad) - termin wynika wylacznie
+// z miesiaca startowego i interwalu (3M lub 6M).
+function calcHarmonogram(kwota, rokStart, startMonth, latKredytu, marza, wiborMode, cpiMode) {
   const nMonths = latKredytu * 12;
+  const fixInterval = wiborMode === '3M' ? 3 : 6;
+  const MIESIAC_NAZWY = ['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paz','lis','gru'];
+
   let saldo = kwota;
   let rows = [];
   let cumulativeDeflator = 1.0;
-
-  const START_MONTH_IDX = startMonth - 1;
-  const MIESIAC_NAZWY = ['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paz','lis','gru'];
-
-  let currentRata = 0;
-  let currentWibor = 0;
-  let currentStopa = 0;
+  let currentRata = 0, currentWibor = 0, currentStopa = 0;
 
   for (let m = 0; m < nMonths; m++) {
-    const calMonthAbs = START_MONTH_IDX + m;
+    const calMonthAbs = (startMonth - 1) + m;
     const calYear  = rokStart + Math.floor(calMonthAbs / 12);
     const calMonth = calMonthAbs % 12;
 
-    // Fixing w maju (calMonth==4) i listopadzie (calMonth==10)
-    const isFix = (m === 0) || (calMonth === 4) || (calMonth === 10);
+    const isFix = (m % fixInterval === 0);
     if (isFix) {
-      // Gdy występuje fixing (miesiąc startu, maj, listopad), półrocze wybieramy wg kalendarza: I–VI => H1, VII–XII => H2.
-      const fixHalf = getHalfForMonth(calMonth + 1);
-      currentWibor = getWiborSemi(calYear, fixHalf);
+      currentWibor = getWibor(calYear, calMonth + 1, wiborMode);
       currentStopa = currentWibor + marza;
-      const rMonthly = calcMonthlyRate(currentWibor, marza);
-      const remainingMonths = nMonths - m;
-      currentRata = calcRata(saldo, rMonthly, remainingMonths);
+      currentRata  = calcRata(saldo, calcMonthlyRate(currentWibor, marza), nMonths - m);
     }
 
-    const rMonthlyForInterest = calcMonthlyRate(currentWibor, marza);
-    const odsetki = saldo * rMonthlyForInterest;
+    const odsetki = saldo * calcMonthlyRate(currentWibor, marza);
     const kapital = Math.min(currentRata - odsetki, saldo);
     saldo = Math.max(0, saldo - kapital);
 
-    // Rata realna: deflator=1.0 w miesiacu 0 -> rata realna = nominalna
     const rataReal = currentRata * cumulativeDeflator;
 
     rows.push({
-      rok: calYear,
-      calMonth,
+      rok: calYear, calMonth,
       miesiacNazwa: MIESIAC_NAZWY[calMonth],
       dataLabel: MIESIAC_NAZWY[calMonth] + ' ' + calYear,
-      miesiac: m + 1,
-      isFix,
-      wibor: currentWibor,
-      stopa: currentStopa,
-      rata: currentRata,
-      odsetki,
-      kapital,
-      saldo,
-      deflator: cumulativeDeflator,
-      rataReal
+      miesiac: m + 1, isFix,
+      wibor: currentWibor, stopa: currentStopa,
+      rata: currentRata, odsetki, kapital, saldo,
+      deflator: cumulativeDeflator, rataReal
     });
 
-    // Aktualizuj deflator NA KONIEC miesiaca (dla nastepnego)
-    const annualCpi = getCpi(calYear) / 100;
-    const monthlyDeflator = 1 / Math.pow(1 + annualCpi, 1 / 12);
-    cumulativeDeflator *= monthlyDeflator;
+    const monthlyDeflatorFactor = getMonthlyDeflatorFactor(calYear, calMonth + 1, cpiMode);
+    cumulativeDeflator *= monthlyDeflatorFactor;
   }
   return rows;
 }
 
-function aggregateYearly(rows, kwota) {
+function aggregateYearly(rows) {
   const byYear = {};
   rows.forEach(r => {
     if (!byYear[r.rok]) byYear[r.rok] = {
-      rok: r.rok,
-      sumRata: 0, sumOdsetki: 0, sumKapital: 0,
-      sumRataReal: 0, saldo: 0, months: 0,
-      sumWibor: 0, sumStopa: 0, // do obliczenia średniej ważonej
-      wynagr: getWynagr(r.rok),
-      wynagrIT: getITWynagr(r.rok)
+      rok: r.rok, sumRata: 0, sumOdsetki: 0, sumKapital: 0,
+      sumRataReal: 0, saldo: 0, months: 0, sumWibor: 0, sumStopa: 0,
+      wynagr: getWynagr(r.rok), wynagrIT: getITWynagr(r.rok)
     };
     const y = byYear[r.rok];
-    y.sumRata     += r.rata;
-    y.sumOdsetki  += r.odsetki;
-    y.sumKapital  += r.kapital;
-    y.sumRataReal += r.rataReal;
-    y.saldo        = r.saldo;
-    y.months++;
-    y.sumWibor += r.wibor;
-    y.sumStopa += r.stopa;
+    y.sumRata += r.rata; y.sumOdsetki += r.odsetki; y.sumKapital += r.kapital;
+    y.sumRataReal += r.rataReal; y.saldo = r.saldo; y.months++;
+    y.sumWibor += r.wibor; y.sumStopa += r.stopa;
   });
-  // oblicz średnie roczne (ważone liczbą miesięcy w roku)
   Object.values(byYear).forEach(y => {
     y.wibor = +(y.sumWibor / y.months).toFixed(2);
     y.stopa = +(y.sumStopa / y.months).toFixed(2);
@@ -1027,408 +630,487 @@ function aggregateYearly(rows, kwota) {
 }
 
 // ==========================================
-// CHART STATE
+// STAN TRYBU I PRZELACZNIKI
 // ==========================================
 let myChart = null;
 let currentTab = 'nominal';
 let currentData = {};
+let wiborMode = '6M';
+let cpiMode = 'annual';
+let methodologyOpen = false;
+
+function setWiborMode(mode) {
+  wiborMode = mode;
+  document.getElementById('btn_wibor6m').classList.toggle('active', mode === '6M');
+  document.getElementById('btn_wibor3m').classList.toggle('active', mode === '3M');
+  calculate();
+}
+
+function setCpiMode(mode) {
+  cpiMode = mode;
+  document.getElementById('btn_cpi_annual').classList.toggle('active', mode === 'annual');
+  document.getElementById('btn_cpi_monthly').classList.toggle('active', mode === 'monthly');
+  calculate();
+}
 
 function switchTab(tab) {
   currentTab = tab;
-  document.querySelectorAll('.tab-btn').forEach((b, i) => {
-    if (['nominal','real','wibor'][i] !== undefined) b.classList.toggle('active', ['nominal','real','wibor'][i] === tab);
+  const tabs = ['nominal', 'real', 'wibor', 'affordability'];
+  document.querySelectorAll('#chart-tab-row .tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', tabs[i] === tab);
   });
-  // Re-assign buttons by data attribute or order... simpler: use onclick directly
   renderChart();
 }
 
 function switchTableTab(id) {
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  ['tA','tB'].forEach(t => {
+    document.getElementById(t).classList.toggle('active', t === id);
+  });
+  ['tbtn_A','tbtn_B'].forEach(b => {
+    document.getElementById(b).classList.toggle('active', b === (id === 'tA' ? 'tbtn_A' : 'tbtn_B'));
+  });
+}
+
+function toggleMethodology() {
+  methodologyOpen = !methodologyOpen;
+  const body = document.getElementById('metodyka_body');
+  const btn = document.getElementById('metodyka_toggle_btn');
+  if (!body || !btn) return;
+  body.hidden = !methodologyOpen;
+  btn.setAttribute('aria-expanded', methodologyOpen ? 'true' : 'false');
+  btn.textContent = methodologyOpen ? 'Ukryj metodykę i wzory' : 'Pokaż metodykę i wzory';
+}
+
+function setMethodValue(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function updateMethodologyPanel(data) {
+  const rowA0 = data.rowsA[0];
+  const rowA1 = data.rowsA[1] || data.rowsA[0];
+  const rowB0 = data.rowsB[0];
+
+  const nA = data.latA * 12;
+  const nB = data.latB * 12;
+  const rMonthly = calcMonthlyRate(rowA0.wibor, data.marza);
+  const powN = Math.pow(1 + rMonthly, nA);
+
+  const odsetki1 = data.kwota * rMonthly;
+  const kapital1 = rowA0.rata - odsetki1;
+  const saldoPo1 = data.kwota - kapital1;
+
+  const deflator1 = getMonthlyDeflatorFactor(data.rokStart, data.startMonth, data.cpiMode);
+  const cpiLabel = data.cpiMode === 'monthly' ? 'CPI m/m (miesiac startu)' : 'CPI roczne (rok startu)';
+  const cpiValue = data.cpiMode === 'monthly'
+    ? fmtPct(data.cpiStartRaw) + ' (≈ ' + fmtPct(data.cpiStartComparable) + ' r/r)'
+    : fmtPct(data.cpiStartRaw);
+  const cpiModeLabel = data.cpiMode === 'monthly' ? 'Miesieczny (m/m)' : 'Roczny';
+  const deflatorFormula = data.cpiMode === 'monthly'
+    ? 'deflator_mies = 1 / (1 + CPI_m/m)'
+    : 'deflator_mies = 1 / (1 + CPI_roczna)^(1/12)';
+
+  setMethodValue('exp_wibor', fmtPct(data.wiborStart));
+  setMethodValue('exp_marza', fmtPct(data.marza));
+  setMethodValue('exp_stopa_nom', fmtPct(rowA0.stopa));
+  setMethodValue('exp_kwota', fmtPLN(data.kwota));
+  setMethodValue('exp_r_monthly', fmt(rMonthly * 100, 4) + '%');
+  setMethodValue('exp_n_a', String(nA));
+  setMethodValue('exp_n_b', String(nB));
+  setMethodValue('exp_pow_n', fmt(powN, 4));
+  setMethodValue('exp_rata_a1', fmtPLN(rowA0.rata));
+  setMethodValue('exp_rata_b1', fmtPLN(rowB0.rata));
+  setMethodValue('exp_odsetki_1', fmtPLN(odsetki1));
+  setMethodValue('exp_kapital_1', fmtPLN(kapital1));
+  setMethodValue('exp_saldo_po_1', fmtPLN(saldoPo1));
+  setMethodValue('exp_cpi_mode', cpiModeLabel);
+  setMethodValue('exp_cpi_label', cpiLabel);
+  setMethodValue('exp_cpi_value', cpiValue);
+  setMethodValue('exp_deflator_formula', deflatorFormula);
+  setMethodValue('exp_deflator_1', fmt(deflator1, 6));
+  setMethodValue('exp_rata_nom_2', fmtPLN(rowA1.rata));
+  setMethodValue('exp_rata_real_2', fmtPLN(rowA1.rataReal));
+  setMethodValue('exp_total_real_a', fmtPLN(data.totRealA));
+  setMethodValue('exp_total_real_b', fmtPLN(data.totRealB));
+  setMethodValue('exp_odsetki_real_a', fmtPLN(data.odsetRealA));
+  setMethodValue('exp_odsetki_real_b', fmtPLN(data.odsetRealB));
 }
 
 function syncHistoricalRanges() {
-  const minYear = HIST_MIN_YEAR;
-  const maxYear = LAST_HIST_WIBOR_YEAR;
   const rokInput = document.getElementById('rok_start');
   const rokRange = document.getElementById('rok_r');
-  rokInput.min = minYear;
-  rokInput.max = maxYear;
-  rokRange.min = minYear;
-  rokRange.max = maxYear;
-  if (parseInt(rokInput.value) > maxYear) {
-    rokInput.value = maxYear;
-    rokRange.value = maxYear;
-    document.getElementById('rok_rv').innerHTML = String(maxYear);
+  rokInput.min = HIST_MIN_YEAR; rokInput.max = LAST_HIST_WIBOR_YEAR;
+  rokRange.min = HIST_MIN_YEAR; rokRange.max = LAST_HIST_WIBOR_YEAR;
+  if (parseInt(rokInput.value) > LAST_HIST_WIBOR_YEAR) {
+    rokInput.value = rokRange.value = LAST_HIST_WIBOR_YEAR;
+    document.getElementById('rok_rv').innerHTML = String(LAST_HIST_WIBOR_YEAR);
   }
 }
 
 // ==========================================
 // FORMAT
 // ==========================================
-function fmt(n, dec=0) {
+function fmt(n, dec) {
+  if (dec === undefined) dec = 0;
   return n.toLocaleString('pl-PL', { minimumFractionDigits: dec, maximumFractionDigits: dec });
 }
 function fmtPLN(n) { return fmt(Math.round(n)) + ' PLN'; }
 function fmtPct(n) { return fmt(n, 2) + '%'; }
 
 // ==========================================
-// RENDER
+// GLOWNA KALKULACJA
 // ==========================================
 function calculate() {
-  const kwota    = parseFloat(document.getElementById('kwota').value)    || 350000;
-  const rokStart = parseInt(document.getElementById('rok_start').value)  || 2021;
-  const startMonthInput = document.getElementById('miesiac_start');
-  const startMonth = normalizeStartMonth(startMonthInput.value);
-  startMonthInput.value = String(startMonth);
-  const marza    = parseFloat(document.getElementById('marza').value)    || 1.85;
-  const latA     = parseInt(document.getElementById('lat_A').value)      || 30;
-  const latB     = parseInt(document.getElementById('lat_B').value)      || 10;
+  const kwota      = parseFloat(document.getElementById('kwota').value)    || 350000;
+  const rokStart   = parseInt(document.getElementById('rok_start').value)  || 2021;
+  const startMonth = parseInt(document.getElementById('miesiac_start').value) || 5;
+  const marza      = parseFloat(document.getElementById('marza').value)    || 1.85;
+  const latA       = parseInt(document.getElementById('lat_A').value)      || 30;
+  const latB       = parseInt(document.getElementById('lat_B').value)      || 10;
+  const fixInterval = wiborMode === '3M' ? 3 : 6;
 
-  const startHalf = getHalfForMonth(startMonth);
-  const wiborStart = getWiborSemi(rokStart, startHalf);
-  const cpiStart   = getCpi(rokStart);
+  const wiborStart = getWibor(rokStart, startMonth, wiborMode);
+  const cpiStartRaw   = cpiMode === 'monthly'
+    ? getCpiMonthly(rokStart, startMonth)
+    : getCpiAnnual(rokStart);
+  const cpiStartComparable = cpiMode === 'monthly'
+    ? annualizeMonthlyCpi(cpiStartRaw)
+    : cpiStartRaw;
   const stopaStart = wiborStart + marza;
-  const realStopa  = stopaStart - cpiStart;
+  const realStopa  = stopaStart - cpiStartComparable;
 
-  // Info sidebar
-  document.getElementById('wibor_display').textContent    = fmtPct(wiborStart);
-  document.getElementById('marza_display').textContent    = fmtPct(marza);
+  document.getElementById('wibor_label').textContent =
+    'WIBOR ' + wiborMode + ' (miesiac startu)';
+  document.getElementById('cpi_label').textContent = cpiMode === 'monthly'
+    ? 'Inflacja CPI (mies. startu, m/m)'
+    : 'Inflacja CPI (rok startu, roczna)';
+  document.getElementById('wibor_display').textContent     = fmtPct(wiborStart);
+  document.getElementById('marza_display').textContent     = fmtPct(marza);
   document.getElementById('total_rate_display').textContent = fmtPct(stopaStart);
-  document.getElementById('inf_display').textContent     = fmtPct(cpiStart);
-  document.getElementById('real_rate_display').textContent = fmtPct(realStopa);
+  document.getElementById('inf_display').textContent = cpiMode === 'monthly'
+    ? fmtPct(cpiStartRaw) + ' (≈ ' + fmtPct(cpiStartComparable) + ' r/r)'
+    : fmtPct(cpiStartRaw);
+  document.getElementById('real_rate_display').textContent  = fmtPct(realStopa);
 
-  // Cards labels
+  document.getElementById('tag_wibor').textContent =
+    'WIBOR ' + wiborMode + ' · dane historyczne (notowania miesieczne)';
+  document.getElementById('tag_cpi').textContent = cpiMode === 'monthly'
+    ? 'Inflacja CPI · GUS Polska (miesieczna m/m)'
+    : 'Inflacja CPI · GUS Polska (roczna)';
+
   document.getElementById('card_la').textContent = latA;
   document.getElementById('card_lb').textContent = latB;
 
-  // Harmonogramy
-  const rowsA = calcHarmonogram(kwota, rokStart, startMonth, latA, marza);
-  const rowsB = calcHarmonogram(kwota, rokStart, startMonth, latB, marza);
+  const rowsA = calcHarmonogram(kwota, rokStart, startMonth, latA, marza, wiborMode, cpiMode);
+  const rowsB = calcHarmonogram(kwota, rokStart, startMonth, latB, marza, wiborMode, cpiMode);
+  const yearA = aggregateYearly(rowsA);
+  const yearB = aggregateYearly(rowsB);
 
-  const yearA = aggregateYearly(rowsA, kwota);
-  const yearB = aggregateYearly(rowsB, kwota);
-
-  // Rata pierwszego miesiąca
-  const rata1A = rowsA[0]?.rata || 0;
-  const rata1B = rowsB[0]?.rata || 0;
-
+  const rata1A = rowsA[0] ? rowsA[0].rata : 0;
+  const rata1B = rowsB[0] ? rowsB[0].rata : 0;
   document.getElementById('rata_A').textContent = fmt(Math.round(rata1A));
   document.getElementById('rata_B').textContent = fmt(Math.round(rata1B));
   document.getElementById('diff_rata').textContent = fmt(Math.round(rata1B - rata1A));
 
-  // Sumy
-  const totNomA    = rowsA.reduce((s,r) => s + r.rata, 0);
-  const totNomB    = rowsB.reduce((s,r) => s + r.rata, 0);
-  const totRealA   = rowsA.reduce((s,r) => s + r.rataReal, 0);
-  const totRealB   = rowsB.reduce((s,r) => s + r.rataReal, 0);
+  const totNomA   = rowsA.reduce(function(s,r){ return s + r.rata; }, 0);
+  const totNomB   = rowsB.reduce(function(s,r){ return s + r.rata; }, 0);
+  const totRealA  = rowsA.reduce(function(s,r){ return s + r.rataReal; }, 0);
+  const totRealB  = rowsB.reduce(function(s,r){ return s + r.rataReal; }, 0);
   const odsetNomA  = totNomA - kwota;
   const odsetNomB  = totNomB - kwota;
   const odsetRealA = totRealA - kwota;
   const odsetRealB = totRealB - kwota;
-  const infZyskA   = totNomA - totRealA; // ile "zaoszczędzono" dzięki inflacji
+  const infZyskA   = totNomA - totRealA;
   const infZyskB   = totNomB - totRealB;
 
-  const MIESIAC_NAZWY_PL = ['styczeń','luty','marzec','kwiecień','maj','czerwiec','lipiec','sierpień','wrzesień','październik','listopad','grudzień'];
-  const dataWyceny = `${MIESIAC_NAZWY_PL[startMonth - 1]} ${rokStart}`;
+  const MIESIAC_NAZWY_PL = ['styczen','luty','marzec','kwiecien','maj','czerwiec',
+    'lipiec','sierpien','wrzesien','pazdziernik','listopad','grudzien'];
+  const dataWyceny = MIESIAC_NAZWY_PL[startMonth - 1] + ' ' + rokStart;
 
-  const simpleA = calcSimpleRealTotal(kwota, latA, stopaStart, cpiStart);
-  const simpleB = calcSimpleRealTotal(kwota, latB, stopaStart, cpiStart);
+  const simpleA = calcSimpleRealTotal(kwota, latA, stopaStart, cpiStartComparable);
+  const simpleB = calcSimpleRealTotal(kwota, latB, stopaStart, cpiStartComparable);
   const simpleDiffA = simpleA.totalRealSimple - totRealA;
   const simpleDiffB = simpleB.totalRealSimple - totRealB;
   const simpleDiffAPct = totRealA !== 0 ? (simpleDiffA / totRealA * 100) : 0;
   const simpleDiffBPct = totRealB !== 0 ? (simpleDiffB / totRealB * 100) : 0;
 
-  // Comparison panel
   document.getElementById('cA_lata').textContent = latA;
   document.getElementById('cB_lata').textContent = latB;
-  document.getElementById('cA_nom').textContent       = fmtPLN(totNomA);
-  document.getElementById('cA_odsetki').textContent   = fmtPLN(odsetNomA);
-  document.getElementById('cA_real').textContent      = fmtPLN(totRealA);
+  document.getElementById('cA_nom').textContent          = fmtPLN(totNomA);
+  document.getElementById('cA_odsetki').textContent      = fmtPLN(odsetNomA);
+  document.getElementById('cA_real').textContent         = fmtPLN(totRealA);
   document.getElementById('cA_real_odsetki').textContent = fmtPLN(odsetRealA);
   document.getElementById('cA_inflacja_zysk').textContent = fmtPLN(infZyskA);
-  document.getElementById('cB_nom').textContent       = fmtPLN(totNomB);
-  document.getElementById('cB_odsetki').textContent   = fmtPLN(odsetNomB);
-  document.getElementById('cB_real').textContent      = fmtPLN(totRealB);
+  document.getElementById('cB_nom').textContent          = fmtPLN(totNomB);
+  document.getElementById('cB_odsetki').textContent      = fmtPLN(odsetNomB);
+  document.getElementById('cB_real').textContent         = fmtPLN(totRealB);
   document.getElementById('cB_real_odsetki').textContent = fmtPLN(odsetRealB);
   document.getElementById('cB_inflacja_zysk').textContent = fmtPLN(infZyskB);
-  document.getElementById('simple_label_A').textContent = `Uproszczone całk. realne · wariant A (${latA} lat)`;
-  document.getElementById('simple_label_B').textContent = `Uproszczone całk. realne · wariant B (${latB} lat)`;
+  document.getElementById('simple_label_A').textContent =
+    'Uproszczone calk. realne · wariant A (' + latA + ' lat)';
+  document.getElementById('simple_label_B').textContent =
+    'Uproszczone calk. realne · wariant B (' + latB + ' lat)';
   document.getElementById('simple_real_A').textContent = fmtPLN(simpleA.totalRealSimple);
   document.getElementById('simple_real_B').textContent = fmtPLN(simpleB.totalRealSimple);
 
   const simpleDiffAEl = document.getElementById('simple_diff_A');
   const simpleDiffBEl = document.getElementById('simple_diff_B');
-  simpleDiffAEl.textContent = `${fmtPLN(simpleDiffA)} (${fmt(simpleDiffAPct, 1)}%)`;
-  simpleDiffBEl.textContent = `${fmtPLN(simpleDiffB)} (${fmt(simpleDiffBPct, 1)}%)`;
-  simpleDiffAEl.className = `val ${simpleDiffA >= 0 ? 'highlight-negative' : 'highlight-positive'}`;
-  simpleDiffBEl.className = `val ${simpleDiffB >= 0 ? 'highlight-negative' : 'highlight-positive'}`;
+  simpleDiffAEl.textContent = fmtPLN(simpleDiffA) + ' (' + fmt(simpleDiffAPct, 1) + '%)';
+  simpleDiffBEl.textContent = fmtPLN(simpleDiffB) + ' (' + fmt(simpleDiffBPct, 1) + '%)';
+  simpleDiffAEl.className = 'val ' + (simpleDiffA >= 0 ? 'highlight-negative' : 'highlight-positive');
+  simpleDiffBEl.className = 'val ' + (simpleDiffB >= 0 ? 'highlight-negative' : 'highlight-positive');
 
-  // Aktualizuj etykiety "realne" z data wyceny
-  document.querySelectorAll('.real-date-label').forEach(el => {
-    el.textContent = `Całk. realne (PLN z ${dataWyceny})`;
+  document.querySelectorAll('.real-date-label').forEach(function(el) {
+    el.textContent = 'Calk. realne (PLN z ' + dataWyceny + ')';
   });
-  document.querySelectorAll('.real-odsetki-label').forEach(el => {
-    el.textContent = `Realne odsetki (PLN z ${dataWyceny})`;
+  document.querySelectorAll('.real-odsetki-label').forEach(function(el) {
+    el.textContent = 'Realne odsetki (PLN z ' + dataWyceny + ')';
   });
 
-  // Verdict
   const nomDiff  = totNomA - totNomB;
   const realDiff = totRealA - totRealB;
   const verdictEl = document.getElementById('verdict_text');
-  const noteEl    = document.getElementById('note_extra');
-
   if (realDiff > 0) {
-    verdictEl.innerHTML = `
-      Wariant <strong>${latA}-letni</strong> kosztuje nominalnie <strong>${fmtPLN(nomDiff)}</strong> więcej niż ${latB}-letni.
-      W złotówkach z <strong>${dataWyceny}</strong> ta różnica spada do <strong>${fmtPLN(realDiff)}</strong>.
-      Inflacja "zjada" ${fmtPLN(infZyskA - infZyskB)} z tej różnicy — długi kredyt jest realnie
-      <strong>tańszy niż wynika z nominałów</strong>. Mimo to wariant ${latB}-letni pozostaje tańszy
-      nawet po inflacji — ale cena to <strong>wyższa rata miesięczna</strong> (${fmtPLN(rata1B - rata1A)} więcej).
-    `;
+    verdictEl.innerHTML =
+      'Wariant <strong>' + latA + '-letni</strong> kosztuje nominalnie <strong>' + fmtPLN(nomDiff) +
+      '</strong> więcej niż ' + latB + '-letni. W złotówkach z <strong>' + dataWyceny +
+      '</strong> ta różnica spada do <strong>' + fmtPLN(realDiff) + '</strong>. ' +
+      'Inflacja "zjada" ' + fmtPLN(infZyskA - infZyskB) +
+      ' z tej różnicy — długi kredyt jest realnie <strong>tańszy niż wynika z nominałów</strong>.' +
+      ' Mimo to wariant ' + latB + '-letni pozostaje tańszy nawet po inflacji — ale cena to' +
+      ' <strong>wyższa rata miesięczna</strong> (' + fmtPLN(rata1B - rata1A) + ' więcej).';
   } else {
-    verdictEl.innerHTML = `
-      W złotówkach z <strong>${dataWyceny}</strong> wariant <strong>${latA}-letni</strong> okazuje się
-      <strong>tańszy lub zbliżony kosztowo</strong> do wariantu ${latB}-letniego.
-      Wysoka inflacja sprawiła, że późniejsze raty były realnie znacznie tańsze.
-      Nominalna różnica: <strong>${fmtPLN(nomDiff)}</strong> — realna: zaledwie <strong>${fmtPLN(Math.abs(realDiff))}</strong>
-      (w PLN z ${dataWyceny}).
-    `;
+    verdictEl.innerHTML =
+      'W złotówkach z <strong>' + dataWyceny + '</strong> wariant <strong>' + latA +
+      '-letni</strong> okazuje się <strong>tańszy lub zbliżony kosztowo</strong> do wariantu ' +
+      latB + '-letniego. Wysoka inflacja sprawiła, że późniejsze raty były realnie znacznie tańsze.' +
+      ' Nominalna różnica: <strong>' + fmtPLN(nomDiff) + '</strong> — realna: zaledwie <strong>' +
+      fmtPLN(Math.abs(realDiff)) + '</strong> (w PLN z ' + dataWyceny + ').';
   }
 
-  noteEl.innerHTML = `<strong>Metodologia:</strong> Rata przeliczana co 6 miesięcy — fixing WIBOR 6M na początku każdego półrocza
-  (H1: I–VI, H2: VII–XII). W miesiącu startu stosowany jest WIBOR półrocza zgodny z wybranym miesiącem.
-  Przez kolejne 6 rat obowiązuje stała rata wyznaczona na bazie salda w dniu fixingu
-  i nowego WIBOR 6M. Dane WIBOR 6M: historyczne notowania rynkowe (zamknięcie miesiąca).
-  Inflacja CPI: GUS — roczne wskaźniki cen towarów i usług konsumpcyjnych.
-  Dane historyczne zaktualizowane z CSV: WIBOR do ${LAST_HIST_WIBOR_YEAR}, CPI do ${LAST_HIST_CPI_YEAR}.
-  Dla lat po ${LAST_HIST_WIBOR_YEAR}: projekcja WIBOR ${DEFAULT_FUTURE_WIBOR}%, inflacja ${DEFAULT_FUTURE_CPI}%.
-  Uproszczona kalkulacja (punkt 2): stała realna stopa = (WIBOR start + marża − inflacja start) dla całego okresu.
-  Obliczenia mają charakter poglądowy — nie uwzględniają kosztów ubezpieczenia, prowizji ani efektu alternatywnego
-  inwestowania różnicy w ratach.`;
+  const lastHistCPI = cpiMode === 'monthly' ? LAST_HIST_CPI_MONTHLY : LAST_HIST_CPI_ANNUAL;
+  document.getElementById('note_extra').innerHTML =
+    '<strong>Metodologia:</strong> Fixing WIBOR ' + wiborMode + ' co ' + fixInterval +
+    ' miesiecy od dnia startu kredytu (brak stalych dat fixingowych). Nowa rata obliczana na' +
+    ' podstawie biezacego salda i aktualnego WIBOR ' + wiborMode + '. Dane WIBOR:' +
+    ' historyczne notowania miesieczne (zamkniecie miesiaca).' +
+    ' Inflacja CPI: GUS' + (cpiMode === 'monthly' ? ' (poprzedni miesiac = 100, bezposrednio m/m)' : ' (roczne wskazniki)') +
+    '. Dane historyczne: WIBOR do ' + LAST_HIST_WIBOR_YEAR + ', CPI do ' + lastHistCPI + '.' +
+    ' Projekcja: WIBOR ' + DEFAULT_FUTURE_WIBOR + '%, inflacja ' + DEFAULT_FUTURE_CPI + '%.' +
+    ' Uproszczona kalkulacja: stala realna stopa = (WIBOR start + marza - inflacja start' +
+    (cpiMode === 'monthly' ? ' annualizowana z m/m' : '') + ').' +
+    ' Obliczenia maja charakter pogl\u0105dowy — nie uwzgledniaja kosztow ubezpieczenia, prowizji.';
 
-  // Store for chart
+  updateMethodologyPanel({
+    kwota, rokStart, startMonth, latA, latB, marza, cpiMode,
+    wiborStart, cpiStartRaw, cpiStartComparable,
+    rowsA, rowsB, totRealA, totRealB, odsetRealA, odsetRealB
+  });
+
+  // ---- Rozklad czynnikow realnego kosztu ----
+  const rowsA0 = calcHarmonogram(kwota, rokStart, startMonth, latA, 0, wiborMode, cpiMode);
+  const rowsB0 = calcHarmonogram(kwota, rokStart, startMonth, latB, 0, wiborMode, cpiMode);
+  const totReal0A = rowsA0.reduce(function(s,r){ return s + r.rataReal; }, 0);
+  const totReal0B = rowsB0.reduce(function(s,r){ return s + r.rataReal; }, 0);
+  const wiborCpiContribA = totReal0A - kwota;
+  const wiborCpiContribB = totReal0B - kwota;
+  const marzaContribA = odsetRealA - wiborCpiContribA;
+  const marzaContribB = odsetRealB - wiborCpiContribB;
+  const statsA = calcAvgStats(rowsA);
+  const statsB = calcAvgStats(rowsB);
+  const durationEffect = odsetRealA - odsetRealB;
+
+  document.getElementById('fA_lata').textContent = latA;
+  document.getElementById('fB_lata').textContent = latB;
+
+  var fA_totalEl = document.getElementById('fA_total');
+  fA_totalEl.textContent = fmtPLN(odsetRealA);
+  fA_totalEl.className = 'val ' + (odsetRealA >= 0 ? 'highlight-negative' : 'highlight-positive');
+  var fB_totalEl = document.getElementById('fB_total');
+  fB_totalEl.textContent = fmtPLN(odsetRealB);
+  fB_totalEl.className = 'val ' + (odsetRealB >= 0 ? 'highlight-negative' : 'highlight-positive');
+
+  document.getElementById('fA_marza').textContent = fmtPLN(marzaContribA);
+  document.getElementById('fB_marza').textContent = fmtPLN(marzaContribB);
+
+  var fA_spreadEl = document.getElementById('fA_spread');
+  fA_spreadEl.textContent = fmtPLN(wiborCpiContribA);
+  fA_spreadEl.className = 'val ' + (wiborCpiContribA >= 0 ? 'highlight-negative' : 'highlight-positive');
+  var fB_spreadEl = document.getElementById('fB_spread');
+  fB_spreadEl.textContent = fmtPLN(wiborCpiContribB);
+  fB_spreadEl.className = 'val ' + (wiborCpiContribB >= 0 ? 'highlight-negative' : 'highlight-positive');
+
+  document.getElementById('fA_avgWibor').textContent = fmtPct(statsA.avgWibor);
+  document.getElementById('fB_avgWibor').textContent = fmtPct(statsB.avgWibor);
+  document.getElementById('fA_avgCpi').textContent = fmtPct(statsA.avgCpi);
+  document.getElementById('fB_avgCpi').textContent = fmtPct(statsB.avgCpi);
+
+  var fA_spreadAvgEl = document.getElementById('fA_avgSpread');
+  fA_spreadAvgEl.textContent = fmtPct(statsA.avgSpread);
+  fA_spreadAvgEl.className = 'val ' + (statsA.avgSpread < 0 ? 'highlight-positive' : '');
+  var fB_spreadAvgEl = document.getElementById('fB_avgSpread');
+  fB_spreadAvgEl.textContent = fmtPct(statsB.avgSpread);
+  fB_spreadAvgEl.className = 'val ' + (statsB.avgSpread < 0 ? 'highlight-positive' : '');
+
+  var durEffectEl = document.getElementById('f_duration_effect');
+  durEffectEl.textContent = fmtPLN(durationEffect);
+  durEffectEl.className = 'val ' + (durationEffect >= 0 ? 'highlight-negative' : 'highlight-positive');
+
   currentData = { rowsA, rowsB, yearA, yearB, kwota, rokStart, startMonth, latA, latB, marza };
-
   renderChart();
   renderTable('tableA', rowsA, kwota);
   renderTable('tableB', rowsB, kwota);
 }
 
-function renderChart() {
-  const { rowsA, rowsB, yearA, yearB, kwota, rokStart, latA, latB } = currentData;
-  if (!rowsA) return;
+// ==========================================
+// RENDER WYKRESU
+// ==========================================
+function makeChartOpts(yTitleText, cbLabel) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#6b7385', font: { family: 'DM Mono', size: 10 }, boxWidth: 12 } },
+      tooltip: {
+        backgroundColor: '#13161d', borderColor: '#252a38', borderWidth: 1,
+        titleColor: '#e8eaf0', bodyColor: '#9098b0',
+        titleFont: { family: 'DM Mono', size: 11 }, bodyFont: { family: 'DM Mono', size: 11 },
+        callbacks: { label: cbLabel }
+      }
+    },
+    scales: {
+      x: { ticks: { color: '#4a5168', font: { family: 'DM Mono', size: 10 }, maxRotation: 45 },
+           grid: { color: 'rgba(37,42,56,0.5)' } },
+      y: { ticks: { color: '#4a5168', font: { family: 'DM Mono', size: 10 } },
+           grid: { color: 'rgba(37,42,56,0.5)' },
+           title: { display: true, text: yTitleText, color: '#4a5168',
+                    font: { family: 'DM Mono', size: 10 } } }
+    }
+  };
+}
 
+function renderChart() {
+  var d = currentData;
+  if (!d.rowsA) return;
   const ctx = document.getElementById('myChart').getContext('2d');
   if (myChart) myChart.destroy();
 
-  let labels, ds1, ds2, label1, label2, yTitle;
-
   if (currentTab === 'wibor') {
-    const startYear = HIST_MIN_YEAR;
     const years = [];
-    for (let y = startYear; y <= LAST_HIST_WIBOR_YEAR; y++) years.push(y);
-    labels = years.map(String);
-    ds1 = years.map(y => WIBOR6M[y] || null);
-    ds2 = years.map(y => CPI[y] || null);
-    label1 = 'WIBOR 6M (%)';
-    label2 = 'Inflacja CPI (%)';
-    yTitle = '%';
-  } else if (currentTab === 'affordability') {
-    // Rata miesięczna jako % wynagrodzenia – Wariant A i B
-    const allYears = [...new Set([...yearA.map(r => r.rok), ...yearB.map(r => r.rok)])].sort();
-    const mapA = Object.fromEntries(yearA.map(r => [r.rok, r]));
-    const mapB = Object.fromEntries(yearB.map(r => [r.rok, r]));
-    labels = allYears.map(String);
-    ds1 = allYears.map(y => {
-      const r = mapA[y];
-      return r ? parseFloat((r.sumRata / r.months / r.wynagr * 100).toFixed(1)) : null;
+    for (let y = HIST_MIN_YEAR; y <= LAST_HIST_WIBOR_YEAR; y++) years.push(y);
+    const opts = makeChartOpts('%', function(c) {
+      const v = c.parsed.y;
+      return v !== null ? c.dataset.label + ': ' + v.toFixed(2) + '%' : '';
     });
-    ds2 = allYears.map(y => {
-      const r = mapB[y];
-      return r ? parseFloat((r.sumRata / r.months / r.wynagr * 100).toFixed(1)) : null;
-    });
-    // IT lines
-    const ds3 = allYears.map(y => {
-      const r = mapA[y];
-      return r ? parseFloat((r.sumRata / r.months / r.wynagrIT * 100).toFixed(1)) : null;
-    });
-    const ds4 = allYears.map(y => {
-      const r = mapB[y];
-      return r ? parseFloat((r.sumRata / r.months / r.wynagrIT * 100).toFixed(1)) : null;
-    });
-    label1 = `${latA}l – rata/sektor (%)`;
-    label2 = `${latB}l – rata/sektor (%)`;
-    yTitle = '% wynagrodzenia';
-
+    opts.scales.y.ticks.callback = function(v) { return v + '%'; };
     myChart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels,
+        labels: years.map(String),
         datasets: [
-          { label: label1, data: ds1, borderColor: '#c8a96e', backgroundColor: 'rgba(200,169,110,0.07)', borderWidth: 2, pointRadius: 2, tension: 0.35, fill: false },
-          { label: label2, data: ds2, borderColor: '#7eb8c9', backgroundColor: 'rgba(126,184,201,0.07)', borderWidth: 2, pointRadius: 2, tension: 0.35, fill: false },
-          { label: `${latA}l – rata/IT (%)`, data: ds3, borderColor: '#c8a96e', borderDash: [4,3], borderWidth: 1.5, pointRadius: 1, tension: 0.35, fill: false },
-          { label: `${latB}l – rata/IT (%)`, data: ds4, borderColor: '#7eb8c9', borderDash: [4,3], borderWidth: 1.5, pointRadius: 1, tension: 0.35, fill: false },
+          { label: 'WIBOR 6M (%)', data: years.map(function(y){ return WIBOR6M_ANNUAL[y] !== undefined ? WIBOR6M_ANNUAL[y] : null; }),
+            borderColor: '#c8a96e', backgroundColor: 'rgba(200,169,110,0.07)',
+            borderWidth: 2, pointRadius: 2, tension: 0.3, fill: false },
+          { label: 'WIBOR 3M (%)', data: years.map(function(y){ return WIBOR3M_ANNUAL[y] !== undefined ? WIBOR3M_ANNUAL[y] : null; }),
+            borderColor: '#7eb8c9', backgroundColor: 'rgba(126,184,201,0.07)',
+            borderWidth: 2, pointRadius: 2, tension: 0.3, fill: false },
+          { label: 'Inflacja CPI (%)', data: years.map(function(y){ return CPI_ANNUAL[y] !== undefined ? CPI_ANNUAL[y] : null; }),
+            borderColor: '#70c997', backgroundColor: 'rgba(112,201,151,0.07)',
+            borderWidth: 1.5, borderDash: [4,3], pointRadius: 2, tension: 0.3, fill: false }
         ]
       },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { labels: { color: '#6b7385', font: { family: 'DM Mono', size: 10 }, boxWidth: 12 } },
-          tooltip: {
-            backgroundColor: '#13161d', borderColor: '#252a38', borderWidth: 1,
-            titleColor: '#e8eaf0', bodyColor: '#9098b0',
-            titleFont: { family: 'DM Mono', size: 11 }, bodyFont: { family: 'DM Mono', size: 11 },
-            callbacks: { label: ctx => ctx.parsed.y !== null ? `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}%` : '' }
-          },
-          annotation: {}
-        },
-        scales: {
-          x: { ticks: { color: '#4a5168', font: { family: 'DM Mono', size: 10 }, maxRotation: 45 }, grid: { color: 'rgba(37,42,56,0.5)' } },
-          y: {
-            ticks: { color: '#4a5168', font: { family: 'DM Mono', size: 10 }, callback: v => v + '%' },
-            grid: { color: 'rgba(37,42,56,0.5)' },
-            title: { display: true, text: '% wynagrodzenia brutto', color: '#4a5168', font: { family: 'DM Mono', size: 10 } }
-          }
-        }
-      }
+      options: opts
     });
     return;
-  } else {
-    // Skumulowane raty
-    let cumA = 0, cumB = 0;
-    const cA = [], cB = [], labYears = [];
-    const allYears = [...new Set([...yearA.map(r => r.rok), ...yearB.map(r => r.rok)])].sort();
-
-    const mapA = Object.fromEntries(yearA.map(r => [r.rok, r]));
-    const mapB = Object.fromEntries(yearB.map(r => [r.rok, r]));
-
-    allYears.forEach(y => {
-      const rA = mapA[y];
-      const rB = mapB[y];
-      if (rA) {
-        cumA += currentTab === 'nominal' ? rA.sumRata : rA.sumRataReal;
-        cA.push(Math.round(cumA));
-      } else {
-        cA.push(null);
-      }
-      if (rB) {
-        cumB += currentTab === 'nominal' ? rB.sumRata : rB.sumRataReal;
-        cB.push(Math.round(cumB));
-      } else {
-        cB.push(null);
-      }
-      labYears.push(y);
-    });
-
-    labels = labYears.map(String);
-    ds1 = cA;
-    ds2 = cB;
-    label1 = `${latA} lat (Wariant A)`;
-    label2 = `${latB} lat (Wariant B)`;
-    yTitle = currentTab === 'nominal' ? 'PLN (nominalne)' : 'PLN (realne, dzisiejsze)';
   }
+
+  if (currentTab === 'affordability') {
+    const yearA = d.yearA, yearB = d.yearB;
+    const allYears = Array.from(new Set(yearA.map(function(r){return r.rok;}).concat(yearB.map(function(r){return r.rok;})))).sort();
+    const mapA = {}, mapB = {};
+    yearA.forEach(function(r){ mapA[r.rok] = r; });
+    yearB.forEach(function(r){ mapB[r.rok] = r; });
+    function pct(row, field) { return row ? parseFloat((row.sumRata / row.months / row[field] * 100).toFixed(1)) : null; }
+    const opts = makeChartOpts('% wynagrodzenia', function(c) {
+      return c.parsed.y !== null ? c.dataset.label + ': ' + c.parsed.y.toFixed(1) + '%' : '';
+    });
+    opts.scales.y.ticks.callback = function(v) { return v + '%'; };
+    myChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: allYears.map(String),
+        datasets: [
+          { label: d.latA + 'l – sektor (%)', data: allYears.map(function(y){ return pct(mapA[y],'wynagr'); }),
+            borderColor: '#c8a96e', borderWidth: 2, pointRadius: 2, tension: 0.35, fill: false },
+          { label: d.latB + 'l – sektor (%)', data: allYears.map(function(y){ return pct(mapB[y],'wynagr'); }),
+            borderColor: '#7eb8c9', borderWidth: 2, pointRadius: 2, tension: 0.35, fill: false },
+          { label: d.latA + 'l – IT (%)', data: allYears.map(function(y){ return pct(mapA[y],'wynagrIT'); }),
+            borderColor: '#c8a96e', borderDash: [4,3], borderWidth: 1.5, pointRadius: 1, tension: 0.35, fill: false },
+          { label: d.latB + 'l – IT (%)', data: allYears.map(function(y){ return pct(mapB[y],'wynagrIT'); }),
+            borderColor: '#7eb8c9', borderDash: [4,3], borderWidth: 1.5, pointRadius: 1, tension: 0.35, fill: false }
+        ]
+      },
+      options: opts
+    });
+    return;
+  }
+
+  const yearA = d.yearA, yearB = d.yearB;
+  const allYears = Array.from(new Set(yearA.map(function(r){return r.rok;}).concat(yearB.map(function(r){return r.rok;})))).sort();
+  const mapA = {}, mapB = {};
+  yearA.forEach(function(r){ mapA[r.rok] = r; });
+  yearB.forEach(function(r){ mapB[r.rok] = r; });
+  let cumA = 0, cumB = 0;
+  const cA = [], cB = [];
+  allYears.forEach(function(y) {
+    const rA = mapA[y], rB = mapB[y];
+    if (rA) { cumA += currentTab === 'nominal' ? rA.sumRata : rA.sumRataReal; cA.push(Math.round(cumA)); } else cA.push(null);
+    if (rB) { cumB += currentTab === 'nominal' ? rB.sumRata : rB.sumRataReal; cB.push(Math.round(cumB)); } else cB.push(null);
+  });
+
+  const yTitle = currentTab === 'nominal' ? 'PLN (nominalne)' : 'PLN (realne, dzisiejsze)';
+  const opts = makeChartOpts(yTitle, function(c) {
+    const v = c.parsed.y;
+    return v !== null ? c.dataset.label + ': ' + fmt(Math.round(v)) + ' PLN' : '';
+  });
+  opts.scales.y.ticks.callback = function(v) { return (v/1000) + 'k'; };
 
   myChart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels,
+      labels: allYears.map(String),
       datasets: [
-        {
-          label: label1,
-          data: ds1,
-          borderColor: '#c8a96e',
-          backgroundColor: 'rgba(200,169,110,0.08)',
-          borderWidth: 2,
-          pointRadius: 2,
-          tension: 0.35,
-          fill: currentTab !== 'wibor'
-        },
-        {
-          label: label2,
-          data: ds2,
-          borderColor: '#7eb8c9',
-          backgroundColor: 'rgba(126,184,201,0.08)',
-          borderWidth: 2,
-          pointRadius: 2,
-          tension: 0.35,
-          fill: false
-        }
+        { label: d.latA + ' lat (Wariant A)', data: cA,
+          borderColor: '#c8a96e', backgroundColor: 'rgba(200,169,110,0.08)',
+          borderWidth: 2, pointRadius: 2, tension: 0.35, fill: true },
+        { label: d.latB + ' lat (Wariant B)', data: cB,
+          borderColor: '#7eb8c9', backgroundColor: 'rgba(126,184,201,0.08)',
+          borderWidth: 2, pointRadius: 2, tension: 0.35, fill: false }
       ]
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          labels: {
-            color: '#6b7385',
-            font: { family: 'DM Mono', size: 11 },
-            boxWidth: 12
-          }
-        },
-        tooltip: {
-          backgroundColor: '#13161d',
-          borderColor: '#252a38',
-          borderWidth: 1,
-          titleColor: '#e8eaf0',
-          bodyColor: '#9098b0',
-          titleFont: { family: 'DM Mono', size: 11 },
-          bodyFont: { family: 'DM Mono', size: 11 },
-          callbacks: {
-            label: function(ctx) {
-              const v = ctx.parsed.y;
-              if (v === null) return '';
-              if (currentTab === 'wibor') return `${ctx.dataset.label}: ${v.toFixed(2)}%`;
-              return `${ctx.dataset.label}: ${fmt(Math.round(v))} PLN`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          ticks: { color: '#4a5168', font: { family: 'DM Mono', size: 10 }, maxRotation: 45 },
-          grid: { color: 'rgba(37,42,56,0.5)' }
-        },
-        y: {
-          ticks: {
-            color: '#4a5168',
-            font: { family: 'DM Mono', size: 10 },
-            callback: (v) => currentTab === 'wibor' ? v + '%' : (v/1000) + 'k'
-          },
-          grid: { color: 'rgba(37,42,56,0.5)' },
-          title: { display: true, text: yTitle, color: '#4a5168', font: { family: 'DM Mono', size: 10 } }
-        }
-      }
-    }
+    options: opts
   });
 }
 
+// ==========================================
+// RENDER TABELI
+// ==========================================
 function renderTable(tableId, rows, kwota) {
   const t = document.getElementById(tableId);
-  // Wynagrodzenia są miesięczne – cache per rok
-  const wynagrCache = {};
-  const wynagrITCache = {};
+  const wynagrCache = {}, wynagrITCache = {};
+  const header = '<thead><tr>' +
+    '<th>#</th><th>Data</th>' +
+    '<th title="Fixing WIBOR w tym miesiacu">Fix</th>' +
+    '<th>WIBOR ' + wiborMode + '</th><th>Stopa</th><th>Rata</th>' +
+    '<th>Odsetki</th><th>Kapital</th>' +
+    '<th title="Rata w zlotowkach z dnia zaciagniecia kredytu (zdyskontowana CPI)">Rata realna</th>' +
+    '<th title="Przecietne wynagrodzenie brutto - sektor przedsiebiorstw (GUS)">Wynagr. sektor</th>' +
+    '<th title="Szacowane wynagrodzenie IT">Wynagr. IT*</th>' +
+    '<th title="Rata jako % wynagrodzenia sektora">Rata/Sektor</th>' +
+    '<th title="Rata jako % wynagrodzenia IT">Rata/IT</th>' +
+    '<th>Saldo</th>' +
+    '</tr></thead>';
 
-  const header = `<thead><tr>
-    <th>#</th>
-    <th>Data</th>
-    <th title="Fixing WIBOR w tym miesiacu">Fix</th>
-    <th>WIBOR 6M</th>
-    <th>Stopa</th>
-    <th>Rata</th>
-    <th>Odsetki</th>
-    <th>Kapital</th>
-    <th title="Rata w zlotowkach z dnia zaciagniecia kredytu (zdyskontowana CPI)">Rata realna</th>
-    <th title="Przecietne wynagrodzenie brutto w sektorze przedsiebiorstw (GUS)">Wynagr. sektor</th>
-    <th title="Szacowane wynagrodzenie IT">Wynagr. IT*</th>
-    <th title="Rata jako % wynagrodzenia sektora">Rata / Sektor</th>
-    <th title="Rata jako % wynagrodzenia IT">Rata / IT</th>
-    <th>Saldo</th>
-  </tr></thead>`;
-
-  const body = rows.map((r) => {
+  const body = rows.map(function(r) {
     if (!wynagrCache[r.rok]) {
       wynagrCache[r.rok]   = getWynagr(r.rok);
       wynagrITCache[r.rok] = getITWynagr(r.rok);
@@ -1439,68 +1121,50 @@ function renderTable(tableId, rows, kwota) {
     const pctIT = r.rata / wynagrIT * 100;
     const colS  = pctS  > 50 ? '#e07070' : pctS  > 35 ? '#c8a96e' : '#70c997';
     const colIT = pctIT > 30 ? '#c8a96e' : '#70c997';
-    // Wiersze fixingu wyrozniamy tlem
     const rowStyle = r.isFix ? 'background:rgba(200,169,110,0.07);' : '';
-    const fixIcon  = r.isFix ? '<span title="Fixing WIBOR" style="color:var(--accent)">●</span>' : '';
-    return `<tr style="${rowStyle}">
-      <td style="color:var(--muted)">${r.miesiac}</td>
-      <td style="white-space:nowrap">${r.dataLabel}</td>
-      <td style="text-align:center">${fixIcon}</td>
-      <td>${r.wibor.toFixed(2)}%</td>
-      <td>${r.stopa.toFixed(2)}%</td>
-      <td>${fmt(Math.round(r.rata))}</td>
-      <td>${fmt(Math.round(r.odsetki))}</td>
-      <td>${fmt(Math.round(r.kapital))}</td>
-      <td style="color:var(--accent2)">${fmt(Math.round(r.rataReal))}</td>
-      <td>${fmt(wynagr)}</td>
-      <td>${fmt(wynagrIT)}</td>
-      <td style="color:${colS};font-weight:600">${pctS.toFixed(1)}%</td>
-      <td style="color:${colIT};font-weight:600">${pctIT.toFixed(1)}%</td>
-      <td>${fmt(Math.round(r.saldo))}</td>
-    </tr>`;
+    const fixIcon  = r.isFix ? '<span title="Fixing WIBOR" style="color:var(--accent)">&#9679;</span>' : '';
+    return '<tr style="' + rowStyle + '">' +
+      '<td data-label="#" style="color:var(--muted)">' + r.miesiac + '</td>' +
+      '<td data-label="Data" style="white-space:nowrap">' + r.dataLabel + '</td>' +
+      '<td data-label="Fix" style="text-align:center">' + fixIcon + '</td>' +
+      '<td data-label="WIBOR ' + wiborMode + '">' + r.wibor.toFixed(2) + '%</td>' +
+      '<td data-label="Stopa">' + r.stopa.toFixed(2) + '%</td>' +
+      '<td data-label="Rata">' + fmt(Math.round(r.rata)) + '</td>' +
+      '<td data-label="Odsetki">' + fmt(Math.round(r.odsetki)) + '</td>' +
+      '<td data-label="Kapitał">' + fmt(Math.round(r.kapital)) + '</td>' +
+      '<td data-label="Rata realna" style="color:var(--accent2)">' + fmt(Math.round(r.rataReal)) + '</td>' +
+      '<td data-label="Wynagr. sektor">' + fmt(wynagr) + '</td>' +
+      '<td data-label="Wynagr. IT*">' + fmt(wynagrIT) + '</td>' +
+      '<td data-label="Rata/Sektor" style="color:' + colS + ';font-weight:600">' + pctS.toFixed(1) + '%</td>' +
+      '<td data-label="Rata/IT" style="color:' + colIT + ';font-weight:600">' + pctIT.toFixed(1) + '%</td>' +
+      '<td data-label="Saldo">' + fmt(Math.round(r.saldo)) + '</td>' +
+      '</tr>';
   }).join('');
 
   t.innerHTML = header + '<tbody>' + body + '</tbody>';
 }
 
 // ==========================================
-// BINDING
+// BINDING INPUTOW
 // ==========================================
 function bindInputs() {
-  const pairs = [
-    ['kwota', 'kwota_r', 'kwota_rv', v => fmt(parseFloat(v)) + ' PLN'],
-    ['rok_start', 'rok_r', 'rok_rv', v => v],
-    ['marza', 'marza_r', 'marza_rv', v => parseFloat(v).toFixed(1) + '%'],
-    ['lat_A', 'lat_A_r', 'lat_A_rv', v => `<span class="badge badge-gold">${v} lat</span>`],
-    ['lat_B', 'lat_B_r', 'lat_B_rv', v => `<span class="badge badge-blue">${v} lat</span>`],
+  var pairs = [
+    ['kwota',    'kwota_r',  'kwota_rv',  function(v){ return fmt(parseFloat(v)) + ' PLN'; }],
+    ['rok_start','rok_r',    'rok_rv',    function(v){ return v; }],
+    ['marza',    'marza_r',  'marza_rv',  function(v){ return parseFloat(v).toFixed(1) + '%'; }],
+    ['lat_A',    'lat_A_r',  'lat_A_rv',  function(v){ return '<span class="badge badge-gold">' + v + ' lat</span>'; }],
+    ['lat_B',    'lat_B_r',  'lat_B_rv',  function(v){ return '<span class="badge badge-blue">' + v + ' lat</span>'; }],
   ];
-
-  pairs.forEach(([inputId, rangId, dispId, fmt]) => {
-    const inp = document.getElementById(inputId);
-    const ran = document.getElementById(rangId);
-    const disp = document.getElementById(dispId);
-
-    const sync = (src, tgt) => {
-      tgt.value = src.value;
-      disp.innerHTML = fmt(src.value);
-      calculate();
-    };
-
-    inp.addEventListener('input', () => sync(inp, ran));
-    ran.addEventListener('input', () => sync(ran, inp));
+  pairs.forEach(function(pair) {
+    var inputId = pair[0], rangId = pair[1], dispId = pair[2], fmtFn = pair[3];
+    var inp  = document.getElementById(inputId);
+    var ran  = document.getElementById(rangId);
+    var disp = document.getElementById(dispId);
+    function sync(src) { ran.value = inp.value = src.value; disp.innerHTML = fmtFn(src.value); calculate(); }
+    inp.addEventListener('input', function(){ sync(inp); });
+    ran.addEventListener('input', function(){ sync(ran); });
   });
-
-  const miesiacStart = document.getElementById('miesiac_start');
-  miesiacStart.addEventListener('input', () => calculate());
-}
-
-function switchTableTab(id) {
-  ['tA','tB'].forEach(t => {
-    document.getElementById(t).classList.toggle('active', t === id);
-  });
-  ['tbtn_A','tbtn_B'].forEach(b => {
-    document.getElementById(b).classList.toggle('active', b === (id === 'tA' ? 'tbtn_A' : 'tbtn_B'));
-  });
+  document.getElementById('miesiac_start').addEventListener('change', function(){ calculate(); });
 }
 
 // Init
