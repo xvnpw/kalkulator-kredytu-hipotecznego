@@ -93,7 +93,7 @@ The overpayment simulator (`symulator-nadplat.js`) additionally computes:
 
 - Compares **base schedule** (no events) vs **modified schedule** (with overpayments/refinancing).
 - Loan duration is in **months** (36–420, default 360). Display shows "X lat Y mies." via `fmtOkres()`.
-- Default startup values in `symulator-nadplat.html`: year `2010`, month `styczeń` (`1`), margin `2.0%`, initial provision `2.0%`, and WIBOR mode `3M`.
+- Default startup values in `symulator-nadplat.html`: year `2005`, month `styczeń` (`1`), margin `2.0%`, initial provision `2.0%`, and WIBOR mode `3M`.
 - WIBOR toggle order in the UI is `WIBOR 1M` then `WIBOR 3M` (active by default) then `WIBOR 6M`.
 - Supports two rate types: **rata równa** (annuity) and **rata malejąca** (decreasing installments).
 - **Events system** — four event types stored in the `events` array:
@@ -180,7 +180,7 @@ Edge cases: 3-year and 35-year loans, high inflation (2022), provision identity,
 
 ### Symulator nadpłat tests (`tests/run-tests-nadplat.js` + `tests/test-nadplat.js`)
 
-The overpayment simulator test runner (`tests/run-tests-nadplat.js`) loads data JS files (including 6 investment/projection data files) and `symulator-nadplat.js` into a VM sandbox with DOM stubs (default input values matching `symulator-nadplat.html`: kwota=350000, rok_start=2010, miesiac_start=1, okres=360, marża=2, prowizja=2, plus projection defaults: future_wibor=3.0, future_cpi=3.0, future_salary=3.5, future_stock_return=5.0, future_deposit_rate=3.0, future_usdpln=3.5, investment_type=none). It also provides `document.createElement()` and `document.querySelectorAll()` stubs since the simulator builds dynamic event UI.
+The overpayment simulator test runner (`tests/run-tests-nadplat.js`) loads data JS files (including 6 investment/projection data files) and `symulator-nadplat.js` into a VM sandbox with DOM stubs (default input values matching `symulator-nadplat.html`: kwota=350000, rok_start=2005, miesiac_start=1, okres=360, marża=2, prowizja=2, plus projection defaults: future_wibor=3.0, future_cpi=3.0, future_salary=3.5, future_stock_return=5.0, future_deposit_rate=3.0, future_usdpln=3.5, investment_type=none). It also provides `document.createElement()` and `document.querySelectorAll()` stubs since the simulator builds dynamic event UI.
 
 #### Test coverage areas (97 groups, 279 assertions)
 

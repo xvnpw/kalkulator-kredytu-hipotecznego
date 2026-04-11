@@ -440,7 +440,7 @@ function fmtPct(n) { return fmt(n, 2) + '%'; }
 // ==========================================
 function calculate() {
   const kwota      = parseFloat(document.getElementById('kwota').value)    || 350000;
-  const rokStart   = parseInt(document.getElementById('rok_start').value)  || 2010;
+  const rokStart   = parseInt(document.getElementById('rok_start').value)  || 2005;
   const startMonth = parseInt(document.getElementById('miesiac_start').value) || 1;
   salarySource     = document.getElementById('salary_source').value || 'average';
   const futureWiborInput = parseFloat(document.getElementById('future_wibor').value);

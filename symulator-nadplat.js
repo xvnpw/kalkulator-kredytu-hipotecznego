@@ -561,7 +561,7 @@ function syncHistoricalRanges() {
 function addEvent(type) {
   if (events.length >= 20) return;
   var id = ++eventIdCounter;
-  var rokStart = parseInt(document.getElementById('rok_start').value) || 2010;
+  var rokStart = parseInt(document.getElementById('rok_start').value) || 2005;
   var ev = {
     id: id,
     type: type || 'nadplata',
@@ -647,7 +647,7 @@ function renderEvents() {
     if (ev.type === 'cykliczna') {
       html += '<div class="field"><label>Od</label><div class="field-pair">' + monthSelect +
         '<input type="number" value="' + ev.year + '" min="2000" max="2060" ' +
-        'onchange="updateEvent(' + ev.id + ',\'year\',parseInt(this.value)||2010)"></div></div>';
+        'onchange="updateEvent(' + ev.id + ',\'year\',parseInt(this.value)||2005)"></div></div>';
 
       // Do kiedy
       var doCheckbox = '<div class="checkbox-row"><input type="checkbox" id="doKonca_' + ev.id + '" ' +
@@ -669,7 +669,7 @@ function renderEvents() {
     } else {
       html += '<div class="field"><label>Data</label><div class="field-pair">' + monthSelect +
         '<input type="number" value="' + ev.year + '" min="2000" max="2060" ' +
-        'onchange="updateEvent(' + ev.id + ',\'year\',parseInt(this.value)||2010)"></div></div>';
+        'onchange="updateEvent(' + ev.id + ',\'year\',parseInt(this.value)||2005)"></div></div>';
     }
 
     // Efekt nadpłaty
@@ -867,7 +867,7 @@ function calcInvestmentPortfolio(overpayments, rokStart, startMonth, nMonths, cp
 // ==========================================
 function calculate() {
   var kwota      = parseFloat(document.getElementById('kwota').value) || 350000;
-  var rokStart   = parseInt(document.getElementById('rok_start').value) || 2010;
+  var rokStart   = parseInt(document.getElementById('rok_start').value) || 2005;
   var startMonth = parseInt(document.getElementById('miesiac_start').value) || 1;
   salarySource   = document.getElementById('salary_source').value || 'average';
   var marza      = parseFloat(document.getElementById('marza').value) || 2;

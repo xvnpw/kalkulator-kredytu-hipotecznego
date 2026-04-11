@@ -72,7 +72,7 @@ Pełny harmonogram z kolumnami: WIBOR, stopa łączna, rata nominalna, rata real
 - Marża banku (%), prowizja początkowa (%)
 - Wybór wskaźnika: WIBOR 1M, WIBOR 3M lub WIBOR 6M (domyślnie WIBOR 3M)
 - Wybór danych CPI i źródła wynagrodzeń (jak w kalkulatorze)
-- Domyślne wartości startowe: rok **2010**, miesiąc **styczeń**, okres **360 miesięcy**, marża **2,0%**, prowizja **2,0%**, porównanie z inwestycją: **Brak (nie porównuj)**
+- Domyślne wartości startowe: rok **2005**, miesiąc **styczeń**, okres **360 miesięcy**, marża **2,0%**, prowizja **2,0%**, porównanie z inwestycją: **Brak (nie porównuj)**
 
 ### Projekcje przyszłe
 Konfigurowalne wartości domyślne dla okresów bez danych historycznych:
