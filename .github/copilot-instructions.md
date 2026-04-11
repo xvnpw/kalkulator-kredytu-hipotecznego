@@ -204,3 +204,9 @@ Comparison: modified schedule cheaper than base, CPI annual vs monthly modes.
 Edge cases: zero provision, date boundary filtering, formatting (`fmtOkres`), salary sources.
 Investment engine: data file spot-checks (WIG30, WIG, SPX, USDPLN, WIBOR1M, NBP_RATE), `getMonthlyInvestmentReturn()` for all instrument types with historical and fallback values, `calcInvestmentPortfolio()` for single/cyclic overpayments across all instruments, Belka tax (gain and loss scenarios), bilans comparison, real portfolio deflation, CPI-monthly deflator compounding, real net gain with deflated contributions, WIBOR 1M fixing interval, projection parameter getters.
 Input handling: locale decimal parsing (comma/dot) and transient input states (`1.`, `1,`).
+
+# Always follow these instructions
+
+- After your done is finished, check if you need to update copilot instructions file, README, tests or long term memory.
+- If you encountered any issue in running commands - update your long term memory to avoid it in the future.
+- If you fixed any bug in the code, add a test that covers it and update long term memory to avoid it in the future.
