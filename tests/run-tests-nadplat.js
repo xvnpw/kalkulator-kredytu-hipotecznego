@@ -32,7 +32,7 @@ function makeMockElement() {
 // Default input values matching symulator-nadplat.html defaults
 var inputValues = {
   kwota: '350000',
-  rok_start: '2010',
+  rok_start: '2005',
   miesiac_start: '1',
   okres: '360',
   marza: '2',

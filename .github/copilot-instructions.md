@@ -93,7 +93,7 @@ The overpayment simulator (`symulator-nadplat.js`) additionally computes:
 
 - Compares **base schedule** (no events) vs **modified schedule** (with overpayments/refinancing).
 - Loan duration is in **months** (36–420, default 360). Display shows "X lat Y mies." via `fmtOkres()`.
-- Default startup values in `symulator-nadplat.html`: year `2010`, month `styczeń` (`1`), margin `2.0%`, initial provision `2.0%`, and WIBOR mode `3M`.
+- Default startup values in `symulator-nadplat.html`: year `2005`, month `styczeń` (`1`), margin `2.0%`, initial provision `2.0%`, and WIBOR mode `3M`.
 - WIBOR toggle order in the UI is `WIBOR 1M` then `WIBOR 3M` (active by default) then `WIBOR 6M`.
 - Supports two rate types: **rata równa** (annuity) and **rata malejąca** (decreasing installments).
 - **Events system** — four event types stored in the `events` array:
@@ -125,7 +125,10 @@ The overpayment simulator (`symulator-nadplat.js`) additionally computes:
 
 ## Shared UI conventions
 
-- Input pairs (number input + range slider) are kept in sync via `bindInputs()`; every change calls `calculate()`.
+- Input pairs (number input + range slider) are kept in sync via `bindInputs()`. Range changes recalculate immediately; transient decimal edit states (`''`, `'-'`, `'1.'`) are allowed while typing.
+- Decimal inputs use `type="number"` with `step="0.001"` to allow up to 3 decimal places. **Never use `type="text"`** for numeric inputs — it breaks CSS styling. Range sliders keep coarser steps (e.g. `0.05`) for drag UX.
+- In `commitInput()` (blur handler), always set `inp.value = String(parsed)` directly — **never read back from `ran.value`** because the range slider may snap to its step and lose precision.
+- For decimal inputs, treat comma and dot as equivalent (`parseLocaleFloat` + `normalizeNumericString` pattern).
 - Polish locale formatting: use `fmt(n, dec)` for numbers and `fmtPLN(n)` / `fmtPct(n)` helpers — never format manually.
 - Colors: `highlight-positive` (green, `var(--success)`) for borrower-favorable values; `highlight-negative` (red, `var(--danger)`) for costs.
 - Dark/light theme toggle via `toggleTheme()` with `localStorage` persistence.
@@ -139,8 +142,8 @@ UI text, variable names in comments, and all displayed strings are in **Polish**
 ### Running tests
 
 ```bash
-node tests/run-tests.js          # Calculator tests (38 groups, 101 assertions)
-node tests/run-tests-nadplat.js  # Overpayment simulator tests (97 groups, 279 assertions)
+node tests/run-tests.js          # Calculator tests (39 groups, 106 assertions)
+node tests/run-tests-nadplat.js  # Overpayment simulator tests (98 groups, 284 assertions)
 ```
 
 No npm packages needed — only Node.js (built-in `vm` and `fs` modules).
@@ -167,7 +170,7 @@ The sandbox needs minimal DOM stubs because `kalkulator-kredytu.js` calls `calcu
 5. Global mode variables (`wiborMode`, `cpiMode`, `salarySource`) can be set freely between tests
 6. Run `node tests/run-tests.js` to verify — exit code 0 = all pass, 1 = failures
 
-### Test coverage areas (38 groups, 101 assertions)
+### Test coverage areas (39 groups, 106 assertions)
 
 Core math: annuity formula, monthly rate, zero-rate edge case, declining installments.
 Harmonogram: first months, final balance convergence, row-level identity (rata = odsetki + kapitał), saldo monotonicity.
@@ -177,12 +180,13 @@ WIBOR: fixing intervals (1M/3M/6M), different start months, 6M vs 3M/1M comparis
 Data integrity: spot-checks on CPI/WIBOR/salary data, annual averages, future fallbacks.
 Aggregation: yearly totals match monthly sums, salary fields populated correctly.
 Edge cases: 3-year and 35-year loans, high inflation (2022), provision identity, verdict direction logic.
+Input handling: locale decimal parsing (comma/dot) and transient input states (`1.`, `1,`).
 
 ### Symulator nadpłat tests (`tests/run-tests-nadplat.js` + `tests/test-nadplat.js`)
 
-The overpayment simulator test runner (`tests/run-tests-nadplat.js`) loads data JS files (including 6 investment/projection data files) and `symulator-nadplat.js` into a VM sandbox with DOM stubs (default input values matching `symulator-nadplat.html`: kwota=350000, rok_start=2010, miesiac_start=1, okres=360, marża=2, prowizja=2, plus projection defaults: future_wibor=3.0, future_cpi=3.0, future_salary=3.5, future_stock_return=5.0, future_deposit_rate=3.0, future_usdpln=3.5, investment_type=none). It also provides `document.createElement()` and `document.querySelectorAll()` stubs since the simulator builds dynamic event UI.
+The overpayment simulator test runner (`tests/run-tests-nadplat.js`) loads data JS files (including 6 investment/projection data files) and `symulator-nadplat.js` into a VM sandbox with DOM stubs (default input values matching `symulator-nadplat.html`: kwota=350000, rok_start=2005, miesiac_start=1, okres=360, marża=2, prowizja=2, plus projection defaults: future_wibor=3.0, future_cpi=3.0, future_salary=3.5, future_stock_return=5.0, future_deposit_rate=3.0, future_usdpln=3.5, investment_type=none). It also provides `document.createElement()` and `document.querySelectorAll()` stubs since the simulator builds dynamic event UI.
 
-#### Test coverage areas (97 groups, 279 assertions)
+#### Test coverage areas (98 groups, 284 assertions)
 
 Core math: annuity formula (`calcRataRowna`), monthly rate, zero-rate edge case, declining installments, WIBOR fixing intervals (3M/6M).
 Harmonogram: base schedule convergence, row-level identity, saldo monotonicity, calendar month mapping, yearly aggregation.
@@ -199,3 +203,10 @@ Table validation: all column fields present, event-specific fields populated.
 Comparison: modified schedule cheaper than base, CPI annual vs monthly modes.
 Edge cases: zero provision, date boundary filtering, formatting (`fmtOkres`), salary sources.
 Investment engine: data file spot-checks (WIG30, WIG, SPX, USDPLN, WIBOR1M, NBP_RATE), `getMonthlyInvestmentReturn()` for all instrument types with historical and fallback values, `calcInvestmentPortfolio()` for single/cyclic overpayments across all instruments, Belka tax (gain and loss scenarios), bilans comparison, real portfolio deflation, CPI-monthly deflator compounding, real net gain with deflated contributions, WIBOR 1M fixing interval, projection parameter getters.
+Input handling: locale decimal parsing (comma/dot) and transient input states (`1.`, `1,`).
+
+# Always follow these instructions
+
+- After your done is finished, check if you need to update copilot instructions file, README, tests or long term memory.
+- If you encountered any issue in running commands - update your long term memory to avoid it in the future.
+- If you fixed any bug in the code, add a test that covers it and update long term memory to avoid it in the future.

@@ -1195,6 +1195,16 @@ var oldNominalInputStyle = invStagger.portfolioRealNetto - invStagger.totalWplat
 assert(Math.abs(invStagger.zyskRealNetto - oldNominalInputStyle) > 0.1, 'Zysk realny netto nie odejmuje wplat nominalnych');
 
 // ============================================================================
+// 98. Parsowanie liczb dziesietnych (locale input)
+// ============================================================================
+group('98. Parsowanie liczb dziesietnych (locale input)');
+assertClose(parseLocaleFloat('2.75'), 2.75, 1e-12, 'parseLocaleFloat: kropka');
+assertClose(parseLocaleFloat('2,75'), 2.75, 1e-12, 'parseLocaleFloat: przecinek');
+assert(isTransientNumericInput('2.') === true, 'isTransientNumericInput: "2." to stan przejsciowy');
+assert(isTransientNumericInput('2,') === true, 'isTransientNumericInput: "2," to stan przejsciowy');
+assert(isTransientNumericInput('2.5') === false, 'isTransientNumericInput: "2.5" nie jest stanem przejsciowym');
+
+// ============================================================================
 // PODSUMOWANIE
 // ============================================================================
 process.stdout.write('\n=== WYNIK ===\n');

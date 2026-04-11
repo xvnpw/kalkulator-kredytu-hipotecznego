@@ -3,13 +3,13 @@
 // ==========================================
 
 // Projekcje przyszłe — odczytywane z pól UI (fallback gdy brak DOM)
-function getFutureWibor() { var el = document.getElementById('future_wibor'); return el ? (parseFloat(el.value) || 3.0) : 3.0; }
-function getFutureCpi() { var el = document.getElementById('future_cpi'); return el ? (parseFloat(el.value) || 3.0) : 3.0; }
+function getFutureWibor() { var el = document.getElementById('future_wibor'); return el ? (parseLocaleFloat(el.value) || 3.0) : 3.0; }
+function getFutureCpi() { var el = document.getElementById('future_cpi'); return el ? (parseLocaleFloat(el.value) || 3.0) : 3.0; }
 function getFutureCpiMonthly() { return (Math.pow(1 + getFutureCpi() / 100, 1 / 12) - 1) * 100; }
-function getFutureSalaryGrowth() { var el = document.getElementById('future_salary'); return el ? (parseFloat(el.value) || 3.5) : 3.5; }
-function getFutureStockReturn() { var el = document.getElementById('future_stock_return'); return el ? (parseFloat(el.value) || 5.0) : 5.0; }
-function getFutureDepositRate() { var el = document.getElementById('future_deposit_rate'); return el ? (parseFloat(el.value) || 3.0) : 3.0; }
-function getFutureUsdPln() { var el = document.getElementById('future_usdpln'); return el ? (parseFloat(el.value) || 3.5) : 3.5; }
+function getFutureSalaryGrowth() { var el = document.getElementById('future_salary'); return el ? (parseLocaleFloat(el.value) || 3.5) : 3.5; }
+function getFutureStockReturn() { var el = document.getElementById('future_stock_return'); return el ? (parseLocaleFloat(el.value) || 5.0) : 5.0; }
+function getFutureDepositRate() { var el = document.getElementById('future_deposit_rate'); return el ? (parseLocaleFloat(el.value) || 3.0) : 3.0; }
+function getFutureUsdPln() { var el = document.getElementById('future_usdpln'); return el ? (parseLocaleFloat(el.value) || 3.5) : 3.5; }
 
 const EPSILON = 1e-12;
 
@@ -450,6 +450,16 @@ function fmt(n, dec) {
 }
 function fmtPLN(n) { return fmt(Math.round(n)) + ' PLN'; }
 function fmtPct(n) { return fmt(n, 2) + '%'; }
+function normalizeNumericString(v) {
+  return String(v === undefined || v === null ? '' : v).replace(/,/g, '.');
+}
+function parseLocaleFloat(v) {
+  return parseFloat(normalizeNumericString(v));
+}
+function isTransientNumericInput(v) {
+  var raw = normalizeNumericString(v).trim();
+  return raw === '' || raw === '-' || raw === '+' || raw.endsWith('.');
+}
 function fmtOkres(n) {
   var lat = Math.floor(n / 12);
   var mies = n % 12;
@@ -561,7 +571,7 @@ function syncHistoricalRanges() {
 function addEvent(type) {
   if (events.length >= 20) return;
   var id = ++eventIdCounter;
-  var rokStart = parseInt(document.getElementById('rok_start').value) || 2010;
+  var rokStart = parseInt(document.getElementById('rok_start').value) || 2005;
   var ev = {
     id: id,
     type: type || 'nadplata',
@@ -647,7 +657,7 @@ function renderEvents() {
     if (ev.type === 'cykliczna') {
       html += '<div class="field"><label>Od</label><div class="field-pair">' + monthSelect +
         '<input type="number" value="' + ev.year + '" min="2000" max="2060" ' +
-        'onchange="updateEvent(' + ev.id + ',\'year\',parseInt(this.value)||2010)"></div></div>';
+        'onchange="updateEvent(' + ev.id + ',\'year\',parseInt(this.value)||parseInt(document.getElementById(\'rok_start\').value)||2005)"></div></div>';
 
       // Do kiedy
       var doCheckbox = '<div class="checkbox-row"><input type="checkbox" id="doKonca_' + ev.id + '" ' +
@@ -669,7 +679,7 @@ function renderEvents() {
     } else {
       html += '<div class="field"><label>Data</label><div class="field-pair">' + monthSelect +
         '<input type="number" value="' + ev.year + '" min="2000" max="2060" ' +
-        'onchange="updateEvent(' + ev.id + ',\'year\',parseInt(this.value)||2010)"></div></div>';
+        'onchange="updateEvent(' + ev.id + ',\'year\',parseInt(this.value)||parseInt(document.getElementById(\'rok_start\').value)||2005)"></div></div>';
     }
 
     // Efekt nadpłaty
@@ -866,12 +876,12 @@ function calcInvestmentPortfolio(overpayments, rokStart, startMonth, nMonths, cp
 // GLOWNA KALKULACJA
 // ==========================================
 function calculate() {
-  var kwota      = parseFloat(document.getElementById('kwota').value) || 350000;
-  var rokStart   = parseInt(document.getElementById('rok_start').value) || 2010;
+  var kwota      = parseLocaleFloat(document.getElementById('kwota').value) || 350000;
+  var rokStart   = parseInt(document.getElementById('rok_start').value) || 2005;
   var startMonth = parseInt(document.getElementById('miesiac_start').value) || 1;
   salarySource   = document.getElementById('salary_source').value || 'average';
-  var marza      = parseFloat(document.getElementById('marza').value) || 2;
-  var prowizjaPct = parseFloat(document.getElementById('prowizja').value) || 0;
+  var marza      = parseLocaleFloat(document.getElementById('marza').value) || 2;
+  var prowizjaPct = parseLocaleFloat(document.getElementById('prowizja').value) || 0;
   var nMonths    = parseInt(document.getElementById('okres').value) || 360;
   var fixInterval = wiborMode === '1M' ? 1 : (wiborMode === '3M' ? 3 : 6);
 
@@ -1414,11 +1424,64 @@ function renderTable(tableId, rows, kwota, showEvents, investmentMonthly) {
 // BINDING INPUTOW
 // ==========================================
 function bindInputs() {
+  var decimalInputs = {
+    marza: true,
+    prowizja: true,
+    future_wibor: true,
+    future_cpi: true,
+    future_salary: true,
+    future_stock_return: true,
+    future_deposit_rate: true,
+    future_usdpln: true
+  };
+  function bindPair(inp, ran, disp, fmtFn, allowsDecimal) {
+    function syncFromInput() {
+      if (allowsDecimal) {
+        var normalized = normalizeNumericString(inp.value);
+        if (normalized !== inp.value) {
+          try {
+            var cursor = inp.selectionStart;
+            inp.value = normalized;
+            inp.selectionStart = inp.selectionEnd = cursor;
+          } catch(e) {
+            inp.value = normalized;
+          }
+        }
+      }
+      if (isTransientNumericInput(inp.value)) return;
+      var parsed = parseLocaleFloat(inp.value);
+      if (!Number.isFinite(parsed)) return;
+      ran.value = String(parsed);
+      disp.innerHTML = fmtFn(ran.value);
+      calculate();
+    }
+    function syncFromRange() {
+      inp.value = ran.value;
+      disp.innerHTML = fmtFn(ran.value);
+      calculate();
+    }
+    function commitInput() {
+      var committed = normalizeNumericString(inp.value).trim();
+      if (committed.endsWith('.')) committed = committed.slice(0, -1);
+      var parsed = parseLocaleFloat(committed);
+      if (!Number.isFinite(parsed)) {
+        inp.value = ran.value;
+      } else {
+        inp.value = String(parsed);
+        ran.value = String(parsed);
+      }
+      disp.innerHTML = fmtFn(String(parseLocaleFloat(inp.value)));
+      calculate();
+    }
+    inp.addEventListener('input', syncFromInput);
+    inp.addEventListener('change', commitInput);
+    ran.addEventListener('input', syncFromRange);
+  }
   var pairs = [
-    ['kwota',    'kwota_r',    'kwota_rv',    function(v){ return fmt(parseFloat(v)) + ' PLN'; }],
+    ['kwota',    'kwota_r',    'kwota_rv',    function(v){ return fmt(parseLocaleFloat(v)) + ' PLN'; }],
     ['rok_start','rok_r',      'rok_rv',      function(v){ return v; }],
-    ['marza',    'marza_r',    'marza_rv',    function(v){ return parseFloat(v).toFixed(1) + '%'; }],
-    ['prowizja', 'prowizja_r', 'prowizja_rv', function(v){ return parseFloat(v).toFixed(1) + '%'; }],
+    ['marza',    'marza_r',    'marza_rv',    function(v){ return parseLocaleFloat(v).toFixed(1) + '%'; }],
+    ['prowizja', 'prowizja_r', 'prowizja_rv', function(v){ return parseLocaleFloat(v).toFixed(1) + '%'; }],
     ['okres',    'okres_r',    'okres_rv',    function(v){ var n = parseInt(v); return n + ' miesięcy = ' + fmtOkres(n); }]
   ];
   pairs.forEach(function(pair) {
@@ -1426,30 +1489,26 @@ function bindInputs() {
     var inp  = document.getElementById(inputId);
     var ran  = document.getElementById(rangId);
     var disp = document.getElementById(dispId);
-    function sync(src) { ran.value = inp.value = src.value; disp.innerHTML = fmtFn(src.value); calculate(); }
-    inp.addEventListener('input', function(){ sync(inp); });
-    ran.addEventListener('input', function(){ sync(ran); });
+    bindPair(inp, ran, disp, fmtFn, !!decimalInputs[inputId]);
   });
   document.getElementById('miesiac_start').addEventListener('change', function(){ calculate(); });
   document.getElementById('salary_source').addEventListener('change', function(){ calculate(); });
 
   // Projekcje przyszłe — input+range pairs
   var projPairs = [
-    ['future_wibor',        'future_wibor_r',        'future_wibor_rv',        function(v){ return parseFloat(v).toFixed(1) + '%'; }],
-    ['future_cpi',          'future_cpi_r',          'future_cpi_rv',          function(v){ return parseFloat(v).toFixed(1) + '%'; }],
-    ['future_salary',       'future_salary_r',       'future_salary_rv',       function(v){ return parseFloat(v).toFixed(1) + '%'; }],
-    ['future_stock_return', 'future_stock_return_r', 'future_stock_return_rv', function(v){ return parseFloat(v).toFixed(1) + '%'; }],
-    ['future_deposit_rate', 'future_deposit_rate_r', 'future_deposit_rate_rv', function(v){ return parseFloat(v).toFixed(1) + '%'; }],
-    ['future_usdpln',       'future_usdpln_r',       'future_usdpln_rv',       function(v){ return parseFloat(v).toFixed(2); }]
+    ['future_wibor',        'future_wibor_r',        'future_wibor_rv',        function(v){ return parseLocaleFloat(v).toFixed(1) + '%'; }],
+    ['future_cpi',          'future_cpi_r',          'future_cpi_rv',          function(v){ return parseLocaleFloat(v).toFixed(1) + '%'; }],
+    ['future_salary',       'future_salary_r',       'future_salary_rv',       function(v){ return parseLocaleFloat(v).toFixed(1) + '%'; }],
+    ['future_stock_return', 'future_stock_return_r', 'future_stock_return_rv', function(v){ return parseLocaleFloat(v).toFixed(1) + '%'; }],
+    ['future_deposit_rate', 'future_deposit_rate_r', 'future_deposit_rate_rv', function(v){ return parseLocaleFloat(v).toFixed(1) + '%'; }],
+    ['future_usdpln',       'future_usdpln_r',       'future_usdpln_rv',       function(v){ return parseLocaleFloat(v).toFixed(2); }]
   ];
   projPairs.forEach(function(pair) {
     var inp = document.getElementById(pair[0]);
     var ran = document.getElementById(pair[1]);
     var disp = document.getElementById(pair[2]);
     if (!inp || !ran || !disp) return;
-    function sync(src) { ran.value = inp.value = src.value; disp.innerHTML = pair[3](src.value); calculate(); }
-    inp.addEventListener('input', function(){ sync(inp); });
-    ran.addEventListener('input', function(){ sync(ran); });
+    bindPair(inp, ran, disp, pair[3], !!decimalInputs[pair[0]]);
   });
 
   // Wybór instrumentu inwestycyjnego
