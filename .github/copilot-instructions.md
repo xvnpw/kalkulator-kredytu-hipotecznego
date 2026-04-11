@@ -11,15 +11,24 @@ This repository contains **two browser applications** with **two HTML entry file
 
 Both share the same external CSS (`kalkulator-kredytu.css`) and a set of data JS files loaded via `<script src="...">` before the main script block.
 
+### CSV and parser directories
+
+| Path | Purpose |
+|---|---|
+| `sources/csv/` | Manually updated source CSV files (reference-only input data) |
+| `scripts/csv_to_js/run_all.py` | Parallel orchestrator for regenerating `data-*.js` files |
+| `scripts/csv_to_js/jobs/` | One parser per CSV (`1 input CSV -> 1 output data JS`) |
+| `scripts/csv_to_js/lib/` | Shared Python stdlib helpers (CSV parsing, dates, formatting, checks) |
+
 ### Shared data files (both HTML files)
 
 | File | Exported constant | Contents |
 |---|---|---|
-| `data-wibor6m.js` | `WIBOR6M_MONTHLY` | WIBOR 6M monthly closing values. Key: `"YYYY-MM"`, value: % rate. Source: `plopln6m_m.csv`. |
-| `data-wibor3m.js` | `WIBOR3M_MONTHLY` | WIBOR 3M monthly closing values. Key: `"YYYY-MM"`, value: % rate. Source: `plopln3m_m.csv`. |
-| `data-wibor1m.js` | `WIBOR1M_MONTHLY` | WIBOR 1M monthly closing values. Key: `"YYYY-MM"`, value: % rate. Source: `plopln1m_m.csv`. |
-| `data-cpi-annual.js` | `CPI_ANNUAL` | Annual Polish CPI as **percentage points** (e.g. `14.4` means 14.4%). Source: GUS annual series. |
-| `data-cpi-monthly.js` | `CPI_MONTHLY` | Monthly CPI m/m (previous month = 100, stored as `index - 100`). Key: `"YYYY-MM"`. Source: GUS monthly series. |
+| `data-wibor6m.js` | `WIBOR6M_MONTHLY` | WIBOR 6M monthly closing values. Key: `"YYYY-MM"`, value: % rate. Source: `sources/csv/plopln6m_m.csv`. |
+| `data-wibor3m.js` | `WIBOR3M_MONTHLY` | WIBOR 3M monthly closing values. Key: `"YYYY-MM"`, value: % rate. Source: `sources/csv/plopln3m_m.csv`. |
+| `data-wibor1m.js` | `WIBOR1M_MONTHLY` | WIBOR 1M monthly closing values. Key: `"YYYY-MM"`, value: % rate. Source: `sources/csv/plopln1m_m.csv`. |
+| `data-cpi-annual.js` | `CPI_ANNUAL` | Annual Polish CPI as **percentage points** (e.g. `14.4` means 14.4%). Source: `sources/csv/rocznewskaznikicentowarowiuslugkonsumpcyjnychod1950roku_2.csv`. |
+| `data-cpi-monthly.js` | `CPI_MONTHLY` | Monthly CPI m/m (previous month = 100, stored as `index - 100`). Key: `"YYYY-MM"`. Source: `sources/csv/miesieczne_wskazniki_cen_towarow_i_uslug_konsumpcyjnych_od_1982_roku__2.csv`. |
 | `data-wynagrodzenia-przecietne.js` | `WYNAGRODZENIA_PRZECIETNE` | Annual average monthly gross wage (PLN, overall). |
 | `data-wynagrodzenia-minimalne.js` | `WYNAGRODZENIA_MINIMALNE` | Annual minimum wage values (PLN). |
 
@@ -27,13 +36,13 @@ Both share the same external CSS (`kalkulator-kredytu.css`) and a set of data JS
 
 | File | Exported constant | Contents |
 |---|---|---|
-| `data-nbp-rate.js` | `NBP_RATE_MONTHLY` | NBP reference rate — monthly fill-forward values. Key: `"YYYY-MM"`, value: % rate. Source: `inrtpl_m_m.csv`. |
-| `data-wig30.js` | `WIG30_MONTHLY` | WIG30 index monthly closing values. Key: `"YYYY-MM"`. Source: `wig30_m.csv`. |
-| `data-wig.js` | `WIG_MONTHLY` | WIG index monthly closing values. Key: `"YYYY-MM"`. Source: `wig_m.csv`. |
-| `data-spx.js` | `SPX_MONTHLY` | S&P 500 index monthly closing values (USD). Key: `"YYYY-MM"`. Source: `spx_m.csv`. |
-| `data-usdpln.js` | `USDPLN_MONTHLY` | USD/PLN exchange rate monthly values. Key: `"YYYY-MM"`. Source: `usdpln_m.csv`. |
+| `data-nbp-rate.js` | `NBP_RATE_MONTHLY` | NBP reference rate — monthly fill-forward values. Key: `"YYYY-MM"`, value: % rate. Source: `sources/csv/inrtpl_m_m.csv`. |
+| `data-wig30.js` | `WIG30_MONTHLY` | WIG30 index monthly closing values. Key: `"YYYY-MM"`. Source: `sources/csv/wig30_m.csv`. |
+| `data-wig.js` | `WIG_MONTHLY` | WIG index monthly closing values. Key: `"YYYY-MM"`. Source: `sources/csv/wig_m.csv`. |
+| `data-spx.js` | `SPX_MONTHLY` | S&P 500 index monthly closing values (USD). Key: `"YYYY-MM"`. Source: `sources/csv/spx_m.csv`. |
+| `data-usdpln.js` | `USDPLN_MONTHLY` | USD/PLN exchange rate monthly values. Key: `"YYYY-MM"`. Source: `sources/csv/usdpln_m.csv`. |
 
-The CSV source files are **reference only** — never read at runtime.
+The CSV source files are **reference only** — never read at runtime. Manual update flow: replace files in `sources/csv/`, then regenerate JS data using `python3 scripts/csv_to_js/run_all.py` (optionally `--only <job>`).
 Both HTML entry files use the shared `favicon.svg` (`💸`).
 
 ## Data layer (in-script constants)
