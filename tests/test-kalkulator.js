@@ -460,6 +460,16 @@ assert(yearlyFull[0].wynagr > 0, 'Wynagr w agregacji rocznej > 0');
 assert(yearlyFull[0].wynagr === getWynagr(yearlyFull[0].rok), 'Wynagr zgodne z getWynagr()');
 
 // ---------------------------------------------------------------------------
+// 39. Parsowanie liczb dziesietnych (locale input)
+// ---------------------------------------------------------------------------
+group('39. Parsowanie liczb dziesietnych (locale input)');
+assertClose(parseLocaleFloat('1.85'), 1.85, 1e-12, 'parseLocaleFloat: kropka');
+assertClose(parseLocaleFloat('1,85'), 1.85, 1e-12, 'parseLocaleFloat: przecinek');
+assert(isTransientNumericInput('1.') === true, 'isTransientNumericInput: "1." to stan przejsciowy');
+assert(isTransientNumericInput('1,') === true, 'isTransientNumericInput: "1," to stan przejsciowy');
+assert(isTransientNumericInput('1.0') === false, 'isTransientNumericInput: "1.0" nie jest stanem przejsciowym');
+
+// ---------------------------------------------------------------------------
 // PODSUMOWANIE
 // ---------------------------------------------------------------------------
 process.stdout.write('\n=== WYNIK ===\n');

@@ -263,7 +263,7 @@
       <div class="field">
         <label>Marża banku (%)</label>
         <div class="field-row">
-          <input type="number" id="marza" value="2" min="0.5" max="5" step="0.05">
+          <input type="number" id="marza" value="2" min="0.5" max="5" step="0.001">
           <span class="unit">%</span>
         </div>
         <input type="range" id="marza_r" min="0.5" max="5" step="0.05" value="2">
@@ -273,7 +273,7 @@
       <div class="field">
         <label>Prowizja banku (%)</label>
         <div class="field-row">
-          <input type="number" id="prowizja" value="2" min="0" max="5" step="0.1">
+          <input type="number" id="prowizja" value="2" min="0" max="5" step="0.001">
           <span class="unit">%</span>
         </div>
         <input type="range" id="prowizja_r" min="0" max="5" step="0.1" value="2">
@@ -293,7 +293,7 @@
         <label>Dane inflacji CPI</label>
         <div class="toggle-group">
           <button class="toggle-btn active" id="btn_cpi_annual" onclick="setCpiMode('annual')">Roczna (GUS)</button>
-          <button class="toggle-btn" id="btn_cpi_monthly" onclick="setCpiMode('monthly')">Miesięczna (miesiąc do miesiąca)</button>
+          <button class="toggle-btn" id="btn_cpi_monthly" onclick="setCpiMode('monthly')">Miesięczna (GUS)</button>
         </div>
       </div>
 
@@ -324,7 +324,7 @@
         <div class="field">
           <label>Przyszły WIBOR (%)</label>
           <div class="field-row">
-            <input type="number" id="future_wibor" value="3.0" min="0.5" max="15" step="0.1">
+            <input type="number" id="future_wibor" value="3.0" min="0.5" max="15" step="0.001">
             <span class="unit">%</span>
           </div>
           <input type="range" id="future_wibor_r" min="0.5" max="15" step="0.1" value="3.0">
@@ -334,7 +334,7 @@
         <div class="field">
           <label>Przyszła inflacja CPI (%)</label>
           <div class="field-row">
-            <input type="number" id="future_cpi" value="3.0" min="0" max="20" step="0.1">
+            <input type="number" id="future_cpi" value="3.0" min="0" max="20" step="0.001">
             <span class="unit">%</span>
           </div>
           <input type="range" id="future_cpi_r" min="0" max="20" step="0.1" value="3.0">
@@ -344,7 +344,7 @@
         <div class="field">
           <label>Przyszły wzrost wynagrodzeń (%)</label>
           <div class="field-row">
-            <input type="number" id="future_salary" value="3.5" min="0" max="15" step="0.1">
+            <input type="number" id="future_salary" value="3.5" min="0" max="15" step="0.001">
             <span class="unit">%</span>
           </div>
           <input type="range" id="future_salary_r" min="0" max="15" step="0.1" value="3.5">
@@ -354,7 +354,7 @@
         <div class="field">
           <label>Przyszła stopa zwrotu akcji (%/rok)</label>
           <div class="field-row">
-            <input type="number" id="future_stock_return" value="5.0" min="-5" max="20" step="0.5">
+            <input type="number" id="future_stock_return" value="5.0" min="-5" max="20" step="0.001">
             <span class="unit">%</span>
           </div>
           <input type="range" id="future_stock_return_r" min="-5" max="20" step="0.5" value="5.0">
@@ -364,7 +364,7 @@
         <div class="field">
           <label>Przyszła stopa lokaty (%/rok)</label>
           <div class="field-row">
-            <input type="number" id="future_deposit_rate" value="3.0" min="0" max="15" step="0.1">
+            <input type="number" id="future_deposit_rate" value="3.0" min="0" max="15" step="0.001">
             <span class="unit">%</span>
           </div>
           <input type="range" id="future_deposit_rate_r" min="0" max="15" step="0.1" value="3.0">
@@ -374,7 +374,7 @@
         <div class="field">
           <label>Przyszły kurs USD/PLN</label>
           <div class="field-row">
-            <input type="number" id="future_usdpln" value="3.5" min="1.0" max="8.0" step="0.1">
+            <input type="number" id="future_usdpln" value="3.5" min="1.0" max="8.0" step="0.001">
             <span class="unit">PLN</span>
           </div>
           <input type="range" id="future_usdpln_r" min="1.0" max="8.0" step="0.1" value="3.5">

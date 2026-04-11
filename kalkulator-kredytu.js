@@ -434,25 +434,35 @@ function fmt(n, dec) {
 }
 function fmtPLN(n) { return fmt(Math.round(n)) + ' PLN'; }
 function fmtPct(n) { return fmt(n, 2) + '%'; }
+function normalizeNumericString(v) {
+  return String(v === undefined || v === null ? '' : v).replace(/,/g, '.');
+}
+function parseLocaleFloat(v) {
+  return parseFloat(normalizeNumericString(v));
+}
+function isTransientNumericInput(v) {
+  var raw = normalizeNumericString(v).trim();
+  return raw === '' || raw === '-' || raw === '+' || raw.endsWith('.');
+}
 
 // ==========================================
 // GLOWNA KALKULACJA
 // ==========================================
 function calculate() {
-  const kwota      = parseFloat(document.getElementById('kwota').value)    || 350000;
+  const kwota      = parseLocaleFloat(document.getElementById('kwota').value)    || 350000;
   const rokStart   = parseInt(document.getElementById('rok_start').value)  || 2005;
   const startMonth = parseInt(document.getElementById('miesiac_start').value) || 1;
   salarySource     = document.getElementById('salary_source').value || 'average';
-  const futureWiborInput = parseFloat(document.getElementById('future_wibor').value);
-  const futureCpiInput = parseFloat(document.getElementById('future_cpi').value);
-  const futureSalaryInput = parseFloat(document.getElementById('future_salary').value);
+  const futureWiborInput = parseLocaleFloat(document.getElementById('future_wibor').value);
+  const futureCpiInput = parseLocaleFloat(document.getElementById('future_cpi').value);
+  const futureSalaryInput = parseLocaleFloat(document.getElementById('future_salary').value);
   futureWibor = Number.isFinite(futureWiborInput) ? futureWiborInput : DEFAULT_FUTURE_WIBOR;
   futureCpi = Number.isFinite(futureCpiInput) ? futureCpiInput : DEFAULT_FUTURE_CPI;
   futureSalaryGrowth = Number.isFinite(futureSalaryInput) ? futureSalaryInput : DEFAULT_FUTURE_SALARY_GROWTH;
   const futureCpiMonthly = getFutureCpiMonthly();
-  const marzaInput = parseFloat(document.getElementById('marza').value);
+  const marzaInput = parseLocaleFloat(document.getElementById('marza').value);
   const marza      = Number.isFinite(marzaInput) ? marzaInput : 2;
-  const prowizjaInput = parseFloat(document.getElementById('prowizja').value);
+  const prowizjaInput = parseLocaleFloat(document.getElementById('prowizja').value);
   const prowizjaPct = Number.isFinite(prowizjaInput) ? prowizjaInput : 2;
   const latA       = parseInt(document.getElementById('lat_A').value)      || 30;
   const latB       = parseInt(document.getElementById('lat_B').value)      || 10;
@@ -855,23 +865,30 @@ function renderTable(tableId, rows, kwota) {
 // BINDING INPUTOW
 // ==========================================
 function bindInputs() {
+  var decimalInputs = {
+    marza: true,
+    prowizja: true,
+    future_wibor: true,
+    future_cpi: true,
+    future_salary: true
+  };
   var pairs = [
-    ['kwota',    'kwota_r',  'kwota_rv',  function(v){ return fmt(parseFloat(v)) + ' PLN'; }],
+    ['kwota',    'kwota_r',  'kwota_rv',  function(v){ return fmt(parseLocaleFloat(v)) + ' PLN'; }],
     ['rok_start','rok_r',    'rok_rv',    function(v){ return v; }],
-    ['marza',    'marza_r',  'marza_rv',  function(v){ return parseFloat(v).toFixed(1) + '%'; }],
-    ['prowizja', 'prowizja_r', 'prowizja_rv', function(v){ return parseFloat(v).toFixed(1) + '%'; }],
+    ['marza',    'marza_r',  'marza_rv',  function(v){ return parseLocaleFloat(v).toFixed(1) + '%'; }],
+    ['prowizja', 'prowizja_r', 'prowizja_rv', function(v){ return parseLocaleFloat(v).toFixed(1) + '%'; }],
     ['future_wibor', 'future_wibor_r', 'future_wibor_rv', function(v){
-      const futureVal = parseFloat(v);
+      const futureVal = parseLocaleFloat(v);
       return fmt(Number.isFinite(futureVal) ? futureVal : DEFAULT_FUTURE_WIBOR, 1) + '%';
     }],
     ['future_cpi', 'future_cpi_r', 'future_cpi_rv', function(v){
-      const annualVal = parseFloat(v);
+      const annualVal = parseLocaleFloat(v);
       const annual = Number.isFinite(annualVal) ? annualVal : DEFAULT_FUTURE_CPI;
       const monthly = (Math.pow(1 + annual / 100, 1 / 12) - 1) * 100;
       return fmt(annual, 1) + '% rocznie (≈ ' + fmt(monthly, 2) + '% m/m)';
     }],
     ['future_salary', 'future_salary_r', 'future_salary_rv', function(v){
-      const futureVal = parseFloat(v);
+      const futureVal = parseLocaleFloat(v);
       return fmt(Number.isFinite(futureVal) ? futureVal : DEFAULT_FUTURE_SALARY_GROWTH, 1) + '%';
     }],
     ['lat_A',    'lat_A_r',  'lat_A_rv',  function(v){ return '<span class="badge badge-gold">' + v + ' lat</span>'; }],
@@ -882,9 +899,48 @@ function bindInputs() {
     var inp  = document.getElementById(inputId);
     var ran  = document.getElementById(rangId);
     var disp = document.getElementById(dispId);
-    function sync(src) { ran.value = inp.value = src.value; disp.innerHTML = fmtFn(src.value); calculate(); }
-    inp.addEventListener('input', function(){ sync(inp); });
-    ran.addEventListener('input', function(){ sync(ran); });
+    var allowsDecimal = !!decimalInputs[inputId];
+    function syncFromInput() {
+      if (allowsDecimal) {
+        var normalized = normalizeNumericString(inp.value);
+        if (normalized !== inp.value) {
+          try {
+            var cursor = inp.selectionStart;
+            inp.value = normalized;
+            inp.selectionStart = inp.selectionEnd = cursor;
+          } catch(e) {
+            inp.value = normalized;
+          }
+        }
+      }
+      if (isTransientNumericInput(inp.value)) return;
+      var parsed = parseLocaleFloat(inp.value);
+      if (!Number.isFinite(parsed)) return;
+      ran.value = String(parsed);
+      disp.innerHTML = fmtFn(ran.value);
+      calculate();
+    }
+    function syncFromRange() {
+      inp.value = ran.value;
+      disp.innerHTML = fmtFn(ran.value);
+      calculate();
+    }
+    function commitInput() {
+      var committed = normalizeNumericString(inp.value).trim();
+      if (committed.endsWith('.')) committed = committed.slice(0, -1);
+      var parsed = parseLocaleFloat(committed);
+      if (!Number.isFinite(parsed)) {
+        inp.value = ran.value;
+      } else {
+        inp.value = String(parsed);
+        ran.value = String(parsed);
+      }
+      disp.innerHTML = fmtFn(String(parseLocaleFloat(inp.value)));
+      calculate();
+    }
+    inp.addEventListener('input', syncFromInput);
+    inp.addEventListener('change', commitInput);
+    ran.addEventListener('input', syncFromRange);
   });
   document.getElementById('miesiac_start').addEventListener('change', function(){ calculate(); });
   document.getElementById('salary_source').addEventListener('change', function(){ calculate(); });
