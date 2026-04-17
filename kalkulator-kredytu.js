@@ -2,7 +2,7 @@
 // STALE I DANE POMOCNICZE
 // ==========================================
 
-const DEFAULT_FUTURE_WIBOR = 3.0;
+const DEFAULT_FUTURE_WIBOR = 4.0;
 const DEFAULT_FUTURE_CPI   = 3.0;
 const DEFAULT_FUTURE_SALARY_GROWTH = 3.5;
 const DEFAULT_FUTURE_CPI_MONTHLY = (Math.pow(1 + DEFAULT_FUTURE_CPI / 100, 1 / 12) - 1) * 100;
@@ -69,8 +69,7 @@ for (let y = 1995; y <= 2026; y++) {
 
 const HIST_MIN_YEAR = 2000;
 const LAST_HIST_WIBOR_YEAR = 2026;
-const LAST_HIST_CPI_ANNUAL = Math.max(...Object.keys(CPI_ANNUAL).map(Number));
-const LAST_HIST_CPI_MONTHLY = 2026;
+const LAST_HIST_CPI = Math.max(...Object.keys(CPI_MONTHLY).map(function(k){ return parseInt(k.slice(0,4), 10); }));
 
 // ==========================================
 // FUNKCJE DANYCH
@@ -89,10 +88,6 @@ function getWibor(year, month, mode) {
   return val !== undefined ? val : futureWibor;
 }
 
-function getCpiAnnual(year) {
-  return CPI_ANNUAL[year] !== undefined ? CPI_ANNUAL[year] : futureCpi;
-}
-
 function getFutureCpiMonthly() {
   return (Math.pow(1 + futureCpi / 100, 1 / 12) - 1) * 100;
 }
@@ -106,18 +101,20 @@ function annualizeMonthlyCpi(cpiMonthlyPct) {
   return (Math.pow(1 + cpiMonthlyPct / 100, 12) - 1) * 100;
 }
 
-function getMonthlyDeflatorFactor(year, month, cpiMode) {
-  if (cpiMode === 'monthly') {
-    return 1 / (1 + getCpiMonthly(year, month) / 100);
+// Geometric compound of 12 monthly CPI m/m values for a calendar year
+// (returns % rate). Returns null if any month is missing.
+function annualizeMonthlyCpiForYear(year) {
+  var factor = 1;
+  for (var m = 1; m <= 12; m++) {
+    var key = year + '-' + String(m).padStart(2, '0');
+    if (CPI_MONTHLY[key] === undefined) return null;
+    factor *= (1 + CPI_MONTHLY[key] / 100);
   }
-  return 1 / Math.pow(1 + getCpiAnnual(year) / 100, 1 / 12);
+  return +((factor - 1) * 100).toFixed(2);
 }
 
-function getCpiComparableAnnual(year, month, cpiMode) {
-  if (cpiMode === 'monthly') {
-    return annualizeMonthlyCpi(getCpiMonthly(year, month));
-  }
-  return getCpiAnnual(year);
+function getMonthlyDeflatorFactor(year, month) {
+  return 1 / (1 + getCpiMonthly(year, month) / 100);
 }
 
 // ==========================================
@@ -139,7 +136,7 @@ function calcAvgStats(rows) {
   var sumWibor = 0, sumCpi = 0;
   rows.forEach(function(r) {
     sumWibor += r.wibor;
-    sumCpi += getCpiComparableAnnual(r.rok, r.calMonth + 1, cpiMode);
+    sumCpi += annualizeMonthlyCpi(getCpiMonthly(r.rok, r.calMonth + 1));
   });
   var n = rows.length;
   return { avgWibor: sumWibor / n, avgCpi: sumCpi / n, avgSpread: (sumWibor - sumCpi) / n };
@@ -148,7 +145,7 @@ function calcAvgStats(rows) {
 // Pelny harmonogram - fixing WIBOR co N miesiecy od dnia startu kredytu.
 // Brak stalych dat fixingowych (np. maj/listopad) - termin wynika wylacznie
 // z miesiaca startowego i interwalu (1M, 3M lub 6M).
-function calcHarmonogram(kwota, rokStart, startMonth, latKredytu, marza, wiborMode, cpiMode, rateTypeArg) {
+function calcHarmonogram(kwota, rokStart, startMonth, latKredytu, marza, wiborMode, rateTypeArg) {
   const nMonths = latKredytu * 12;
   const fixInterval = wiborMode === '1M' ? 1 : (wiborMode === '3M' ? 3 : 6);
   const MIESIAC_NAZWY = ['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'];
@@ -202,7 +199,7 @@ function calcHarmonogram(kwota, rokStart, startMonth, latKredytu, marza, wiborMo
       deflator: cumulativeDeflator, rataReal
     });
 
-    const monthlyDeflatorFactor = getMonthlyDeflatorFactor(calYear, calMonth + 1, cpiMode);
+    const monthlyDeflatorFactor = getMonthlyDeflatorFactor(calYear, calMonth + 1);
     cumulativeDeflator *= monthlyDeflatorFactor;
   }
   return rows;
@@ -235,7 +232,6 @@ let myChart = null;
 let currentTab = 'nominal';
 let currentData = {};
 let wiborMode = '3M';
-let cpiMode = 'annual';
 let salarySource = 'average';
 let rateType = 'rowna';
 let methodologyOpen = false;
@@ -281,13 +277,6 @@ function setWiborMode(mode) {
   document.getElementById('btn_wibor3m').classList.toggle('active', mode === '3M');
   const btn1m = document.getElementById('btn_wibor1m');
   if (btn1m) btn1m.classList.toggle('active', mode === '1M');
-  calculate();
-}
-
-function setCpiMode(mode) {
-  cpiMode = mode;
-  document.getElementById('btn_cpi_annual').classList.toggle('active', mode === 'annual');
-  document.getElementById('btn_cpi_monthly').classList.toggle('active', mode === 'monthly');
   calculate();
 }
 
@@ -363,19 +352,10 @@ function updateMethodologyPanel(data) {
   const kapital1 = rowA0.rata - odsetki1;
   const saldoPo1 = data.kwota - kapital1;
 
-  const deflator1 = getMonthlyDeflatorFactor(data.rokStart, data.startMonth, data.cpiMode);
-  const cpiLabel = data.cpiMode === 'monthly'
-    ? 'CPI miesięczna (miesiąc startu, miesiąc do miesiąca)'
-    : 'CPI roczne (rok startu)';
-  const cpiValue = data.cpiMode === 'monthly'
-    ? fmtPct(data.cpiStartRaw) + ' (≈ ' + fmtPct(data.cpiStartComparable) + ' rok do roku)'
-    : fmtPct(data.cpiStartRaw);
-  const cpiModeLabel = data.cpiMode === 'monthly'
-    ? 'Miesięczny (miesiąc do miesiąca)'
-    : 'Roczny';
-  const deflatorFormula = data.cpiMode === 'monthly'
-    ? 'deflator miesięczny = 1 / (1 + CPI miesięczne miesiąc do miesiąca)'
-    : 'deflator miesięczny = 1 / (1 + CPI roczne)^(1/12)';
+  const deflator1 = getMonthlyDeflatorFactor(data.rokStart, data.startMonth);
+  const cpiLabel = 'CPI miesięczna (miesiąc startu, miesiąc do miesiąca)';
+  const cpiValue = fmtPct(data.cpiStartRaw) + ' (≈ ' + fmtPct(data.cpiStartComparable) + ' rok do roku)';
+  const deflatorFormula = 'deflator miesięczny = 1 / (1 + CPI miesięczne miesiąc do miesiąca)';
   const rateTypeLabel = data.rateType === 'malejaca'
     ? 'Rata malejąca'
     : 'Rata równa (annuitet)';
@@ -394,7 +374,6 @@ function updateMethodologyPanel(data) {
   setMethodValue('exp_odsetki_1', fmtPLN(odsetki1));
   setMethodValue('exp_kapital_1', fmtPLN(kapital1));
   setMethodValue('exp_saldo_po_1', fmtPLN(saldoPo1));
-  setMethodValue('exp_cpi_mode', cpiModeLabel);
   setMethodValue('exp_cpi_label', cpiLabel);
   setMethodValue('exp_cpi_value', cpiValue);
   setMethodValue('exp_deflator_formula', deflatorFormula);
@@ -469,12 +448,8 @@ function calculate() {
   const fixInterval = wiborMode === '1M' ? 1 : (wiborMode === '3M' ? 3 : 6);
 
   const wiborStart = getWibor(rokStart, startMonth, wiborMode);
-  const cpiStartRaw   = cpiMode === 'monthly'
-    ? getCpiMonthly(rokStart, startMonth)
-    : getCpiAnnual(rokStart);
-  const cpiStartComparable = cpiMode === 'monthly'
-    ? annualizeMonthlyCpi(cpiStartRaw)
-    : cpiStartRaw;
+  const cpiStartRaw = getCpiMonthly(rokStart, startMonth);
+  const cpiStartComparable = annualizeMonthlyCpi(cpiStartRaw);
   const stopaStart = wiborStart + marza;
   const realStopa  = stopaStart - cpiStartComparable;
 
@@ -483,19 +458,13 @@ function calculate() {
   wiborLabelEl.title = 'WIBOR ' + wiborMode + ' dla miesiąca startu kredytu';
 
   const cpiLabelEl = document.getElementById('cpi_label');
-  if (cpiMode === 'monthly') {
-    cpiLabelEl.textContent = 'Inflacja CPI (miesiąc startu, miesiąc do miesiąca)';
-    cpiLabelEl.title = 'Inflacja CPI (miesiąc startu, miesiąc do miesiąca)';
-  } else {
-    cpiLabelEl.textContent = 'Inflacja CPI (rok startu, roczna)';
-    cpiLabelEl.title = 'Inflacja CPI (rok startu, roczna)';
-  }
+  cpiLabelEl.textContent = 'Inflacja CPI (miesiąc startu, miesiąc do miesiąca)';
+  cpiLabelEl.title = 'Inflacja CPI (miesiąc startu, miesiąc do miesiąca)';
   document.getElementById('wibor_display').textContent     = fmtPct(wiborStart);
   document.getElementById('marza_display').textContent     = fmtPct(marza);
   document.getElementById('total_rate_display').textContent = fmtPct(stopaStart);
-  document.getElementById('inf_display').textContent = cpiMode === 'monthly'
-    ? fmtPct(cpiStartRaw) + ' (≈ ' + fmtPct(cpiStartComparable) + ' rok do roku)'
-    : fmtPct(cpiStartRaw);
+  document.getElementById('inf_display').textContent =
+    fmtPct(cpiStartRaw) + ' (≈ ' + fmtPct(cpiStartComparable) + ' rok do roku)';
   document.getElementById('real_rate_display').textContent  = fmtPct(realStopa);
 
   const tagWiborEl = document.getElementById('tag_wibor');
@@ -503,13 +472,8 @@ function calculate() {
   tagWiborEl.title = 'Dane WIBOR: notowania miesięczne';
 
   const tagCpiEl = document.getElementById('tag_cpi');
-  if (cpiMode === 'monthly') {
-    tagCpiEl.textContent = 'Inflacja CPI · GUS Polska (miesięczna, miesiąc do miesiąca)';
-    tagCpiEl.title = 'Inflacja CPI (miesięczna, miesiąc do miesiąca)';
-  } else {
-    tagCpiEl.textContent = 'Inflacja CPI · GUS Polska (roczna)';
-    tagCpiEl.title = 'Inflacja CPI (roczna)';
-  }
+  tagCpiEl.textContent = 'Inflacja CPI · GUS Polska (miesięczna, miesiąc do miesiąca)';
+  tagCpiEl.title = 'Inflacja CPI (miesięczna, miesiąc do miesiąca)';
   const tagProjectionEl = document.getElementById('tag_projection');
   tagProjectionEl.textContent =
     'Projekcja 2027+ · WIBOR ' + fmt(futureWibor, 1) + '% · CPI ' + fmt(futureCpi, 1) +
@@ -519,8 +483,8 @@ function calculate() {
   document.getElementById('card_la').textContent = latA;
   document.getElementById('card_lb').textContent = latB;
 
-  const rowsA = calcHarmonogram(kwota, rokStart, startMonth, latA, marza, wiborMode, cpiMode, rateType);
-  const rowsB = calcHarmonogram(kwota, rokStart, startMonth, latB, marza, wiborMode, cpiMode, rateType);
+  const rowsA = calcHarmonogram(kwota, rokStart, startMonth, latA, marza, wiborMode, rateType);
+  const rowsB = calcHarmonogram(kwota, rokStart, startMonth, latB, marza, wiborMode, rateType);
   const yearA = aggregateYearly(rowsA);
   const yearB = aggregateYearly(rowsB);
 
@@ -598,24 +562,21 @@ function calculate() {
       fmtPLN(Math.abs(realDiff)) + '</strong> (w PLN z ' + dataWyceny + ').';
   }
 
-  const lastHistCPI = cpiMode === 'monthly' ? LAST_HIST_CPI_MONTHLY : LAST_HIST_CPI_ANNUAL;
   document.getElementById('note_extra').innerHTML =
     '<strong>Metodologia (w skrócie):</strong><br>' +
     '1) Co ' + fixInterval + ' miesięcy od startu kredytu (bez stałych dat kalendarzowych) pobieramy aktualny WIBOR ' +
     wiborMode + ' i wyliczamy nową ratę od bieżącego salda.<br>' +
-    '2) Dane WIBOR to historyczne notowania miesięczne (zamknięcia miesiąca). Inflacja CPI pochodzi z GUS' +
-    (cpiMode === 'monthly' ? ' (miesięczna, miesiąc do miesiąca).' : ' (roczna).') +
-    '<br>3) Dane historyczne: WIBOR do ' + LAST_HIST_WIBOR_YEAR + ', CPI do ' + lastHistCPI +
+    '2) Dane WIBOR to historyczne notowania miesięczne (zamknięcia miesiąca). Inflacja CPI pochodzi z GUS (miesięczna, miesiąc do miesiąca).' +
+    '<br>3) Dane historyczne: WIBOR do ' + LAST_HIST_WIBOR_YEAR + ', CPI do ' + LAST_HIST_CPI +
     '. Dla kolejnych lat przyjmujemy stałą projekcję: WIBOR ' + fmt(futureWibor, 1) +
-    '%, inflacja ' + fmt(futureCpi, 1) + '%' +
-    (cpiMode === 'monthly' ? ' (≈ ' + fmt(futureCpiMonthly, 2) + '% m/m)' : '') +
+    '%, inflacja ' + fmt(futureCpi, 1) + '% rocznie (≈ ' + fmt(futureCpiMonthly, 2) + '% m/m)' +
     ', wzrost wynagrodzeń ' + fmt(futureSalaryGrowth, 1) + '%.<br>' +
     '4) Prowizję banku (' + fmt(prowizjaPct, 1) + '%) doliczamy jako koszt jednorazowy na starcie — bez zwiększania salda kredytu. W wartości realnej prowizja ma ten sam poziom, bo jest kosztem w miesiącu 0 (deflator = 1).<br>' +
     '5) Realne odsetki i rozkład czynników liczymy od samych rat (bez prowizji), aby oddzielić koszt finansowania od opłaty jednorazowej.<br>' +
     '6) Rodzaj rat: ' + (rateType === 'malejaca' ? 'malejące' : 'równe (annuitet)') + '.';
 
   updateMethodologyPanel({
-    kwota, rokStart, startMonth, latA, latB, marza, cpiMode, rateType,
+    kwota, rokStart, startMonth, latA, latB, marza, rateType,
     wiborStart, cpiStartRaw, cpiStartComparable,
     rowsA, rowsB,
     prowizjaPct, prowizjaA, prowizjaB,
@@ -625,8 +586,8 @@ function calculate() {
   });
 
   // ---- Rozklad czynnikow realnego kosztu ----
-  const rowsA0 = calcHarmonogram(kwota, rokStart, startMonth, latA, 0, wiborMode, cpiMode, rateType);
-  const rowsB0 = calcHarmonogram(kwota, rokStart, startMonth, latB, 0, wiborMode, cpiMode, rateType);
+  const rowsA0 = calcHarmonogram(kwota, rokStart, startMonth, latA, 0, wiborMode, rateType);
+  const rowsB0 = calcHarmonogram(kwota, rokStart, startMonth, latB, 0, wiborMode, rateType);
   const totReal0A = rowsA0.reduce(function(s,r){ return s + r.rataReal; }, 0);
   const totReal0B = rowsB0.reduce(function(s,r){ return s + r.rataReal; }, 0);
   const wiborCpiContribA = totReal0A - kwota;
@@ -740,7 +701,7 @@ function renderChart() {
           { label: 'WIBOR 1M (%)', data: years.map(function(y){ return WIBOR1M_ANNUAL[y] !== undefined ? WIBOR1M_ANNUAL[y] : null; }),
             borderColor: '#c97eb8', backgroundColor: 'rgba(201,126,184,0.07)',
             borderWidth: 2, pointRadius: 2, tension: 0.3, fill: false },
-          { label: 'Inflacja CPI (%)', data: years.map(function(y){ return CPI_ANNUAL[y] !== undefined ? CPI_ANNUAL[y] : null; }),
+          { label: 'Inflacja CPI (%)', data: years.map(function(y){ return annualizeMonthlyCpiForYear(y); }),
             borderColor: '#70c997', backgroundColor: 'rgba(112,201,151,0.07)',
             borderWidth: 1.5, borderDash: [4,3], pointRadius: 2, tension: 0.3, fill: false }
         ]

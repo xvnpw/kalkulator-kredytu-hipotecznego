@@ -59,11 +59,6 @@ JOBS: dict[str, dict[str, str]] = {
         "input": "miesieczne_wskazniki_cen_towarow_i_uslug_konsumpcyjnych_od_1982_roku__2.csv",
         "output": "data-cpi-monthly.js",
     },
-    "cpi-annual": {
-        "script": "parse_cpi_annual.py",
-        "input": "rocznewskaznikicentowarowiuslugkonsumpcyjnychod1950roku_2.csv",
-        "output": "data-cpi-annual.js",
-    },
 }
 
 

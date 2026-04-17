@@ -112,14 +112,6 @@
       </div>
 
       <div class="field">
-        <label>Dane inflacji CPI</label>
-        <div class="toggle-group">
-          <button class="toggle-btn active" id="btn_cpi_annual" onclick="setCpiMode('annual')">Roczna (GUS)</button>
-          <button class="toggle-btn" id="btn_cpi_monthly" onclick="setCpiMode('monthly')">Miesięczna (GUS)</button>
-        </div>
-      </div>
-
-      <div class="field">
         <label>Źródło danych wynagrodzeń</label>
         <div class="field-row">
           <select id="salary_source">
@@ -138,11 +130,11 @@
         <div class="field">
           <label title="Stosowany dla WIBOR 1M, 3M i 6M">Przyszły WIBOR (%)</label>
           <div class="field-row">
-            <input type="number" id="future_wibor" value="3.0" min="0" max="15" step="0.001">
+            <input type="number" id="future_wibor" value="4.0" min="0" max="15" step="0.001">
             <span class="unit">%</span>
           </div>
-          <input type="range" id="future_wibor_r" min="0" max="15" step="0.1" value="3.0">
-          <div class="range-val" id="future_wibor_rv">3,0%</div>
+          <input type="range" id="future_wibor_r" min="0" max="15" step="0.1" value="4.0">
+          <div class="range-val" id="future_wibor_rv">4,0%</div>
         </div>
 
         <div class="field">
@@ -441,7 +433,6 @@
             <div class="formula-line"><code id="exp_deflator_formula">—</code></div>
             <div class="formula-line"><code>rata_realna_t = rata_nominalna_t × skumulowany_deflator_t</code></div>
             <div class="explainer-kv">
-              <div class="explainer-kv-row"><span>Tryb CPI</span><strong id="exp_cpi_mode">—</strong></div>
               <div class="explainer-kv-row"><span id="exp_cpi_label">CPI użyte do deflatora</span><strong id="exp_cpi_value">—</strong></div>
               <div class="explainer-kv-row"><span>Deflator dla 1. miesiąca</span><strong id="exp_deflator_1">—</strong></div>
               <div class="explainer-kv-row"><span>Rata nominalna (2. miesiąc, A)</span><strong id="exp_rata_nom_2">—</strong></div>
@@ -515,7 +506,6 @@
 <script src="data-wibor6m.js"></script>
 <script src="data-wibor3m.js"></script>
 <script src="data-wibor1m.js"></script>
-<script src="data-cpi-annual.js"></script>
 <script src="data-cpi-monthly.js"></script>
 <script src="data-wynagrodzenia-przecietne.js"></script>
 <script src="data-wynagrodzenia-minimalne.js"></script>

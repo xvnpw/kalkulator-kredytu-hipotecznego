@@ -152,6 +152,7 @@
   .event-badge-refinance { background: rgba(126,184,201,0.15); color: var(--accent2); }
   .event-badge-payoff { background: rgba(224,112,112,0.15); color: var(--danger); }
   .event-badge-recurring { background: rgba(200,169,110,0.15); color: var(--accent); }
+  .event-badge-extend { background: rgba(200,169,110,0.15); color: var(--accent); }
   .event-inactive {
     opacity: 0.5;
     border-style: dashed;
@@ -164,6 +165,7 @@
   .row-overpay { background: rgba(112,201,151,0.06) !important; }
   .row-refinance { background: rgba(126,184,201,0.06) !important; }
   .row-payoff { background: rgba(224,112,112,0.06) !important; }
+  .row-extend { background: rgba(200,169,110,0.06) !important; }
   .row-provision { background: rgba(200,169,110,0.04) !important; }
   .provision-info {
     font-size: 10px;
@@ -290,14 +292,6 @@
       </div>
 
       <div class="field">
-        <label>Dane inflacji CPI</label>
-        <div class="toggle-group">
-          <button class="toggle-btn active" id="btn_cpi_annual" onclick="setCpiMode('annual')">Roczna (GUS)</button>
-          <button class="toggle-btn" id="btn_cpi_monthly" onclick="setCpiMode('monthly')">Miesięczna (GUS)</button>
-        </div>
-      </div>
-
-      <div class="field">
         <label>Źródło danych wynagrodzeń</label>
         <div class="field-row">
           <select id="salary_source">
@@ -324,11 +318,11 @@
         <div class="field">
           <label>Przyszły WIBOR (%)</label>
           <div class="field-row">
-            <input type="number" id="future_wibor" value="3.0" min="0.5" max="15" step="0.001">
+            <input type="number" id="future_wibor" value="4.0" min="0.5" max="15" step="0.001">
             <span class="unit">%</span>
           </div>
-          <input type="range" id="future_wibor_r" min="0.5" max="15" step="0.1" value="3.0">
-          <div class="range-val" id="future_wibor_rv">3,0%</div>
+          <input type="range" id="future_wibor_r" min="0.5" max="15" step="0.1" value="4.0">
+          <div class="range-val" id="future_wibor_rv">4,0%</div>
         </div>
 
         <div class="field">
@@ -417,10 +411,10 @@
         <div class="card accent">
           <div class="card-label">Rata początkowa</div>
           <div class="card-val" id="rata_base">—</div>
-          <div class="card-sub">PLN / miesiąc (bez nadpłat)</div>
+          <div class="card-sub">PLN / miesiąc (bazowy)</div>
         </div>
         <div class="card blue">
-          <div class="card-label">Rata po nadpłatach</div>
+          <div class="card-label">Rata po zmianach</div>
           <div class="card-val" id="rata_mod">—</div>
           <div class="card-sub" id="rata_mod_sub">PLN / miesiąc</div>
         </div>
@@ -458,7 +452,7 @@
         <div class="compare-grid">
           <div class="compare-col col-25">
             <div class="compare-year" id="cA_label">Bazowy</div>
-            <div class="compare-title" id="cA_sub">Bez nadpłat</div>
+            <div class="compare-title" id="cA_sub">Bazowy</div>
             <div class="compare-row">
               <span class="lbl">Okres kredytu</span>
               <span class="val" id="cA_okres">—</span>
@@ -489,7 +483,7 @@
             </div>
           </div>
           <div class="compare-col col-10">
-            <div class="compare-year" id="cB_label">Z nadpłatami</div>
+            <div class="compare-year" id="cB_label">Nowy</div>
             <div class="compare-title" id="cB_sub">Harmonogram zmodyfikowany</div>
             <div class="compare-row">
               <span class="lbl">Okres kredytu</span>
@@ -524,7 +518,7 @@
 
         <div class="big-verdict">
           <div class="v-label">Wniosek kalkulatora</div>
-          <p id="verdict_text">Dodaj zdarzenia (nadpłaty) aby zobaczyć porównanie.</p>
+          <p id="verdict_text">Dodaj zdarzenia aby zobaczyć porównanie.</p>
         </div>
         <div class="note" style="margin-top:14px" id="note_extra"></div>
 
@@ -539,7 +533,7 @@
         </button>
         <div class="explainer-body" id="metodyka_body" hidden>
           <p class="explainer-lead">
-            Kalkulator oblicza dwa harmonogramy: <strong>bazowy</strong> (bez nadpłat) i <strong>zmodyfikowany</strong> (z nadpłatami/refinansowaniem).
+            Kalkulator oblicza dwa harmonogramy: <strong>bazowy</strong> (bez zdarzeń) i <strong>zmodyfikowany</strong> / <strong>nowy</strong> (ze zdarzeniami: nadpłaty, refinansowanie, wydłużenie, spłata).
             Oba uwzględniają historyczne notowania WIBOR i inflację CPI.
           </p>
 
@@ -561,11 +555,11 @@
             <div class="explainer-title">Krok 3: Inflacja i realny koszt</div>
             <p>Ratę nominalną przeliczamy na wartość pieniądza z dnia startu kredytu.</p>
             <div class="formula-line"><code>rata_realna = rata_nominalna × skumulowany_deflator</code></div>
-            <div class="formula-line"><code>deflator_miesięczny = 1 / (1 + CPI_roczne)^(1/12)</code></div>
+            <div class="formula-line"><code>deflator_miesięczny = 1 / (1 + CPI_m/m)</code></div>
           </div>
 
           <div class="explainer-block">
-            <div class="explainer-title">Krok 4: Jak działa nadpłata?</div>
+            <div class="explainer-title">Krok 4: Nadpłata</div>
             <p><strong>Niższa rata:</strong> po nadpłacie przeliczamy ratę od nowego (niższego) salda na pozostałą liczbę miesięcy. Okres kredytu nie zmienia się.</p>
             <p><strong>Krótszy okres:</strong> rata pozostaje taka sama, ale kredyt kończy się wcześniej, bo saldo szybciej maleje.</p>
           </div>
@@ -576,12 +570,17 @@
           </div>
 
           <div class="explainer-block">
-            <div class="explainer-title">Krok 6: Prowizje</div>
+            <div class="explainer-title">Krok 6: Wydłużenie okresu</div>
+            <p>Wydłużenie nie zmienia salda ani stopy — tylko rozciąga pozostałą liczbę rat. Rata jest natychmiast przeliczana od bieżącego salda na nową (większą) liczbę miesięcy, więc jest niższa. Łącznie zapłacisz jednak więcej odsetek, bo są naliczane przez dłuższy czas.</p>
+          </div>
+
+          <div class="explainer-block">
+            <div class="explainer-title">Krok 7: Prowizje</div>
             <p>Prowizja początkowa i prowizja refinansowania są wliczone do łącznego kosztu kredytu, ale <strong>nie</strong> są dodawane do salda. Pojawiają się w podsumowaniu jako osobna pozycja.</p>
           </div>
 
           <div class="explainer-block">
-            <div class="explainer-title">Krok 7: Koszt alternatywny (opportunity cost)</div>
+            <div class="explainer-title">Krok 8: Koszt alternatywny (opportunity cost)</div>
             <p>Dla każdej nadpłaty obliczamy, ile zarobiłaby na rynku:</p>
             <div class="formula-line"><code>portfel[m] = (portfel[m-1] + wpłata[m]) × (1 + stopa_miesięczna[m])</code></div>
             <div class="formula-line"><code>zysk_realny_mies[m] = zysk_nominalny_mies[m] × deflator_skumulowany[m]</code></div>
@@ -606,8 +605,8 @@
       <div class="chart-panel">
         <div class="panel-title">Szczegółowa tabela miesięczna</div>
         <div class="tab-row">
-          <button class="tab-btn active" onclick="switchTableTab('tA')" id="tbtn_A">Bez nadpłat</button>
-          <button class="tab-btn" onclick="switchTableTab('tB')" id="tbtn_B">Z nadpłatami</button>
+          <button class="tab-btn active" onclick="switchTableTab('tA')" id="tbtn_A">Bazowy</button>
+          <button class="tab-btn" onclick="switchTableTab('tB')" id="tbtn_B">Nowy</button>
         </div>
         <div class="tab-content active" id="tA">
           <div class="table-scroll"><table id="tableA"></table></div>
@@ -620,7 +619,7 @@
           <span style="color:#70c997">zielony</span> — nadpłata,
           <span style="color:#7eb8c9">niebieski</span> — refinansowanie,
           <span style="color:#e07070">czerwony</span> — pełna spłata,
-          <span style="color:#c8a96e">złoty</span> — fixing/prowizja.
+          <span style="color:#c8a96e">złoty</span> — wydłużenie / fixing / prowizja.
           <br><strong>Stosunek raty do wynagrodzenia:</strong> <span style="color:#70c997">&lt;35%</span>, <span style="color:#c8a96e">35–50%</span>, <span style="color:#e07070">&gt;50%</span>.
         </div>
       </div>
@@ -632,7 +631,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="data-wibor6m.js"></script>
 <script src="data-wibor3m.js"></script>
-<script src="data-cpi-annual.js"></script>
 <script src="data-cpi-monthly.js"></script>
 <script src="data-wynagrodzenia-przecietne.js"></script>
 <script src="data-wynagrodzenia-minimalne.js"></script>

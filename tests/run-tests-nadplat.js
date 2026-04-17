@@ -38,7 +38,7 @@ var inputValues = {
   marza: '2',
   prowizja: '2',
   salary_source: 'average',
-  future_wibor: '3.0',
+  future_wibor: '4.0',
   future_cpi: '3.0',
   future_salary: '3.5',
   future_stock_return: '5.0',
@@ -86,7 +86,6 @@ const sandbox = vm.createContext({
 var dataFiles = [
   'data-wibor6m.js',
   'data-wibor3m.js',
-  'data-cpi-annual.js',
   'data-cpi-monthly.js',
   'data-wynagrodzenia-przecietne.js',
   'data-wynagrodzenia-minimalne.js',

@@ -27,10 +27,9 @@ Both share the same external CSS (`kalkulator-kredytu.css`) and a set of data JS
 | `data-wibor6m.js` | `WIBOR6M_MONTHLY` | WIBOR 6M monthly closing values. Key: `"YYYY-MM"`, value: % rate. Source: `sources/csv/plopln6m_m.csv`. |
 | `data-wibor3m.js` | `WIBOR3M_MONTHLY` | WIBOR 3M monthly closing values. Key: `"YYYY-MM"`, value: % rate. Source: `sources/csv/plopln3m_m.csv`. |
 | `data-wibor1m.js` | `WIBOR1M_MONTHLY` | WIBOR 1M monthly closing values. Key: `"YYYY-MM"`, value: % rate. Source: `sources/csv/plopln1m_m.csv`. |
-| `data-cpi-annual.js` | `CPI_ANNUAL` | Annual Polish CPI as **percentage points** (e.g. `14.4` means 14.4%). Source: `sources/csv/rocznewskaznikicentowarowiuslugkonsumpcyjnychod1950roku_2.csv`. |
 | `data-cpi-monthly.js` | `CPI_MONTHLY` | Monthly CPI m/m (previous month = 100, stored as `index - 100`). Key: `"YYYY-MM"`. Source: `sources/csv/miesieczne_wskazniki_cen_towarow_i_uslug_konsumpcyjnych_od_1982_roku__2.csv`. |
-| `data-wynagrodzenia-przecietne.js` | `WYNAGRODZENIA_PRZECIETNE` | Annual average monthly gross wage (PLN, overall). |
-| `data-wynagrodzenia-minimalne.js` | `WYNAGRODZENIA_MINIMALNE` | Annual minimum wage values (PLN). |
+| `data-wynagrodzenia-przecietne.js` | `WYNAGRODZENIA_PRZECIETNE` | Monthly average gross wage indexed by year (PLN/month). |
+| `data-wynagrodzenia-minimalne.js` | `WYNAGRODZENIA_MINIMALNE` | Monthly minimum wage indexed by year (PLN/month). |
 
 ### Additional data files (symulator-nadplat.html only)
 
@@ -53,14 +52,14 @@ Both applications define similar constants in their `<script>` blocks:
 |---|---|
 | `SALARY_SOURCE_CONFIG` | Salary source registry (`average`, `minimum`) with labels, tooltips, and yearly data maps. |
 | `WIBOR6M_ANNUAL` / `WIBOR3M_ANNUAL` / `WIBOR1M_ANNUAL` | Annual averages computed at startup from monthly WIBOR datasets; used only for the WIBOR history chart. |
-| `DEFAULT_FUTURE_WIBOR` / `DEFAULT_FUTURE_CPI` / `DEFAULT_FUTURE_CPI_MONTHLY` | Default fallback projection values. In `index.html` active future parameters are configurable from UI (`future_wibor`, `future_cpi`, `future_salary`) and monthly CPI fallback is derived from annual CPI. |
+| `DEFAULT_FUTURE_WIBOR` / `DEFAULT_FUTURE_CPI` / `DEFAULT_FUTURE_CPI_MONTHLY` | Default fallback projection values (`DEFAULT_FUTURE_WIBOR = 4.0%` = inflation default + 1 pp; `DEFAULT_FUTURE_CPI = 3.0%`). In `index.html` active future parameters are configurable from UI (`future_wibor`, `future_cpi`, `future_salary`). The user-facing `future_cpi` input is expressed as annual % and is automatically converted to its monthly-equivalent via `(1 + annual/100)^(1/12) − 1`. |
 
 The overpayment simulator (`symulator-nadplat.js`) additionally computes:
 
 | Constant / Function | Contents |
 |---|---|
-| `getFutureWibor()` | Dynamic getter — reads from `#future_wibor` input, default 3.0%. Replaces hardcoded `DEFAULT_FUTURE_WIBOR`. |
-| `getFutureCpi()` | Dynamic getter — reads from `#future_cpi` input, default 3.0%. |
+| `getFutureWibor()` | Dynamic getter — reads from `#future_wibor` input, default **4.0%** (inflation default + 1 pp). Uses `Number.isFinite` fallback, so a legitimate `0` input is preserved (not silently replaced). |
+| `getFutureCpi()` | Dynamic getter — reads from `#future_cpi` input, default 3.0%. `Number.isFinite` fallback preserves `0` input. |
 | `getFutureSalaryGrowth()` | Dynamic getter — reads from `#future_salary` input, default 3.5%. |
 | `getFutureStockReturn()` | Dynamic getter — reads from `#future_stock_return` input, default 5.0%. |
 | `getFutureDepositRate()` | Dynamic getter — reads from `#future_deposit_rate` input, default 3.0%. |
@@ -69,7 +68,7 @@ The overpayment simulator (`symulator-nadplat.js`) additionally computes:
 ## Shared calculation conventions
 
 - **WIBOR fixing** happens every `fixInterval` months from the loan start month (1 for WIBOR 1M, 3 for WIBOR 3M, 6 for WIBOR 6M). There are no fixed calendar dates — the interval is purely relative to month index `m`: `isFix = (m % fixInterval === 0)`.
-- **Real payment** uses a **cumulative monthly deflator** that starts at `1.0` in month 0 (so `rataReal[0] === rata[0]`). The deflator is updated *after* each month: for annual CPI mode `cumulativeDeflator *= 1 / (1 + annualCPI/100)^(1/12)`, for monthly CPI mode `cumulativeDeflator *= 1 / (1 + monthlyCPI/100)`.
+- **Real payment** uses a **cumulative monthly deflator** that starts at `1.0` in month 0 (so `rataReal[0] === rata[0]`). The deflator is updated *after* each month: `cumulativeDeflator *= 1 / (1 + monthlyCPI/100)` where `monthlyCPI` is sourced from `CPI_MONTHLY` (m/m), falling back to the monthly-equivalent of the annual projection input.
 - **Provision (`prowizja`)** is an off-balance one-time cost at month 0 (does not increase `saldo`). In real totals it is added 1:1 (month-0 deflator is `1.0`).
 - **Real interest** can legitimately be **negative** when high inflation deflates total real payments below the principal. Do not clamp with `Math.max(0, ...)`.
 - **Affordability ratio** uses the currently selected salary source from `SALARY_SOURCE_CONFIG` (average/minimum), with monthly values.
@@ -86,7 +85,7 @@ The overpayment simulator (`symulator-nadplat.js`) additionally computes:
 - CSS custom properties: `var(--accent)` (gold) for Variant A, `var(--accent2)` (blue) for Variant B.
 - Chart tabs: `nominal`, `real`, `wibor`, `affordability`.
 - Table tabs: `tA` / `tB`.
-- `calcAvgStats(rows)` computes average WIBOR, CPI, and spread; reads module-level `cpiMode`.
+- `calcAvgStats(rows)` computes average WIBOR, CPI, and spread; annualizes per-month CPI m/m for comparability.
 - Factor analysis: real interest decomposed into **margin contribution** and **WIBOR−CPI spread effect** via zero-margin harmonograms.
 
 ## symulator-nadplat.html specifics
@@ -96,19 +95,20 @@ The overpayment simulator (`symulator-nadplat.js`) additionally computes:
 - Default startup values in `symulator-nadplat.html`: year `2005`, month `styczeń` (`1`), margin `2.0%`, initial provision `2.0%`, and WIBOR mode `3M`.
 - WIBOR toggle order in the UI is `WIBOR 1M` then `WIBOR 3M` (active by default) then `WIBOR 6M`.
 - Supports two rate types: **rata równa** (annuity) and **rata malejąca** (decreasing installments).
-- **Events system** — four event types stored in the `events` array:
+- **Events system** — five event types stored in the `events` array:
   - `nadplata` — one-time overpayment (amount + date + effect: `nizsza_rata` / `krotszy_okres`)
   - `cykliczna` — recurring monthly overpayment (start month, optional end month or `doKonca`)
   - `splata` — full early payoff at a specific date
   - `refinansowanie` — move to new bank (new margin, optional provision, optional WIBOR type change)
+  - `wydluzenie` — extend the remaining schedule by N months; recomputes rata (or principal share for decreasing) on the spot, no balance or WIBOR change
 - `expandEvents()` expands `cykliczna` entries into individual monthly `nadplata` events before calculation.
-- Event processing order per month: refinansowanie → nadpłata → pełna spłata.
+- Event processing order per month: **refinansowanie → wydłużenie → nadpłata → pełna spłata**. Enforced by a sort comparator on explicit keys (`refinansowanie = 0`, `wydluzenie = 1`, overpayments = 2, `splata = 3`) and is independent of the order the user added the events in the UI. Use `??` (not `||`) when reading the key, otherwise `0` collapses to the fallback.
 - `effectiveEndMonth` tracks loan shortening for `krotszy_okres` overpayments — at WIBOR fixing, `remaining = effectiveEndMonth - m` (not `nMonths - m`).
 - When overpayment fully zeroes the saldo, a final row with `saldo: 0` is recorded.
 - **Provisions** (initial + refinancing) are tracked in cost summary but NOT added to loan balance.
 - **Investment opportunity cost** — compares overpayment savings vs investing the same money:
   - Investment types: `wig30`, `wig`, `sp500`, `lokata`, `gotowka`, `none` (disabled).
-  - `calcInvestmentPortfolio(overpayments, rokStart, startMonth, nMonths, cpiMode, investmentType)` builds a monthly portfolio from overpayment cash flows, applying instrument-specific monthly returns.
+  - `calcInvestmentPortfolio(overpayments, rokStart, startMonth, nMonths, investmentType)` builds a monthly portfolio from overpayment cash flows, applying instrument-specific monthly returns.
   - Portfolio recurrence: `portfel[m] = (portfel[m-1] + wpłata[m]) × (1 + stopa_miesięczna[m])`.
   - S&P 500 returns are in PLN: `SPX[m] × USDPLN[m]` captures both stock return and currency effect.
   - `lokata` uses NBP reference rate / 12 as monthly return; `gotowka` uses 0.
@@ -142,8 +142,8 @@ UI text, variable names in comments, and all displayed strings are in **Polish**
 ### Running tests
 
 ```bash
-node tests/run-tests.js          # Calculator tests (39 groups, 106 assertions)
-node tests/run-tests-nadplat.js  # Overpayment simulator tests (98 groups, 284 assertions)
+node tests/run-tests.js          # Calculator tests (38 groups, 104 assertions)
+node tests/run-tests-nadplat.js  # Overpayment simulator tests (96 groups, 283 assertions)
 ```
 
 No npm packages needed — only Node.js (built-in `vm` and `fs` modules).
@@ -167,17 +167,17 @@ The sandbox needs minimal DOM stubs because `kalkulator-kredytu.js` calls `calcu
 2. Add a new `group('N. Name')` section
 3. Use `assert(cond, msg)` for boolean checks or `assertClose(a, b, tol, msg)` for numeric tolerance
 4. All functions/constants from `kalkulator-kredytu.js` and data files are available in scope
-5. Global mode variables (`wiborMode`, `cpiMode`, `salarySource`) can be set freely between tests
+5. Global mode variables (`wiborMode`, `salarySource`) can be set freely between tests
 6. Run `node tests/run-tests.js` to verify — exit code 0 = all pass, 1 = failures
 
-### Test coverage areas (39 groups, 106 assertions)
+### Test coverage areas (38 groups, 104 assertions)
 
 Core math: annuity formula, monthly rate, zero-rate edge case, declining installments.
 Harmonogram: first months, final balance convergence, row-level identity (rata = odsetki + kapitał), saldo monotonicity.
-Real values: cumulative deflator (annual and monthly CPI modes), inflation savings, year-boundary transitions, deflation handling, negative real interest scenario.
+Real values: cumulative deflator (monthly CPI m/m), inflation savings, year-boundary transitions, deflation handling, negative real interest scenario.
 Factor analysis: margin contribution + WIBOR-CPI contribution = real interest (via zero-margin harmonogram).
 WIBOR: fixing intervals (1M/3M/6M), different start months, 6M vs 3M/1M comparison.
-Data integrity: spot-checks on CPI/WIBOR/salary data, annual averages, future fallbacks.
+Data integrity: spot-checks on CPI/WIBOR/salary data, WIBOR annual averages, future fallbacks.
 Aggregation: yearly totals match monthly sums, salary fields populated correctly.
 Edge cases: 3-year and 35-year loans, high inflation (2022), provision identity, verdict direction logic.
 Input handling: locale decimal parsing (comma/dot) and transient input states (`1.`, `1,`).
@@ -186,21 +186,22 @@ Input handling: locale decimal parsing (comma/dot) and transient input states (`
 
 The overpayment simulator test runner (`tests/run-tests-nadplat.js`) loads data JS files (including 6 investment/projection data files) and `symulator-nadplat.js` into a VM sandbox with DOM stubs (default input values matching `symulator-nadplat.html`: kwota=350000, rok_start=2005, miesiac_start=1, okres=360, marża=2, prowizja=2, plus projection defaults: future_wibor=3.0, future_cpi=3.0, future_salary=3.5, future_stock_return=5.0, future_deposit_rate=3.0, future_usdpln=3.5, investment_type=none). It also provides `document.createElement()` and `document.querySelectorAll()` stubs since the simulator builds dynamic event UI.
 
-#### Test coverage areas (98 groups, 284 assertions)
+#### Test coverage areas (96 groups, 283 assertions)
 
 Core math: annuity formula (`calcRataRowna`), monthly rate, zero-rate edge case, declining installments, WIBOR fixing intervals (3M/6M).
 Harmonogram: base schedule convergence, row-level identity, saldo monotonicity, calendar month mapping, yearly aggregation.
-Real values: cumulative deflator (annual and monthly CPI), high inflation (2022), year boundaries.
+Real values: cumulative deflator (monthly CPI m/m), high inflation (2022), year boundaries.
 Data integrity: spot-checks on CPI/WIBOR data, future fallbacks, annualization round-trip.
 Events — nadpłata: single overpayment (shorter term / lower installment), overpayment exceeding balance, overpayment at month 0, multiple in same month.
 Events — cykliczna: recurring overpayment (doKońca=true expands to end, doKońca=false to specified date), combined with shorter/lower-rata modes.
 Events — spłata: early full payoff, balance drops to 0 in payoff month.
 Events — refinansowanie: new margin applied, provision calculated, WIBOR type change, `fixCounterSinceReset` restarts.
-Event ordering: refinansowanie → nadpłata → spłata in same month.
+Events — wydluzenie: `effectiveEndMonth += N`, rata/k recomputed on spot, saldo and WIBOR untouched.
+Event ordering: refinansowanie → wydłużenie → nadpłata → spłata in same month.
 Combined events: multiple events across different months, balance identity (raty + nadpłaty ≈ kapitał + odsetki).
 Methodology verification: steps 1–6 (rate calculation, installment formula, real values, overpayment effect, refinancing, provisions).
 Table validation: all column fields present, event-specific fields populated.
-Comparison: modified schedule cheaper than base, CPI annual vs monthly modes.
+Comparison: modified schedule cheaper than base.
 Edge cases: zero provision, date boundary filtering, formatting (`fmtOkres`), salary sources.
 Investment engine: data file spot-checks (WIG30, WIG, SPX, USDPLN, WIBOR1M, NBP_RATE), `getMonthlyInvestmentReturn()` for all instrument types with historical and fallback values, `calcInvestmentPortfolio()` for single/cyclic overpayments across all instruments, Belka tax (gain and loss scenarios), bilans comparison, real portfolio deflation, CPI-monthly deflator compounding, real net gain with deflated contributions, WIBOR 1M fixing interval, projection parameter getters.
 Input handling: locale decimal parsing (comma/dot) and transient input states (`1.`, `1,`).

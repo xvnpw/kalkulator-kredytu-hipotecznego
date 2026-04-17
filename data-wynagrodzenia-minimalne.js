@@ -1,4 +1,4 @@
-// Minimalne wynagrodzenie za prace (PLN, wartosci roczne)
+// Minimalne wynagrodzenie za pracę (miesięczna stawka brutto, PLN; wartość obowiązująca w danym roku)
 // 2003-2025: ZUS, "Minimalne wynagrodzenie za prace od 2003 r."
 // https://www.zus.pl/baza-wiedzy/skladki-wskazniki-odsetki/wskazniki/minimalne-wynagrodzenie-za-prace-od-2003-r
 // 2000-2002: dane historyczne z zestawienia "Placa minimalna" (Wikipedia)

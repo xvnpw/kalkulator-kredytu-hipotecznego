@@ -29,7 +29,7 @@ Na stronie startowej (`index.html`) jest wyróżniony skrót do symulatora nadp�
 - Prowizja banku (%) — koszt jednorazowy (domyślnie 2,0%)
 - Typ raty: **rata równa** (annuitet) lub **rata malejąca**
 - Wybór wskaźnika: WIBOR 1M, WIBOR 3M lub WIBOR 6M
-- Wybór danych CPI: roczne (GUS) lub miesięczne m/m (GUS, „poprzedni miesiąc = 100”)
+- Źródło CPI: miesięczne m/m (GUS, „poprzedni miesiąc = 100”)
 - Wybór źródła danych wynagrodzeń: przeciętne wynagrodzenie / wynagrodzenie minimalne
 - Sekcja **„Projekcje przyszłe”**: przyszły WIBOR, przyszła inflacja CPI, przyszły wzrost wynagrodzeń
 - Dwa okresy kredytowania do porównania: **Wariant A** (długi) vs **Wariant B** (krótki)
@@ -38,7 +38,7 @@ Na stronie startowej (`index.html`) jest wyróżniony skrót do symulatora nadp�
 ### Obliczenia
 - **Harmonogram ratalny** z refixingiem WIBOR co 1, 3 lub 6 miesięcy od daty startu, dla rat równych i malejących
 - **Prowizja banku** jest doliczana jako koszt jednorazowy na starcie i nie zwiększa salda kredytu
-- **Realna wartość płatności** — każda rata dyskontowana skumulowanym deflaktorem CPI (deflator = 1,0 w miesiącu 0; dla CPI rocznego używany jest miesięczny pierwiastek 12., dla CPI m/m bezpośredni mnożnik miesięczny)
+- **Realna wartość płatności** — każda rata dyskontowana skumulowanym deflaktorem CPI (deflator = 1,0 w miesiącu 0; dla każdego miesiąca bezpośredni mnożnik `1 / (1 + CPI m/m)`)
 - **Koszty realne**: całkowita kwota realna = suma rat realnych + prowizja; realne odsetki = suma rat realnych − kwota kredytu (bez prowizji)
 
 ### Analiza czynników realnego kosztu
@@ -72,13 +72,13 @@ Pełny harmonogram z kolumnami: WIBOR, stopa łączna, rata nominalna, rata real
 - Typ raty: **rata równa** (annuitet) lub **rata malejąca**
 - Marża banku (%), prowizja początkowa (%)
 - Wybór wskaźnika: WIBOR 1M, WIBOR 3M lub WIBOR 6M (domyślnie WIBOR 3M)
-- Wybór danych CPI i źródła wynagrodzeń (jak w kalkulatorze)
+- CPI m/m (GUS) oraz wybór źródła wynagrodzeń (jak w kalkulatorze)
 - Pola dziesiętne akceptują zarówno kropkę (`1.85`), jak i przecinek (`1,85`)
 - Domyślne wartości startowe: rok **2005**, miesiąc **styczeń**, okres **360 miesięcy**, marża **2,0%**, prowizja **2,0%**, porównanie z inwestycją: **Brak (nie porównuj)**
 
 ### Projekcje przyszłe
 Konfigurowalne wartości domyślne dla okresów bez danych historycznych:
-- Przyszły WIBOR 1M/3M/6M (domyślnie 3,0%)
+- Przyszły WIBOR 1M/3M/6M (domyślnie 4,0% — inflacja + 1 pp)
 - Przyszła inflacja CPI (domyślnie 3,0%)
 - Przyszły wzrost wynagrodzeń (domyślnie 3,5%)
 - Przyszła stopa zwrotu z akcji (domyślnie 5,0%)
@@ -112,6 +112,7 @@ Użytkownik dodaje zdarzenia modyfikujące harmonogram:
 | 🔄 **Nadpłata cykliczna** | Kwota/miesiąc, data startu i końca (lub „do końca kredytu"), efekt j.w. |
 | ✅ **Pełna spłata** | Wcześniejsza spłata całości w danym miesiącu |
 | 🏦 **Refinansowanie** | Przeniesienie do nowego banku: nowa marża, prowizja, opcjonalna zmiana WIBOR 6M↔3M |
+| ⏩ **Wydłużenie okresu** | Dodaj N miesięcy do pozostałego harmonogramu — rata przeliczana natychmiast na nową, niższą (saldo i stopa bez zmian) |
 
 ### Porównanie
 - **Harmonogram bazowy** (bez zdarzeń) vs **harmonogram zmodyfikowany** (ze zdarzeniami)
@@ -138,10 +139,9 @@ Harmonogram z wyróżnieniem miesięcy, w których wystąpiły zdarzenia (kolor,
 | `data-wibor6m.js` | WIBOR 6M — notowania miesięczne (zamknięcie) 1997–2026 | `sources/csv/plopln6m_m.csv` |
 | `data-wibor3m.js` | WIBOR 3M — notowania miesięczne (zamknięcie) 1997–2026 | `sources/csv/plopln3m_m.csv` |
 | `data-wibor1m.js` | WIBOR 1M — notowania miesięczne (zamknięcie) 1995–2026 | `sources/csv/plopln1m_m.csv` |
-| `data-cpi-annual.js` | Roczne wskaźniki CPI od 1997 r. | `sources/csv/rocznewskaznikicentowarowiuslugkonsumpcyjnychod1950roku_2.csv` |
 | `data-cpi-monthly.js` | Miesięczne wskaźniki CPI m/m od 1982 r. (poprzedni miesiąc = 100, wartość = wskaźnik−100) | `sources/csv/miesieczne_wskazniki_cen_towarow_i_uslug_konsumpcyjnych_od_1982_roku__2.csv` |
 | `data-wynagrodzenia-przecietne.js` | Przeciętne miesięczne wynagrodzenie brutto (ogółem) | BDL GUS — zmienna 64428 + ZUS (lata 2000–2001) |
-| `data-wynagrodzenia-minimalne.js` | Minimalne wynagrodzenie za pracę (roczne) | ZUS (od 2003 r.) + dane historyczne 2000–2002 |
+| `data-wynagrodzenia-minimalne.js` | Minimalne wynagrodzenie za pracę (miesięczna stawka, wartość per rok) | ZUS (od 2003 r.) + dane historyczne 2000–2002 |
 | `data-nbp-rate.js` | Stopa referencyjna NBP — wartości miesięczne fill-forward 1998–2026 | `sources/csv/inrtpl_m_m.csv` |
 | `data-wig30.js` | WIG30 — notowania miesięczne (zamknięcie) 1991–2026 | `sources/csv/wig30_m.csv` |
 | `data-wig.js` | WIG — notowania miesięczne (zamknięcie) 1991–2026 | `sources/csv/wig_m.csv` |
@@ -180,7 +180,6 @@ Każdy parser działa w czystym kontekście (`1 input CSV -> 1 output data-*.js`
 | `spx` | `scripts/csv_to_js/jobs/parse_spx.py` | `sources/csv/spx_m.csv` | `data-spx.js` |
 | `usdpln` | `scripts/csv_to_js/jobs/parse_usdpln.py` | `sources/csv/usdpln_m.csv` | `data-usdpln.js` |
 | `cpi-monthly` | `scripts/csv_to_js/jobs/parse_cpi_monthly.py` | `sources/csv/miesieczne_wskazniki_cen_towarow_i_uslug_konsumpcyjnych_od_1982_roku__2.csv` | `data-cpi-monthly.js` |
-| `cpi-annual` | `scripts/csv_to_js/jobs/parse_cpi_annual.py` | `sources/csv/rocznewskaznikicentowarowiuslugkonsumpcyjnychod1950roku_2.csv` | `data-cpi-annual.js` |
 
 Przydatne opcje:
 - `--workers N` — liczba procesów równoległych.
@@ -190,14 +189,14 @@ Przydatne opcje:
 
 ### Kalkulator kredytu (`index.html`)
 Konfigurowalne parametry z poziomu interfejsu (sekcja „Projekcje przyszłe"):
-- Przyszły WIBOR (domyślnie 3,0%) — stosowany dla WIBOR 1M, 3M i 6M
-- Przyszła inflacja CPI (domyślnie 3,0%); w trybie CPI m/m przeliczana automatycznie
+- Przyszły WIBOR (domyślnie 4,0% — inflacja + 1 pp) — stosowany dla WIBOR 1M, 3M i 6M
+- Przyszła inflacja CPI (domyślnie 3,0% rocznie, automatycznie przeliczana na m/m)
 - Przyszły wzrost wynagrodzeń (domyślnie 3,5%)
 
 ### Symulator nadpłat (`symulator-nadplat.html`)
 Konfigurowalne parametry z poziomu interfejsu (sekcja „Projekcje przyszłe"):
-- Przyszły WIBOR (domyślnie 3,0%) — stosowany dla WIBOR 1M, 3M i 6M
-- Przyszła inflacja CPI (domyślnie 3,0%); w trybie CPI m/m przeliczana automatycznie
+- Przyszły WIBOR (domyślnie 4,0% — inflacja + 1 pp) — stosowany dla WIBOR 1M, 3M i 6M
+- Przyszła inflacja CPI (domyślnie 3,0% rocznie, automatycznie przeliczana na m/m)
 - Przyszły wzrost wynagrodzeń (domyślnie 3,5%)
 - Przyszła stopa zwrotu z akcji (domyślnie 5,0%) — dla WIG30, WIG, S&P 500
 - Przyszłe oprocentowanie lokaty (domyślnie 3,0%)
@@ -220,7 +219,7 @@ node tests/run-tests.js && node tests/run-tests-nadplat.js
 
 Każdy test runner (`tests/run-tests.js`, `tests/run-tests-nadplat.js`) ładuje pliki danych i odpowiedni skrypt JS do piaskownicy `vm.createContext()` z zaślepkami DOM/Chart.js, a następnie wykonuje plik testowy wewnątrz tego kontekstu. Dzięki temu testy mają bezpośredni dostęp do wszystkich `const`/`let`/`function` z kodu źródłowego.
 
-### Kalkulator kredytu (39 grup, 106 asercji)
+### Kalkulator kredytu (38 grup, 104 asercje)
 
 | # | Grupa | Co weryfikuje |
 |---|---|---|
@@ -230,41 +229,40 @@ Każdy test runner (`tests/run-tests.js`, `tests/run-tests-nadplat.js`) ładuje 
 | 4 | Harmonogram pierwsze miesiące | Fixing, deflator m0=1, rata=odsetki+kapitał |
 | 5 | Zbieżność salda | Saldo → 0 po ostatniej racie, suma kapitału = kwota |
 | 6 | Raty malejące | Poprawność schematu malejącego, saldo końcowe |
-| 7 | Deflator skumulowany (roczny) | Akumulacja deflatora przez 12+ miesięcy |
-| 8 | Deflator CPI miesięczny | Tryb m/m — deflator m1 z poprawnego miesiąca |
-| 9 | Sumy nominalne | Odsetki = suma rat − kapitał |
-| 10 | Sumy realne i zysk inflacyjny | Realne < nominalne; dłuższy kredyt → większy zysk inflacyjny |
-| 11 | Dekompozycja czynników | marża\_contrib + wibor\_cpi\_contrib = odsetki realne |
-| 12 | Interwały fixingu WIBOR | 1M co 1 mies., 3M co 3 mies., 6M co 6 mies. |
-| 13 | Mapowanie miesiąca startowego | calMonth/rok przy starcie w lipcu |
-| 14 | Agregacja roczna | `aggregateYearly()` — suma roczna = suma miesięczna |
-| 15 | Annualizacja CPI | `annualizeMonthlyCpi()` — round-trip roczne↔miesięczne |
-| 16 | Fallback przyszłości | `DEFAULT_FUTURE_WIBOR/CPI/CPI_MONTHLY` |
-| 17 | Ujemne odsetki realne | Scenariusz 2021 z niską marżą → odsetki realne < 0 |
-| 18 | Malejące: przeliczenie przy fixingu | Część kapitałowa = saldo/remaining |
-| 19 | Spot-check danych | CPI 2022, WIBOR 1M/6M 2010, wynagrodzenia |
-| 20 | Średnie roczne WIBOR | `WIBOR1M_ANNUAL` / `WIBOR6M_ANNUAL` / `WIBOR3M_ANNUAL` wyliczone |
-| 21 | Cross-check annuitet | Porównanie z ręcznie obliczonymi wartościami |
-| 22 | calcAvgStats | avgSpread = avgWibor − avgCpi |
-| 23 | Deflacja | CPI 2015 < 0 → deflator > 1 |
-| 24 | Edge cases: różne okresy | 3-letni i 35-letni kredyt |
-| 25 | WIBOR 6M vs 3M/1M | Porównanie harmonogramów trybów WIBOR |
-| 26 | Różne miesiące startowe | Styczeń vs październik |
-| 27 | rata = odsetki + kapitał | Każdy wiersz harmonogramu (annuitet i malejące) |
-| 28 | Saldo monotoniczne (annuitet) | Saldo nierosnące w każdym kroku |
-| 29 | Saldo monotoniczne (malejące) | Saldo nierosnące w każdym kroku |
-| 30 | Wysoka inflacja 2022 | Deflator < 0.90 po 12 mies. przy CPI 14.4% |
-| 31 | Prowizja | 2% z kwoty; realna = nominalna (deflator=1 w m0) |
-| 32 | Werdykt — kierunek | 30-letni realnie droższy od 10-letniego przy marży 2% |
-| 33 | Granica roku — deflator | Przejście deflatora na styku lat (CPI roku bieżącego) |
-| 34 | WIBOR 6M w harmonogramie | Wartość z `getWibor()`, brak fixingu między interwałami |
-| 35 | Wskaźnik przystępności | rata / wynagrodzenie w rozsądnym zakresie |
-| 36 | getWynagr fallback | Rok przed zakresem i ekstrapolacja 7% |
-| 37 | getMonthlyDeflatorFactor | Oba tryby CPI — wartości w rozsądnym zakresie |
-| 38 | aggregateYearly — wynagrodzenia | Pole wynagr zgodne z getWynagr() |
-| 39 | Parsowanie liczb dziesiętnych | `parseLocaleFloat()` i stany przejściowe inputu (`1,`, `1.`) |
+| 7 | Deflator skumulowany (m/m) | `D[1] = 1/(1+CPI m/m)`; `D[12] = iloczyn 12 czynników` |
+| 8 | Sumy nominalne | Odsetki = suma rat − kapitał |
+| 9 | Sumy realne i zysk inflacyjny | Realne < nominalne; dłuższy kredyt → większy zysk inflacyjny |
+| 10 | Dekompozycja czynników | marża\_contrib + wibor\_cpi\_contrib = odsetki realne |
+| 11 | Interwały fixingu WIBOR | 1M co 1 mies., 3M co 3 mies., 6M co 6 mies. |
+| 12 | Mapowanie miesiąca startowego | calMonth/rok przy starcie w lipcu |
+| 13 | Agregacja roczna | `aggregateYearly()` — suma roczna = suma miesięczna |
+| 14 | Annualizacja CPI | `annualizeMonthlyCpi()` — round-trip roczne↔miesięczne |
+| 15 | Fallback przyszłości | `DEFAULT_FUTURE_WIBOR/CPI_MONTHLY` |
+| 16 | Ujemne odsetki realne | Scenariusz 2021 z niską marżą → odsetki realne < 0 |
+| 17 | Malejące: przeliczenie przy fixingu | Część kapitałowa = saldo/remaining |
+| 18 | Spot-check danych | Annualizowana CPI 2022, WIBOR 1M/6M 2010, wynagrodzenia |
+| 19 | Średnie roczne WIBOR | `WIBOR1M_ANNUAL` / `WIBOR6M_ANNUAL` / `WIBOR3M_ANNUAL` wyliczone |
+| 20 | Cross-check annuitet | Porównanie z ręcznie obliczonymi wartościami |
+| 21 | calcAvgStats | avgSpread = avgWibor − avgCpi |
+| 22 | Deflacja (m/m) | CPI m/m 2015 ujemne → deflator > 1 |
+| 23 | Edge cases: różne okresy | 3-letni i 35-letni kredyt |
+| 24 | WIBOR 6M vs 3M/1M | Porównanie harmonogramów trybów WIBOR |
+| 25 | Różne miesiące startowe | Styczeń vs październik |
+| 26 | rata = odsetki + kapitał | Każdy wiersz harmonogramu (annuitet i malejące) |
+| 27 | Saldo monotoniczne (annuitet) | Saldo nierosnące w każdym kroku |
+| 28 | Saldo monotoniczne (malejące) | Saldo nierosnące w każdym kroku |
+| 29 | Wysoka inflacja 2022 | Deflator < 0.90 po 12 mies. przy CPI 14.4% |
+| 30 | Prowizja | 2% z kwoty; realna = nominalna (deflator=1 w m0) |
+| 31 | Werdykt — kierunek | 30-letni realnie droższy od 10-letniego przy marży 2% |
+| 32 | Granica roku — deflator (m/m) | `factor = 1/(1+CPI m/m grudzień)` na styku lat |
+| 33 | WIBOR 6M w harmonogramie | Wartość z `getWibor()`, brak fixingu między interwałami |
+| 34 | Wskaźnik przystępności | rata / wynagrodzenie w rozsądnym zakresie |
+| 35 | getWynagr fallback | Rok przed zakresem i ekstrapolacja 7% |
+| 36 | getMonthlyDeflatorFactor | `1 / (1 + CPI m/m)` — wartość w rozsądnym zakresie |
+| 37 | aggregateYearly — wynagrodzenia | Pole wynagr zgodne z getWynagr() |
+| 38 | Parsowanie liczb dziesiętnych | `parseLocaleFloat()` i stany przejściowe inputu (`1,`, `1.`) |
 
-### Symulator nadpłat (98 grup, 284 asercji)
+### Symulator nadpłat (100 grup, 306 asercji)
 
 | # | Grupa | Co weryfikuje |
 |---|---|---|
@@ -275,77 +273,79 @@ Każdy test runner (`tests/run-tests.js`, `tests/run-tests-nadplat.js`) ładuje 
 | 5 | Zbieżność salda (annuitet) | Saldo → 0 po ostatniej racie, suma kapitału = kwota |
 | 6 | Raty malejące | Poprawność schematu malejącego, stała część kapitałowa między fixingami |
 | 7 | Interwały fixingu WIBOR | 1M co 1 mies., 3M co 3 mies., 6M co 6 mies., poprawne oznaczenie isFix |
-| 8 | Deflator skumulowany (roczny) | Akumulacja deflatora przez 12+ miesięcy |
-| 9 | Deflator CPI miesięczny | Tryb m/m — deflator m1 z poprawnego miesiąca |
-| 10 | Sumy nominalne — spójność | Odsetki = suma rat − kapitał |
-| 11 | Mapowanie miesiąca startowego | calMonth/rok przy starcie w lipcu, przejście roku |
-| 12 | Agregacja roczna | `aggregateYearly()` — suma roczna = suma miesięczna |
-| 13 | Annualizacja CPI | `annualizeMonthlyCpi()` — round-trip roczne↔miesięczne |
-| 14 | Fallback przyszłości | `DEFAULT_FUTURE_WIBOR/CPI/CPI_MONTHLY` dla lat poza danymi |
-| 15 | rata = odsetki + kapitał | Tożsamość w każdym wierszu (annuitet i malejące) |
-| 16 | Saldo monotoniczne | Saldo nierosnące (annuitet i malejące) |
-| 17 | Wysoka inflacja 2022 | Deflator < 0.90 po 12 mies. |
-| 18 | Spot-check danych | CPI 2022, WIBOR 1M/3M/6M styczeń 2010 |
-| 19 | Kwota kredytu — różne wartości | 50k i 1.5M: saldo→0, większa kwota → większa rata |
-| 20 | Okres kredytu — różne wartości | 36 i 420 miesięcy: saldo→0, krótszy okres → wyższa rata |
-| 21 | Data startu — różne miesiące | Październik: calMonth, rok, przejście roku, nazwy |
-| 22 | WIBOR 3M vs 6M | Porównanie harmonogramów, oba zbiegają do 0 |
-| 23 | Marża i prowizja | Wyższa marża → wyższa rata/stopa/koszt |
-| 24 | Harmonogram z wydarzeniami — brak zdarzeń | Identyczny z bazowym, prowizja=kwota*pct |
-| 25 | Nadpłata jednorazowa — krótszy okres | Mniej wierszy, saldo→0, kwota/event poprawne |
-| 26 | Nadpłata jednorazowa — niższa rata | Okres bez zmian (360), rata niższa po nadpłacie |
-| 27 | Pełna wcześniejsza spłata | Kredyt zamknięty w miesiącu splaty, saldo=0 |
-| 28 | Refinansowanie | Nowa marża, prowizja ref, wiersz z eventem |
-| 29 | Refinansowanie ze zmianą WIBOR | Zmiana z 3M na 6M, natychmiastowy fixing |
-| 30 | Nadpłata cykliczna — doKońca=true | `expandEvents()` rozwija do końca kredytu |
-| 31 | Nadpłata cykliczna — doKońca=false | `expandEvents()` rozwija do wskazanej daty (24 zdarzenia) |
-| 32 | Nadpłata cykliczna — harmonogram | Skrócenie kredytu, wiele wierszy z nadpłatami |
-| 33 | Nadpłata cykliczna — niższa rata | Mała kwota: okres 360; duża kwota: saldo→0 wcześniej |
-| 34 | Nadpłata zamykająca kredyt | Nadpłata > saldo: kredyt zamknięty natychmiast |
-| 35 | expandEvents — jednorazowe | Nadpłata/spłata/refinansowanie: 3 elementy bez rozwijania |
-| 36 | expandEvents — graniczne daty | Zdarzenia sprzed startu kredytu odfiltrowane |
-| 37 | Kolejność przetwarzania zdarzeń | Refinansowanie → nadpłata → spłata w tym samym miesiącu |
-| 38 | Malejące + nadpłata — krótszy okres | Mniej wierszy, saldo→0 |
-| 39 | Malejące + nadpłata — niższa rata | Okres bez zmian (360) |
-| 40 | Malejące + pełna spłata | Kredyt zamknięty, saldo=0 |
-| 41 | Malejące + refinansowanie | Wiersz refinansowania z fixing=true |
-| 42 | Prowizje — początkowa i refinansowania | Łączne prowizje, realne < nominalne |
-| 43 | Wiele zdarzeń w różnych miesiącach | Łączna nadpłata, prowizje ≥ początkowej |
-| 44 | Spójność: raty + nadpłaty = kapitał + odsetki | Tożsamość bilansowa |
-| 45 | Nadpłata oszczędza odsetki | Odsetki z nadpłatą < odsetki bazowe |
-| 46 | Deflator w harmonogramie z wydarzeniami | Deflator m0=1, m12<1 |
-| 47 | Metodyka krok 1: oprocentowanie | WIBOR startu, stopa=WIBOR+marża |
-| 48 | Metodyka krok 2: rata miesięczna | Annuitet i malejące: wzory poprawne |
-| 49 | Metodyka krok 3: rata realna | Deflator m1, rata realna < nominalna |
-| 50 | Metodyka krok 4: efekt nadpłaty | Krótszy okres vs niższa rata |
-| 51 | Metodyka krok 5: refinansowanie | Nowa marża, natychmiastowy fixing, stopa po ref |
-| 52 | Metodyka krok 6: prowizje | Prowizja nie zwiększa salda |
-| 53 | Walidacja kolumn tabeli | Wszystkie pola wiersza harmonogramu obecne |
-| 54 | Tabela z wydarzeniami — pola | Nadpłata/spłata: poprawne pola event/nadplata/saldo |
-| 55 | Formatowanie (fmtOkres) | 360m=30lat, 120m=10lat, 5m, 25m=2lat 1mies |
-| 56 | Porównanie bazowy vs zmodyfikowany | Suma rat zmodyfikowanego < bazowego |
-| 57 | CPI roczne vs miesięczne | Raty nominalne identyczne, deflatory różne |
-| 58 | getWynagr i calcAvgStats | Wynagrodzenia, ekstrapolacja, avgSpread |
-| 59 | Salary source — różne źródła | Minimalne < przeciętne |
-| 60 | Nadpłata w miesiącu 0 | Nadpłata na starcie kredytu |
-| 61 | Wielokrotna nadpłata w tym samym miesiącu | Łączna kwota dwóch nadpłat |
-| 62 | Refinansowanie + nadpłata w tym samym miesiącu | Kolejność: ref→nadpłata, prowizje |
-| 63 | fixCounterSinceReset po refinansowaniu | Nowy cykl fixingu po refinansowaniu |
-| 64 | Prowizja zerowa | 0% → totalProwizje = 0 |
-| 65 | Nadpłata nie przekracza salda | Obcięcie kwoty do salda |
-| 66 | Data label format | Poprawny format „sty 2010", „gru 2010" |
-| 67–72 | Dane inwestycyjne — spot-check | WIG30, WIG, SPX, USDPLN, WIBOR1M, NBP_RATE: istnienie kluczy, wartości > 0, fill-forward bez luk |
-| 73–77 | getMonthlyInvestmentReturn | WIG30, S&P 500 w PLN, fallback dla przyszłości, lokata historyczna i fallback |
-| 78–83 | calcInvestmentPortfolio | Brak nadpłat → null; WIG30, lokata, gotówka, S&P 500, cykliczne nadpłaty |
-| 84–85 | Podatek Belki | 19% od zysku na koniec; brak podatku przy stracie |
-| 86 | Bilans: nadpłata vs inwestycja | Bilans nominalny = oszczędność odsetek nom. − zysk netto nom. |
-| 87–88 | Portfel realny | Wartość realna z deflatorem CPI, spójność wpłat |
-| 89 | investment_type = none | Brak instrumentu → null |
-| 90–91 | WIBOR 1M | fixInterval=1 (każdy miesiąc to fixing), roczne średnie |
-| 92–95 | Projekcje przyszłe | Fallback WIBOR/CPI/wynagrodzenia, stopa gotówki = 0 |
-| 96 | Deflator inwestycji (CPI miesięczne) | Iloczyn miesięcznych deflatorów CPI i zgodność portfela real netto |
-| 97 | Zysk realny netto inwestycji | Realne wpłaty `Σ(wpłata×deflator)` i bilans realny bez mieszania z nominalem |
-| 98 | Parsowanie liczb dziesiętnych | `parseLocaleFloat()` i stany przejściowe inputu (`1,`, `1.`) |
+| 8 | Deflator skumulowany (m/m) | `D[1] = 1/(1+CPI m/m)`; `D[12] = iloczyn 12 czynników` |
+| 9 | Sumy nominalne — spójność | Odsetki = suma rat − kapitał |
+| 10 | Mapowanie miesiąca startowego | calMonth/rok przy starcie w lipcu, przejście roku |
+| 11 | Agregacja roczna | `aggregateYearly()` — suma roczna = suma miesięczna |
+| 12 | Annualizacja CPI | `annualizeMonthlyCpi()` — round-trip roczne↔miesięczne |
+| 13 | Fallback przyszłości | `DEFAULT_FUTURE_WIBOR/CPI_MONTHLY` dla lat poza danymi |
+| 14 | rata = odsetki + kapitał | Tożsamość w każdym wierszu (annuitet i malejące) |
+| 15 | Saldo monotoniczne | Saldo nierosnące (annuitet i malejące) |
+| 16 | Wysoka inflacja 2022 | Deflator < 0.90 po 12 mies. |
+| 17 | Spot-check danych | Annualizowana CPI 2022, WIBOR 1M/3M/6M styczeń 2010 |
+| 18 | Kwota kredytu — różne wartości | 50k i 1.5M: saldo→0, większa kwota → większa rata |
+| 19 | Okres kredytu — różne wartości | 36 i 420 miesięcy: saldo→0, krótszy okres → wyższa rata |
+| 20 | Data startu — różne miesiące | Październik: calMonth, rok, przejście roku, nazwy |
+| 21 | WIBOR 3M vs 6M | Porównanie harmonogramów, oba zbiegają do 0 |
+| 22 | Marża i prowizja | Wyższa marża → wyższa rata/stopa/koszt |
+| 23 | Harmonogram z wydarzeniami — brak zdarzeń | Identyczny z bazowym, prowizja=kwota*pct |
+| 24 | Nadpłata jednorazowa — krótszy okres | Mniej wierszy, saldo→0, kwota/event poprawne |
+| 25 | Nadpłata jednorazowa — niższa rata | Okres bez zmian (360), rata niższa po nadpłacie |
+| 26 | Pełna wcześniejsza spłata | Kredyt zamknięty w miesiącu splaty, saldo=0 |
+| 27 | Refinansowanie | Nowa marża, prowizja ref, wiersz z eventem |
+| 28 | Refinansowanie ze zmianą WIBOR | Zmiana z 3M na 6M, natychmiastowy fixing |
+| 29 | Nadpłata cykliczna — doKońca=true | `expandEvents()` rozwija do końca kredytu |
+| 30 | Nadpłata cykliczna — doKońca=false | `expandEvents()` rozwija do wskazanej daty (24 zdarzenia) |
+| 31 | Nadpłata cykliczna — harmonogram | Skrócenie kredytu, wiele wierszy z nadpłatami |
+| 32 | Nadpłata cykliczna — niższa rata | Mała kwota: okres 360; duża kwota: saldo→0 wcześniej |
+| 33 | Nadpłata zamykająca kredyt | Nadpłata > saldo: kredyt zamknięty natychmiast |
+| 34 | expandEvents — jednorazowe | Nadpłata/spłata/refinansowanie: 3 elementy bez rozwijania |
+| 35 | expandEvents — graniczne daty | Zdarzenia sprzed startu kredytu odfiltrowane |
+| 36 | Kolejność przetwarzania zdarzeń | Refinansowanie → nadpłata → spłata w tym samym miesiącu |
+| 37 | Malejące + nadpłata — krótszy okres | Mniej wierszy, saldo→0 |
+| 38 | Malejące + nadpłata — niższa rata | Okres bez zmian (360) |
+| 39 | Malejące + pełna spłata | Kredyt zamknięty, saldo=0 |
+| 40 | Malejące + refinansowanie | Wiersz refinansowania z fixing=true |
+| 41 | Prowizje — początkowa i refinansowania | Łączne prowizje, realne < nominalne |
+| 42 | Wiele zdarzeń w różnych miesiącach | Łączna nadpłata, prowizje ≥ początkowej |
+| 43 | Spójność: raty + nadpłaty = kapitał + odsetki | Tożsamość bilansowa |
+| 44 | Nadpłata oszczędza odsetki | Odsetki z nadpłatą < odsetki bazowe |
+| 45 | Deflator w harmonogramie z wydarzeniami | Deflator m0=1, m12<1 |
+| 46 | Metodyka krok 1: oprocentowanie | WIBOR startu, stopa=WIBOR+marża |
+| 47 | Metodyka krok 2: rata miesięczna | Annuitet i malejące: wzory poprawne |
+| 48 | Metodyka krok 3: rata realna | Deflator m1 (m/m), rata realna < nominalna |
+| 49 | Metodyka krok 4: efekt nadpłaty | Krótszy okres vs niższa rata |
+| 50 | Metodyka krok 5: refinansowanie | Nowa marża, natychmiastowy fixing, stopa po ref |
+| 51 | Metodyka krok 6: prowizje | Prowizja nie zwiększa salda |
+| 52 | Walidacja kolumn tabeli | Wszystkie pola wiersza harmonogramu obecne |
+| 53 | Tabela z wydarzeniami — pola | Nadpłata/spłata: poprawne pola event/nadplata/saldo |
+| 54 | Formatowanie (fmtOkres) | 360m=30lat, 120m=10lat, 5m, 25m=2lat 1mies |
+| 55 | Porównanie bazowy vs zmodyfikowany | Suma rat zmodyfikowanego < bazowego |
+| 56 | getWynagr i calcAvgStats | Wynagrodzenia, ekstrapolacja, avgSpread |
+| 57 | Salary source — różne źródła | Minimalne < przeciętne |
+| 58 | Nadpłata w miesiącu 0 | Nadpłata na starcie kredytu |
+| 59 | Wielokrotna nadpłata w tym samym miesiącu | Łączna kwota dwóch nadpłat |
+| 60 | Refinansowanie + nadpłata w tym samym miesiącu | Kolejność: ref→nadpłata, prowizje |
+| 61 | fixCounterSinceReset po refinansowaniu | Nowy cykl fixingu po refinansowaniu |
+| 62 | Prowizja zerowa | 0% → totalProwizje = 0 |
+| 63 | Nadpłata nie przekracza salda | Obcięcie kwoty do salda |
+| 64 | Data label format | Poprawny format „sty 2010", „gru 2010" |
+| 65–70 | Dane inwestycyjne — spot-check | WIG30, WIG, SPX, USDPLN, WIBOR1M, NBP_RATE: istnienie kluczy, wartości > 0, fill-forward bez luk |
+| 71–75 | getMonthlyInvestmentReturn | WIG30, S&P 500 w PLN, fallback dla przyszłości, lokata historyczna i fallback |
+| 76–81 | calcInvestmentPortfolio | Brak nadpłat → null; WIG30, lokata, gotówka, S&P 500, cykliczne nadpłaty |
+| 82–83 | Podatek Belki | 19% od zysku na koniec; brak podatku przy stracie |
+| 84 | Bilans: nadpłata vs inwestycja | Bilans nominalny = oszczędność odsetek nom. − zysk netto nom. |
+| 85–86 | Portfel realny | Wartość realna z deflatorem CPI, spójność wpłat |
+| 87 | investment_type = none | Brak instrumentu → null |
+| 88–89 | WIBOR 1M | fixInterval=1 (każdy miesiąc to fixing), roczne średnie |
+| 90–93 | Projekcje przyszłe | Fallback WIBOR/CPI m/m/wynagrodzenia, stopa gotówki = 0 |
+| 94 | Deflator inwestycji (CPI m/m) | Iloczyn miesięcznych deflatorów CPI i zgodność portfela real netto |
+| 95 | Zysk realny netto inwestycji | Realne wpłaty `Σ(wpłata×deflator)` i bilans realny bez mieszania z nominalem |
+| 96 | Parsowanie liczb dziesiętnych | `parseLocaleFloat()` i stany przejściowe inputu (`1,`, `1.`) |
+| 99 | Wydłużenie okresu — annuitet | `effectiveEndMonth += N`, rata spada, saldo i kapitał spójne, wydłużenie nie wymusza fixingu WIBOR |
+| 100 | Wydłużenie okresu — malejące | `czescKapitalowa = saldo / (remaining+N)`, długość harmonogramu = `nMonths + N` |
+| 101 | Kolejność refi + wydłużenie + nadpłata | Wyniki niezależne od kolejności dodania zdarzeń; prowizja refi liczona na saldzie przed nadpłatą i wydłużeniem |
+| 102 | Wydłużenie: ochrona wartości | `miesiace = 0` / `NaN` → minimum 1 (regresja wzorca `\|\| default`) |
 
 ## Ograniczenia
 

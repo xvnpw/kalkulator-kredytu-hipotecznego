@@ -72,26 +72,3 @@ def parse_cpi_monthly_series(
             continue
         parsed[ym] = value - Decimal("100")
     return dict(sorted(parsed.items()))
-
-
-def parse_cpi_annual_series(
-    csv_path: Path,
-    *,
-    presentation: str = "Rok poprzedni = 100",
-    min_year: int = 1997,
-) -> dict[int, Decimal]:
-    _, rows = read_rows(csv_path, delimiter=";")
-    parsed: dict[int, Decimal] = {}
-    for row in rows:
-        if len(row) < 5:
-            continue
-        if row[2] != presentation:
-            continue
-        value = parse_decimal(row[4])
-        if value is None:
-            continue
-        year = int(row[3])
-        if year < min_year:
-            continue
-        parsed[year] = value - Decimal("100")
-    return dict(sorted(parsed.items()))
