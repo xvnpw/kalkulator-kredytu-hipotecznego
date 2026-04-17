@@ -23,7 +23,6 @@ function assertClose(a, b, tol, msg) {
 
 // Ustawienie trybow globalnych
 wiborMode = '3M';
-cpiMode = 'annual';
 salarySource = 'average';
 
 process.stdout.write('\n=== Testy symulatora nadplat kredytu hipotecznego ===\n');
@@ -58,7 +57,7 @@ assertClose(calcRataRowna(120000, 0, 120), 1000, 0.01, '120k / 0% / 10 lat = 100
 // 4. Harmonogram bazowy - pierwsze miesiace (annuitet)
 // ============================================================================
 group('4. Harmonogram bazowy - annuitet');
-var rowsBase = calcHarmonogram(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna');
+var rowsBase = calcHarmonogram(350000, 2010, 1, 360, 2, '3M', 'rowna');
 assert(rowsBase.length === 360, 'Harmonogram 30-letni ma 360 wierszy');
 assert(rowsBase[0].isFix === true, 'Miesiac 0 to fixing');
 assertClose(rowsBase[0].deflator, 1.0, 1e-10, 'Deflator w miesiącu 0 = 1.0');
@@ -80,7 +79,7 @@ assertClose(totKap, 350000, 1.0, 'Suma splaconego kapitalu = kwota kredytu');
 // 6. Raty malejace
 // ============================================================================
 group('6. Raty malejace');
-var rowsMal = calcHarmonogram(350000, 2010, 1, 360, 2, '3M', 'annual', 'malejaca');
+var rowsMal = calcHarmonogram(350000, 2010, 1, 360, 2, '3M', 'malejaca');
 assert(rowsMal.length === 360, 'Malejace: 360 wierszy');
 assert(rowsMal[0].rata > rowsMal[359].rata, 'Pierwsza rata > ostatnia');
 assertClose(rowsMal[359].saldo, 0, 1.0, 'Saldo koncowe ~0 (malejace)');
@@ -99,7 +98,7 @@ assertClose(kap1, kap2, 0.01, 'Czesc kapitalowa stala miedzy fixingami (m1=m2)')
 // ============================================================================
 group('7. Interwaly fixingu WIBOR');
 // WIBOR 3M - fixing co 3 miesiace
-var rows3M = calcHarmonogram(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna');
+var rows3M = calcHarmonogram(350000, 2010, 1, 360, 2, '3M', 'rowna');
 assert(rows3M[0].isFix === true, '3M: m0 fixing');
 assert(rows3M[1].isFix === false, '3M: m1 nie jest fixingiem');
 assert(rows3M[2].isFix === false, '3M: m2 nie jest fixingiem');
@@ -107,32 +106,27 @@ assert(rows3M[3].isFix === true, '3M: m3 fixing');
 assert(rows3M[6].isFix === true, '3M: m6 fixing');
 
 // WIBOR 6M - fixing co 6 miesiecy
-var rows6M = calcHarmonogram(350000, 2010, 1, 360, 2, '6M', 'annual', 'rowna');
+var rows6M = calcHarmonogram(350000, 2010, 1, 360, 2, '6M', 'rowna');
 assert(rows6M[0].isFix === true, '6M: m0 fixing');
 assert(rows6M[3].isFix === false, '6M: m3 nie jest fixingiem');
 assert(rows6M[5].isFix === false, '6M: m5 nie jest fixingiem');
 assert(rows6M[6].isFix === true, '6M: m6 fixing');
 
 // ============================================================================
-// 8. Deflator skumulowany - tryb roczny
+// 8. Deflator skumulowany (m/m)
 // ============================================================================
-group('8. Deflator skumulowany - tryb roczny');
-var cpi2010 = getCpiAnnual(2010);
-var monthlyFactor = 1 / Math.pow(1 + cpi2010 / 100, 1 / 12);
-var expectedDeflator12 = Math.pow(monthlyFactor, 12);
-assertClose(rowsBase[12].deflator, expectedDeflator12, 0.001,
-  'Deflator po 12 m ≈ (1/(1+CPI))^1, CPI=' + cpi2010 + '%');
-assert(rowsBase[12].deflator < 1.0, 'Deflator < 1 przy dodatniej inflacji');
-
-// ============================================================================
-// 9. Deflator - tryb CPI miesieczny
-// ============================================================================
-group('9. Deflator - tryb CPI miesieczny');
-var rowsCpiM = calcHarmonogram(350000, 2010, 1, 360, 2, '3M', 'monthly', 'rowna');
-assertClose(rowsCpiM[0].deflator, 1.0, 1e-10, 'Deflator m0 = 1 (tryb miesieczny)');
+group('8. Deflator skumulowany (m/m)');
+assertClose(rowsBase[0].deflator, 1.0, 1e-10, 'Deflator m0 = 1');
 var cpiM_2010_01 = getCpiMonthly(2010, 1);
 var expFactor = 1 / (1 + cpiM_2010_01 / 100);
-assertClose(rowsCpiM[1].deflator, expFactor, 1e-6, 'Deflator m1 uzywa CPI m/m styczen 2010');
+assertClose(rowsBase[1].deflator, expFactor, 1e-6, 'Deflator m1 uzywa CPI m/m styczen 2010');
+// Skumulowany deflator po 12 m = iloczyn 12 miesiecznych czynnikow
+var expected12 = 1;
+for (var mm = 1; mm <= 12; mm++) {
+  expected12 *= 1 / (1 + getCpiMonthly(2010, mm) / 100);
+}
+assertClose(rowsBase[12].deflator, expected12, 1e-6, 'Deflator po 12 m = iloczyn 12 czynnikow miesiecznych');
+assert(rowsBase[12].deflator < 1.0, 'Deflator < 1 przy dodatniej inflacji');
 
 // ============================================================================
 // 10. Sumy nominalne - spojnosc
@@ -147,7 +141,7 @@ assert(totNom > 350000, 'Suma nominalna > kwota kredytu');
 // 11. Mapowanie miesiaca startowego
 // ============================================================================
 group('11. Mapowanie miesiaca startowego');
-var rowsJul = calcHarmonogram(350000, 2010, 7, 120, 2, '3M', 'annual', 'rowna');
+var rowsJul = calcHarmonogram(350000, 2010, 7, 120, 2, '3M', 'rowna');
 assert(rowsJul[0].calMonth === 6, 'Start lipiec: calMonth = 6 (0-indexed)');
 assert(rowsJul[0].rok === 2010, 'Start lipiec 2010: rok = 2010');
 assert(rowsJul[6].calMonth === 0, 'Po 6 mies od lipca: calMonth = 0 (styczen)');
@@ -179,8 +173,28 @@ assertClose(annualized, expected, 0.001, 'Round-trip annualizacja CPI miesieczny
 group('14. Fallback przyszlosci');
 assertClose(getWibor(2060, 1, '3M'), getFutureWibor(), 0.001, 'WIBOR 3M 2060 = getFutureWibor()');
 assertClose(getWibor(2060, 1, '6M'), getFutureWibor(), 0.001, 'WIBOR 6M 2060 = getFutureWibor()');
-assertClose(getCpiAnnual(2060), getFutureCpi(), 0.001, 'CPI roczne 2060 = getFutureCpi()');
 assertClose(getCpiMonthly(2060, 1), getFutureCpiMonthly(), 0.001, 'CPI miesieczne 2060 = getFutureCpiMonthly()');
+
+// Domyślny WIBOR = inflacja + 1 pp → 3.0 + 1 = 4.0 (mock DOM w run-tests-nadplat.js).
+assertClose(getFutureWibor(), 4.0, 0.001, 'Domyślny przyszły WIBOR = 4.0%');
+
+// Bug-regression: legitime "0" w polu input NIE może wpadać w fallback (regresja `|| default`).
+// Tymczasowo podmieniamy mock future_wibor/cpi i sprawdzamy.
+var _origGetEl = document.getElementById;
+function _stubEl(id, value) {
+  document.getElementById = function(x) {
+    if (x === id) return { value: value };
+    return _origGetEl(x);
+  };
+}
+_stubEl('future_wibor', '0');
+assertClose(getFutureWibor(), 0, 1e-9, 'getFutureWibor() = 0 gdy użytkownik wpisał "0" (nie fallback do 4)');
+_stubEl('future_cpi', '0');
+assertClose(getFutureCpi(), 0, 1e-9, 'getFutureCpi() = 0 gdy użytkownik wpisał "0" (nie fallback do 3)');
+// Puste pole → fallback
+_stubEl('future_wibor', '');
+assertClose(getFutureWibor(), 4.0, 0.001, 'getFutureWibor() = 4.0 fallback gdy puste pole');
+document.getElementById = _origGetEl;
 
 // ============================================================================
 // 15. rata = odsetki + kapital (kazdy wiersz harmonogramu)
@@ -218,15 +232,18 @@ assert(saldoIncMal === 0, 'Malejace: saldo nierosnące (' + saldoIncMal + ' wzro
 // 17. Wysoka inflacja 2022 (deflator)
 // ============================================================================
 group('17. Wysoka inflacja 2022');
-var rows2022 = calcHarmonogram(350000, 2022, 1, 360, 2, '3M', 'annual', 'rowna');
+var rows2022 = calcHarmonogram(350000, 2022, 1, 360, 2, '3M', 'rowna');
 assert(rows2022[12].deflator < 0.90, 'CPI 2022 > 14% -> deflator po 12 m < 0.90');
 
 // ============================================================================
 // 18. Spot-check danych historycznych
 // ============================================================================
 group('18. Spot-check danych historycznych');
-assert(CPI_ANNUAL[2022] !== undefined, 'CPI 2022 istnieje');
-assert(CPI_ANNUAL[2022] > 10, 'CPI 2022 > 10% (inflacja)');
+// Annualizowana CPI z danych m/m dla 2022 (rok wysokiej inflacji)
+var cpiAnn2022 = annualizeMonthlyCpiForYear(2022);
+assert(cpiAnn2022 !== null, 'CPI m/m dla 2022 istnieje (pelny rok)');
+assert(cpiAnn2022 > 10, 'Annualizowana CPI 2022 > 10% (got ' + cpiAnn2022.toFixed(2) + ')');
+assert(CPI_MONTHLY['2022-01'] !== undefined, 'CPI_MONTHLY 2022-01 istnieje');
 assert(WIBOR3M_MONTHLY['2010-01'] !== undefined, 'WIBOR 3M styczen 2010 istnieje');
 assert(WIBOR6M_MONTHLY['2010-01'] !== undefined, 'WIBOR 6M styczen 2010 istnieje');
 
@@ -234,12 +251,12 @@ assert(WIBOR6M_MONTHLY['2010-01'] !== undefined, 'WIBOR 6M styczen 2010 istnieje
 // 19. Kwota kredytu - rozne wartosci
 // ============================================================================
 group('19. Kwota kredytu - rozne wartosci');
-var rowsSmall = calcHarmonogram(50000, 2010, 1, 120, 2, '3M', 'annual', 'rowna');
+var rowsSmall = calcHarmonogram(50000, 2010, 1, 120, 2, '3M', 'rowna');
 assertClose(rowsSmall[119].saldo, 0, 1.0, 'Maly kredyt 50k / 10 lat: saldo koncowe ~0');
 var totKapSmall = rowsSmall.reduce(function(s, r) { return s + r.kapital; }, 0);
 assertClose(totKapSmall, 50000, 1.0, 'Maly kredyt: suma kapitalu = 50k');
 
-var rowsLarge = calcHarmonogram(1500000, 2015, 1, 360, 2, '3M', 'annual', 'rowna');
+var rowsLarge = calcHarmonogram(1500000, 2015, 1, 360, 2, '3M', 'rowna');
 assertClose(rowsLarge[359].saldo, 0, 2.0, 'Duzy kredyt 1.5M / 30 lat: saldo koncowe ~0');
 assert(rowsLarge[0].rata > rowsSmall[0].rata, 'Wieksza kwota -> wieksza rata');
 
@@ -247,11 +264,11 @@ assert(rowsLarge[0].rata > rowsSmall[0].rata, 'Wieksza kwota -> wieksza rata');
 // 20. Okres kredytu - rozne wartosci
 // ============================================================================
 group('20. Okres kredytu - rozne wartosci');
-var rows36 = calcHarmonogram(350000, 2010, 1, 36, 2, '3M', 'annual', 'rowna');
+var rows36 = calcHarmonogram(350000, 2010, 1, 36, 2, '3M', 'rowna');
 assert(rows36.length === 36, 'Krotki kredyt 3 lata: 36 wierszy');
 assertClose(rows36[35].saldo, 0, 1.0, 'Krotki kredyt: saldo koncowe ~0');
 
-var rows420 = calcHarmonogram(350000, 2010, 1, 420, 2, '3M', 'annual', 'rowna');
+var rows420 = calcHarmonogram(350000, 2010, 1, 420, 2, '3M', 'rowna');
 assert(rows420.length === 420, 'Dlugi kredyt 35 lat: 420 wierszy');
 assertClose(rows420[419].saldo, 0, 2.0, 'Dlugi kredyt: saldo koncowe ~0');
 
@@ -261,7 +278,7 @@ assert(rows36[0].rata > rows420[0].rata, 'Krotszy okres -> wieksza rata');
 // 21. Data startu kredytu - rozne miesiace
 // ============================================================================
 group('21. Data startu - rozne miesiace');
-var rowsOct = calcHarmonogram(350000, 2010, 10, 360, 2, '3M', 'annual', 'rowna');
+var rowsOct = calcHarmonogram(350000, 2010, 10, 360, 2, '3M', 'rowna');
 assert(rowsOct[0].calMonth === 9, 'Start pazdziernik: calMonth = 9');
 assert(rowsOct[0].rok === 2010, 'Start paz 2010: rok = 2010');
 assert(rowsOct[3].calMonth === 0, 'Po 3 mies od paz: styczen (calMonth=0)');
@@ -272,8 +289,8 @@ assert(rowsOct[0].miesiacNazwa === 'paź', 'Nazwa miesiaca pazdziernik = paź');
 // 22. WIBOR 3M vs 6M porownanie
 // ============================================================================
 group('22. WIBOR 3M vs 6M porownanie');
-var rA3 = calcHarmonogram(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna');
-var rA6 = calcHarmonogram(350000, 2010, 1, 360, 2, '6M', 'annual', 'rowna');
+var rA3 = calcHarmonogram(350000, 2010, 1, 360, 2, '3M', 'rowna');
+var rA6 = calcHarmonogram(350000, 2010, 1, 360, 2, '6M', 'rowna');
 var tot3 = rA3.reduce(function(s,r){return s + r.rata;}, 0);
 var tot6 = rA6.reduce(function(s,r){return s + r.rata;}, 0);
 assert(Math.abs(tot3 - tot6) / tot3 < 0.1, 'Raznica WIBOR 3M vs 6M < 10%');
@@ -285,8 +302,8 @@ assertClose(rA6[359].saldo, 0, 1.0, '6M: saldo koncowe ~0');
 // 23. Marza i prowizja - harmonogram bazowy
 // ============================================================================
 group('23. Marza i prowizja');
-var rowsHigh = calcHarmonogram(350000, 2010, 1, 360, 4, '3M', 'annual', 'rowna');
-var rowsLow  = calcHarmonogram(350000, 2010, 1, 360, 1, '3M', 'annual', 'rowna');
+var rowsHigh = calcHarmonogram(350000, 2010, 1, 360, 4, '3M', 'rowna');
+var rowsLow  = calcHarmonogram(350000, 2010, 1, 360, 1, '3M', 'rowna');
 assert(rowsHigh[0].rata > rowsLow[0].rata, 'Wyzsza marza -> wyzsza rata');
 assert(rowsHigh[0].stopa > rowsLow[0].stopa, 'Wyzsza marza -> wyzsza stopa');
 var totHigh = rowsHigh.reduce(function(s,r){return s + r.rata;}, 0);
@@ -297,7 +314,7 @@ assert(totHigh > totLow, 'Wyzsza marza -> wyzszy koszt laczny');
 // 24. calcHarmonogramWithEvents - brak zdarzen = bazowy
 // ============================================================================
 group('24. Harmonogram z wydarzeniami - brak zdarzen');
-var resultEmpty = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', [], 2);
+var resultEmpty = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', [], 2);
 var rowsEmpty = resultEmpty.rows;
 assert(rowsEmpty.length === rowsBase.length, 'Brak zdarzen -> taka sama dlugosc');
 assertClose(rowsEmpty[0].rata, rowsBase[0].rata, 0.01, 'Brak zdarzen -> taka sama rata m0');
@@ -315,7 +332,7 @@ var evNadplata = [{
   type: 'nadplata', kwota: 50000, month: 1, year: 2012,
   efekt: 'krotszy_okres'
 }];
-var resultNad = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', evNadplata, 0);
+var resultNad = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', evNadplata, 0);
 var rowsNad = resultNad.rows;
 assert(rowsNad.length < 360, 'Nadplata krotszy_okres: mniej niz 360 wierszy (got ' + rowsNad.length + ')');
 assert(rowsNad[rowsNad.length - 1].saldo <= 0.01, 'Nadplata: saldo koncowe ~0');
@@ -336,7 +353,7 @@ var evNizszaRata = [{
   type: 'nadplata', kwota: 50000, month: 1, year: 2012,
   efekt: 'nizsza_rata'
 }];
-var resultNR = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', evNizszaRata, 0);
+var resultNR = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', evNizszaRata, 0);
 var rowsNR = resultNR.rows;
 assert(rowsNR.length === 360, 'nizsza_rata: okres bez zmian (360 wierszy) got ' + rowsNR.length);
 // Po nadplacie rata powinna byc nizsza
@@ -352,7 +369,7 @@ group('27. Pelna wczesniejsza splata');
 var evSplata = [{
   type: 'splata', month: 6, year: 2015
 }];
-var resultSpl = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', evSplata, 0);
+var resultSpl = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', evSplata, 0);
 var rowsSpl = resultSpl.rows;
 // Kredyt powinien sie zakonczyc w okolicy miesiaca 66 (czerwiec 2015 = 65 od startu + 1)
 assert(rowsSpl.length <= 66, 'Splata cze 2015: max 66 wierszy (got ' + rowsSpl.length + ')');
@@ -370,7 +387,7 @@ var evRef = [{
   type: 'refinansowanie', month: 1, year: 2013,
   nowaMarza: 1.5, prowizjaRef: 1.0, nowyWibor: 'bez_zmian'
 }];
-var resultRef = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', evRef, 2);
+var resultRef = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', evRef, 2);
 var rowsRef = resultRef.rows;
 assert(rowsRef.length === 360, 'Refinansowanie: 360 wierszy');
 // Po refinansowaniu marza zmienia sie na 1.5 -> stopa powinna byc nizsza
@@ -393,7 +410,7 @@ var evRefW = [{
   type: 'refinansowanie', month: 1, year: 2015,
   nowaMarza: 1.5, prowizjaRef: 0, nowyWibor: '6M'
 }];
-var resultRefW = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', evRefW, 0);
+var resultRefW = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', evRefW, 0);
 var rowsRefW = resultRefW.rows;
 // Po refinansowaniu fixing powinien byc co 6 miesiecy
 // Sprawdz ze wiersz refinansowania ma fixing
@@ -441,7 +458,7 @@ var evCykCalc = [{
   efekt: 'krotszy_okres', doKonca: true, doMonth: 12, doYear: 2015
 }];
 var expandedCalc = expandEvents(evCykCalc, 2010, 1, 360);
-var resultCyk = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', expandedCalc, 0);
+var resultCyk = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', expandedCalc, 0);
 var rowsCyk = resultCyk.rows;
 assert(rowsCyk.length < 360, 'Cykliczna nadplata skraca kredyt (got ' + rowsCyk.length + ')');
 assert(resultCyk.totalNadplatyNom > 0, 'Laczna nadplata nom > 0');
@@ -459,7 +476,7 @@ var evCykNR = [{
   efekt: 'nizsza_rata', doKonca: true, doMonth: 12, doYear: 2015
 }];
 var expandedNR_cyk = expandEvents(evCykNR, 2010, 1, 360);
-var resultCykNR = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', expandedNR_cyk, 0);
+var resultCykNR = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', expandedNR_cyk, 0);
 var rowsCykNR = resultCykNR.rows;
 assert(rowsCykNR.length === 360, 'Cykliczna nizsza_rata: okres bez zmian (360), got ' + rowsCykNR.length);
 // Rata pod koniec kredytu powinna byc nizsza niz bazowa
@@ -472,7 +489,7 @@ var evCykNR_big = [{
   efekt: 'nizsza_rata', doKonca: true, doMonth: 12, doYear: 2015
 }];
 var expandedNR_big = expandEvents(evCykNR_big, 2010, 1, 360);
-var resultCykNR_big = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', expandedNR_big, 0);
+var resultCykNR_big = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', expandedNR_big, 0);
 assert(resultCykNR_big.rows.length <= 360, 'Duza cykliczna nizsza_rata: <= 360 wierszy');
 assert(resultCykNR_big.rows[resultCykNR_big.rows.length - 1].saldo <= 0.01,
   'Duza cykliczna nizsza_rata: saldo koncowe ~0');
@@ -485,7 +502,7 @@ var evBig = [{
   type: 'nadplata', kwota: 400000, month: 6, year: 2012,
   efekt: 'krotszy_okres'
 }];
-var resultBig = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', evBig, 0);
+var resultBig = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', evBig, 0);
 var rowsBig = resultBig.rows;
 assert(rowsBig.length <= 30, 'Nadplata wieksza niz saldo: kredyt konczy sie szybko (got ' + rowsBig.length + ')');
 assert(rowsBig[rowsBig.length - 1].saldo === 0, 'Saldo = 0 po duzej nadplacie');
@@ -522,17 +539,30 @@ assert(expandedEdge.length === 3, 'Zdarzenia sprzed startu odfiltrowane: 3 eleme
 // 37. Kolejnosc przetwarzania zdarzen (refinansowanie -> nadplata -> splata)
 // ============================================================================
 group('37. Kolejnosc przetwarzania zdarzen');
-var evOrder = [
-  { type: 'nadplata', kwota: 10000, month: 1, year: 2013, efekt: 'krotszy_okres' },
-  { type: 'refinansowanie', month: 1, year: 2013, nowaMarza: 1.5, prowizjaRef: 0, nowyWibor: 'bez_zmian' }
-];
-var resultOrder = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', evOrder, 0);
-var rowsOrder = resultOrder.rows;
-// Wiersz m=36 (sty 2013) powinien miec event refinansowanie (bo idzie pierwszy)
-// a nadplata tez tam jest
-var m36 = rowsOrder[36]; // sty 2013 = miesiac 36 od startu
-// Po refinansowaniu marza=1.5 i potem nadplata -> stopa powinna uzywac nowej marzy
-assert(m36 !== undefined, 'Wiersz m36 istnieje');
+// Bug-regression: event sort comparator używał `order[x] || 1`, które traktowało
+// `refinansowanie` (klucz 0) jak fallback, przez co kolejność zdarzeń zależała
+// od kolejności dodania w UI. Te asercje wyłapują regresję.
+var nadpEv = { type: 'nadplata', kwota: 10000, month: 1, year: 2013, efekt: 'krotszy_okres' };
+var refiEv = { type: 'refinansowanie', month: 1, year: 2013, nowaMarza: 1.5, prowizjaRef: 1.0, nowyWibor: 'bez_zmian' };
+
+// Dwa scenariusze: nadpłata dodana pierwsza vs. refinansowanie pierwsze.
+var resNadFirst  = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', [nadpEv, refiEv], 0);
+var resRefiFirst = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', [refiEv, nadpEv], 0);
+
+// Wynik musi być identyczny niezależnie od kolejności dodania zdarzeń.
+assertClose(resNadFirst.totalProwizjeNom, resRefiFirst.totalProwizjeNom, 0.01,
+  'Prowizja refinansowania niezależna od kolejności dodania zdarzeń');
+assert(resNadFirst.rows.length === resRefiFirst.rows.length,
+  'Liczba wierszy identyczna niezależnie od kolejności zdarzeń (' +
+  resNadFirst.rows.length + ' vs ' + resRefiFirst.rows.length + ')');
+
+// Prowizja refi = 1% × saldo PRZED nadpłatą — a nie po niej.
+// Sprawdzamy to iterując harmonogram bez zdarzeń aż do m=36 żeby znaleźć saldo.
+var rowsBaseline = calcHarmonogram(350000, 2010, 1, 360, 2, '3M', 'rowna');
+var saldoPrzedM36 = rowsBaseline[35].saldo; // saldo na koniec miesiąca 35 = początek 36
+var expectedProwRef = saldoPrzedM36 * 1.0 / 100;
+assertClose(resNadFirst.totalProwizjeNom, expectedProwRef, 1.0,
+  'Prowizja refinansowania liczona na saldzie PRZED nadpłatą (refi → nadpłata)');
 
 // ============================================================================
 // 38. Raty malejace z nadplata - krotszy_okres
@@ -542,7 +572,7 @@ var evMalNad = [{
   type: 'nadplata', kwota: 50000, month: 1, year: 2012,
   efekt: 'krotszy_okres'
 }];
-var resultMalNad = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'malejaca', evMalNad, 0);
+var resultMalNad = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'malejaca', evMalNad, 0);
 var rowsMalNad = resultMalNad.rows;
 assert(rowsMalNad.length < 360, 'Malejace + krotszy_okres: mniej niz 360 wierszy (got ' + rowsMalNad.length + ')');
 assert(rowsMalNad[rowsMalNad.length - 1].saldo <= 0.01, 'Malejace + nadplata: saldo koncowe ~0');
@@ -555,7 +585,7 @@ var evMalNR = [{
   type: 'nadplata', kwota: 50000, month: 1, year: 2012,
   efekt: 'nizsza_rata'
 }];
-var resultMalNR = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'malejaca', evMalNR, 0);
+var resultMalNR = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'malejaca', evMalNR, 0);
 var rowsMalNR = resultMalNR.rows;
 assert(rowsMalNR.length === 360, 'Malejace nizsza_rata: 360 wierszy, got ' + rowsMalNR.length);
 
@@ -564,7 +594,7 @@ assert(rowsMalNR.length === 360, 'Malejace nizsza_rata: 360 wierszy, got ' + row
 // ============================================================================
 group('40. Raty malejace z pelna splata');
 var evMalSpl = [{ type: 'splata', month: 6, year: 2015 }];
-var resultMalSpl = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'malejaca', evMalSpl, 0);
+var resultMalSpl = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'malejaca', evMalSpl, 0);
 var rowsMalSpl = resultMalSpl.rows;
 assert(rowsMalSpl.length <= 66, 'Malejace + splata: max 66 wierszy (got ' + rowsMalSpl.length + ')');
 assert(rowsMalSpl[rowsMalSpl.length - 1].saldo === 0, 'Malejace + splata: saldo = 0');
@@ -577,7 +607,7 @@ var evMalRef = [{
   type: 'refinansowanie', month: 1, year: 2013,
   nowaMarza: 1.5, prowizjaRef: 0.5, nowyWibor: 'bez_zmian'
 }];
-var resultMalRef = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'malejaca', evMalRef, 0);
+var resultMalRef = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'malejaca', evMalRef, 0);
 var rowsMalRef = resultMalRef.rows;
 assert(rowsMalRef.length === 360, 'Malejace + refinansowanie: 360 wierszy');
 var refRowMal = rowsMalRef.find(function(r) { return r.event === 'refinansowanie'; });
@@ -592,7 +622,7 @@ var evProw = [{
   type: 'refinansowanie', month: 1, year: 2015,
   nowaMarza: 1.5, prowizjaRef: 2.0, nowyWibor: 'bez_zmian'
 }];
-var resultProw = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', evProw, 3);
+var resultProw = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', evProw, 3);
 var prowInit = 350000 * 3 / 100;
 assert(resultProw.totalProwizjeNom > prowInit, 'Laczne prowizje > prowizja poczatkowa');
 // Prowizja refinansowania = saldo_w_momencie_ref * 2%
@@ -610,7 +640,7 @@ var evMulti = [
   { type: 'refinansowanie', month: 1, year: 2016, nowaMarza: 1.5, prowizjaRef: 0, nowyWibor: 'bez_zmian' },
   { type: 'nadplata', kwota: 50000, month: 6, year: 2018, efekt: 'nizsza_rata' }
 ];
-var resultMulti = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', evMulti, 2);
+var resultMulti = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', evMulti, 2);
 var rowsMulti = resultMulti.rows;
 assert(rowsMulti.length < 360, 'Wiele zdarzen: krotszy okres');
 assertClose(resultMulti.totalNadplatyNom, 100000, 0.01, 'Laczna nadplata = 20k + 30k + 50k');
@@ -641,7 +671,7 @@ assert(savedOds > 0, 'Oszczednosc na odsetkach > 0 (saved ' + Math.round(savedOd
 // 46. Deflator i wartosci realne w harmonogramie z wydarzeniami
 // ============================================================================
 group('46. Deflator w harmonogramie z wydarzeniami');
-var resultDef = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', [], 0);
+var resultDef = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', [], 0);
 var rowsDef = resultDef.rows;
 assertClose(rowsDef[0].deflator, 1.0, 1e-10, 'Deflator m0 = 1.0 (z events)');
 assertClose(rowsDef[0].rataReal, rowsDef[0].rata, 0.01, 'Rata realna m0 = nominalna (z events)');
@@ -677,10 +707,10 @@ group('49. Metodyka krok 3: rata realna');
 assertClose(rowsBase[0].rataReal, rowsBase[0].rata * 1.0, 0.01, 'Rata realna m0 = rata nom * deflator(1.0)');
 // W m1 deflator < 1 (bo CPI 2010 > 0)
 assert(rowsBase[1].rataReal < rowsBase[1].rata, 'Rata realna m1 < rata nominalna (inflacja > 0)');
-// Deflator miesieczny
-var cpi2010v = getCpiAnnual(2010);
-var expectedDef1 = 1.0 * (1 / Math.pow(1 + cpi2010v / 100, 1 / 12));
-assertClose(rowsBase[1].deflator, expectedDef1, 1e-6, 'Deflator m1 = 1/(1+CPI)^(1/12)');
+// Deflator miesieczny (tryb m/m)
+var cpiM_2010_01v = getCpiMonthly(2010, 1);
+var expectedDef1 = 1.0 * (1 / (1 + cpiM_2010_01v / 100));
+assertClose(rowsBase[1].deflator, expectedDef1, 1e-6, 'Deflator m1 = 1/(1+CPI_m/m)');
 
 // ============================================================================
 // 50. Weryfikacja kroku 4 (metodyka): efekt nadplaty
@@ -705,7 +735,7 @@ assert(rataNR_after < rataBase_same, 'nizsza_rata: rata po nadplacie < rata bazo
 // ============================================================================
 group('51. Metodyka krok 5: refinansowanie');
 // Refinansowanie zmienia marze i wymusza natychmiastowy fixing
-var refResult = calcHarmonogramWithEvents(350000, 2010, 1, 360, 3, '3M', 'annual', 'rowna',
+var refResult = calcHarmonogramWithEvents(350000, 2010, 1, 360, 3, '3M', 'rowna',
   [{ type: 'refinansowanie', month: 1, year: 2013, nowaMarza: 1.5, prowizjaRef: 0, nowyWibor: 'bez_zmian' }], 0);
 var refRows = refResult.rows;
 // m36 = sty 2013 powinien miec nowa stope
@@ -721,7 +751,7 @@ assert(refRows[35].stopa > m36ref.stopa, 'Stopa przed ref > stopa po ref (marza 
 // 52. Weryfikacja kroku 6 (metodyka): prowizje nie zwiekszaja salda
 // ============================================================================
 group('52. Metodyka krok 6: prowizje');
-var resultProwCheck = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', [], 5);
+var resultProwCheck = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', [], 5);
 var rowsProwCheck = resultProwCheck.rows;
 // Prowizja 5% z 350k = 17500 - ale saldo w m0 to dalej 350k (minus splata kapitalowa)
 var prowNom = 350000 * 5 / 100;
@@ -788,18 +818,6 @@ assertClose(totNomMod, totOdsNad + (350000 - resultNad.totalNadplatyNom), 2.0,
   'Raty = odsetki + (kwota - nadplaty)');
 
 // ============================================================================
-// 57. CPI roczne vs miesieczne - harmonogram
-// ============================================================================
-group('57. CPI roczne vs miesieczne - harmonogram');
-var rowsAnn = calcHarmonogram(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna');
-var rowsMon = calcHarmonogram(350000, 2010, 1, 360, 2, '3M', 'monthly', 'rowna');
-// Raty nominalne identyczne (CPI nie wplywa na nominalne)
-assertClose(rowsAnn[0].rata, rowsMon[0].rata, 0.01, 'Rata nom m0 taka sama niezaleznie od trybu CPI');
-// Deflatory rozne
-assert(Math.abs(rowsAnn[12].deflator - rowsMon[12].deflator) < 0.05,
-  'Deflatory po 12 m zblizone (ale nie identyczne)');
-
-// ============================================================================
 // 58. getWynagr i calcAvgStats
 // ============================================================================
 group('58. getWynagr i calcAvgStats');
@@ -834,7 +852,7 @@ var evM0 = [{
   type: 'nadplata', kwota: 50000, month: 1, year: 2010,
   efekt: 'krotszy_okres'
 }];
-var resultM0 = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', evM0, 0);
+var resultM0 = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', evM0, 0);
 var rowsM0 = resultM0.rows;
 assert(rowsM0[0].nadplata === 50000, 'Nadplata w m0 = 50k');
 assert(rowsM0.length < 360, 'Nadplata w m0 skraca kredyt');
@@ -847,7 +865,7 @@ var evDbl = [
   { type: 'nadplata', kwota: 20000, month: 6, year: 2012, efekt: 'krotszy_okres' },
   { type: 'nadplata', kwota: 15000, month: 6, year: 2012, efekt: 'krotszy_okres' }
 ];
-var resultDbl = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', evDbl, 0);
+var resultDbl = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', evDbl, 0);
 assertClose(resultDbl.totalNadplatyNom, 35000, 0.01, 'Dwie nadplaty w tym samym m: laczna = 35k');
 
 // ============================================================================
@@ -858,7 +876,7 @@ var evRefNad = [
   { type: 'refinansowanie', month: 1, year: 2013, nowaMarza: 1.5, prowizjaRef: 0.5, nowyWibor: 'bez_zmian' },
   { type: 'nadplata', kwota: 50000, month: 1, year: 2013, efekt: 'krotszy_okres' }
 ];
-var resultRefNad = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', evRefNad, 0);
+var resultRefNad = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', evRefNad, 0);
 var rowsRefNad = resultRefNad.rows;
 // Refinansowanie idzie pierwsze, potem nadplata
 assert(rowsRefNad.length < 360, 'Ref + nadplata skraca kredyt');
@@ -874,7 +892,7 @@ var evRefFix = [{
   type: 'refinansowanie', month: 2, year: 2013,
   nowaMarza: 1.5, prowizjaRef: 0, nowyWibor: '3M'
 }];
-var resultRefFix = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', evRefFix, 0);
+var resultRefFix = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', evRefFix, 0);
 var rowsRefFix = resultRefFix.rows;
 // m37 = lut 2013 (refinansowanie, fixing=true)
 // m38 = mar 2013 (fixing counter=1, nie fixing)
@@ -896,7 +914,7 @@ if (refIdx >= 0 && refIdx + 3 < rowsRefFix.length) {
 // 64. Prowizja zerowa
 // ============================================================================
 group('64. Prowizja zerowa');
-var resultP0 = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', [], 0);
+var resultP0 = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', [], 0);
 assertClose(resultP0.totalProwizjeNom, 0, 0.01, 'Prowizja 0% -> totalProwizjeNom = 0');
 assertClose(resultP0.totalProwizjeReal, 0, 0.01, 'Prowizja 0% -> totalProwizjeReal = 0');
 
@@ -909,7 +927,7 @@ var evHuge = [{
   type: 'nadplata', kwota: 999999, month: 1, year: 2010,
   efekt: 'krotszy_okres'
 }];
-var resultHuge = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'annual', 'rowna', evHuge, 0);
+var resultHuge = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', evHuge, 0);
 // Nadplata efektywna <= 350000
 assert(resultHuge.totalNadplatyNom <= 350000, 'Nadplata obcieta do salda');
 assert(resultHuge.rows[resultHuge.rows.length - 1].saldo === 0, 'Po duzej nadplacie saldo = 0');
@@ -1023,14 +1041,14 @@ assertClose(lok_fb, getFutureDepositRate() / 12 / 100, 0.0001, 'Lokata 2060 -> f
 // 78. calcInvestmentPortfolio() – brak nadpłat
 // ============================================================================
 group('78. calcInvestmentPortfolio() - brak nadplat');
-var inv_none = calcInvestmentPortfolio([], 2010, 1, 12, 'annual', 'wig30');
+var inv_none = calcInvestmentPortfolio([], 2010, 1, 12, 'wig30');
 assert(inv_none === null, 'Brak nadplat -> null');
 
 // ============================================================================
 // 79. calcInvestmentPortfolio() – jedna nadpłata WIG30
 // ============================================================================
 group('79. calcInvestmentPortfolio() - jedna nadplata WIG30');
-var inv_one = calcInvestmentPortfolio([{month: 0, kwota: 50000}], 2015, 1, 24, 'annual', 'wig30');
+var inv_one = calcInvestmentPortfolio([{month: 0, kwota: 50000}], 2015, 1, 24, 'wig30');
 assert(inv_one !== null, 'Wynik nie null');
 assert(inv_one.totalWplaty === 50000, 'Wplaty = 50k');
 assert(inv_one.monthly.length === 25, 'Monthly ma 25 wierszy (0-24)');
@@ -1040,7 +1058,7 @@ assert(inv_one.monthly[0].wartoscNom === 50000, 'Portfel w m0 = 50k (przed wzros
 // 80. calcInvestmentPortfolio() – lokata po Belce
 // ============================================================================
 group('80. calcInvestmentPortfolio() - lokata');
-var inv_lok = calcInvestmentPortfolio([{month: 0, kwota: 100000}], 2015, 1, 12, 'annual', 'lokata');
+var inv_lok = calcInvestmentPortfolio([{month: 0, kwota: 100000}], 2015, 1, 12, 'lokata');
 assert(inv_lok !== null, 'Lokata wynik nie null');
 assert(inv_lok.portfolioBrutto > 100000, 'Lokata brutto > wplata');
 assert(inv_lok.podatekBelki > 0, 'Belka > 0 dla lokaty z zyskiem');
@@ -1050,7 +1068,7 @@ assert(inv_lok.portfolioNetto < inv_lok.portfolioBrutto, 'Netto < brutto');
 // 81. calcInvestmentPortfolio() – gotówka
 // ============================================================================
 group('81. calcInvestmentPortfolio() - gotowka');
-var inv_cash = calcInvestmentPortfolio([{month: 0, kwota: 50000}], 2015, 1, 12, 'annual', 'gotowka');
+var inv_cash = calcInvestmentPortfolio([{month: 0, kwota: 50000}], 2015, 1, 12, 'gotowka');
 assert(inv_cash !== null, 'Gotowka wynik nie null');
 assertClose(inv_cash.portfolioBrutto, 50000, 0.01, 'Gotowka nom = wplata');
 assertClose(inv_cash.zyskBrutto, 0, 0.01, 'Gotowka zysk = 0');
@@ -1060,7 +1078,7 @@ assertClose(inv_cash.podatekBelki, 0, 0.01, 'Gotowka brak Belki');
 // 82. calcInvestmentPortfolio() – SP500 w PLN
 // ============================================================================
 group('82. calcInvestmentPortfolio() - SP500 w PLN');
-var inv_sp = calcInvestmentPortfolio([{month: 0, kwota: 50000}], 2010, 1, 60, 'annual', 'sp500');
+var inv_sp = calcInvestmentPortfolio([{month: 0, kwota: 50000}], 2010, 1, 60, 'sp500');
 assert(inv_sp !== null, 'SP500 wynik nie null');
 assert(inv_sp.totalWplaty === 50000, 'SP500 wplaty = 50k');
 
@@ -1070,7 +1088,7 @@ assert(inv_sp.totalWplaty === 50000, 'SP500 wplaty = 50k');
 group('83. calcInvestmentPortfolio() - cykliczne nadplaty');
 var cycOverpay = [];
 for (var ci = 0; ci < 12; ci++) cycOverpay.push({month: ci * 3, kwota: 5000});
-var inv_cyc = calcInvestmentPortfolio(cycOverpay, 2015, 1, 36, 'annual', 'wig30');
+var inv_cyc = calcInvestmentPortfolio(cycOverpay, 2015, 1, 36, 'wig30');
 assert(inv_cyc !== null, 'Cykliczne wynik nie null');
 assertClose(inv_cyc.totalWplaty, 60000, 0.01, 'Cykliczne wplaty = 60k');
 assert(inv_cyc.monthly.length === 37, 'Cykliczne 37 wierszy');
@@ -1122,14 +1140,14 @@ assertClose(invWplSum, inv_cyc.totalWplaty, 0.01, 'Suma wplat miesięcznych = to
 // 89. investment_type = 'none'
 // ============================================================================
 group('89. investment_type = none');
-var inv_none2 = calcInvestmentPortfolio([{month: 0, kwota: 50000}], 2015, 1, 12, 'annual', 'none');
+var inv_none2 = calcInvestmentPortfolio([{month: 0, kwota: 50000}], 2015, 1, 12, 'none');
 assert(inv_none2 === null, 'none -> null');
 
 // ============================================================================
 // 90. WIBOR 1M fixing interval
 // ============================================================================
 group('90. WIBOR 1M fixing interval');
-var rows1m = calcHarmonogram(350000, 2010, 1, 36, 2, '1M', 'annual', 'rowna');
+var rows1m = calcHarmonogram(350000, 2010, 1, 36, 2, '1M', 'rowna');
 assert(rows1m[0].isFix === true, '1M: m0 fixing');
 assert(rows1m[1].isFix === true, '1M: m1 fixing');
 assert(rows1m[2].isFix === true, '1M: m2 fixing');
@@ -1152,7 +1170,10 @@ assertClose(getWibor(2060, 1, '1M'), getFutureWibor(), 0.001, 'WIBOR 1M 2060 = g
 // 93. Projekcje przyszłe — CPI
 // ============================================================================
 group('93. Projekcje przyszle - CPI');
-assertClose(getCpiAnnual(2060), getFutureCpi(), 0.001, 'CPI 2060 = getFutureCpi()');
+assertClose(getCpiMonthly(2060, 1), getFutureCpiMonthly(), 0.001, 'CPI m/m 2060 = getFutureCpiMonthly()');
+// Annualizowana wartosc fallbacku = getFutureCpi() (round-trip)
+assertClose(annualizeMonthlyCpi(getCpiMonthly(2060, 1)), getFutureCpi(), 0.001,
+  'annualizeMonthlyCpi(getFutureCpiMonthly) = getFutureCpi()');
 
 // ============================================================================
 // 94. Projekcje przyszłe — wynagrodzenie
@@ -1171,13 +1192,13 @@ assertClose(getMonthlyInvestmentReturn('gotowka', 2020, 6), 0, 0.0001, 'Gotowka 
 // 96. Deflator inwestycji - tryb CPI miesieczny
 // ============================================================================
 group('96. Deflator inwestycji - tryb CPI miesieczny');
-var invCpiMonthly = calcInvestmentPortfolio([{month: 0, kwota: 50000}], 2010, 1, 12, 'monthly', 'gotowka');
+var invCpiMonthly = calcInvestmentPortfolio([{month: 0, kwota: 50000}], 2010, 1, 12, 'gotowka');
 assert(invCpiMonthly !== null, 'Portfel CPI miesieczny nie jest null');
 var expectedInvDeflator = 1;
 for (var mi = 0; mi < 12; mi++) {
   var calMonth96 = ((1 - 1 + mi) % 12) + 1;
   var calYear96 = 2010 + Math.floor((1 - 1 + mi) / 12);
-  expectedInvDeflator *= getMonthlyDeflatorFactor(calYear96, calMonth96, 'monthly');
+  expectedInvDeflator *= getMonthlyDeflatorFactor(calYear96, calMonth96);
 }
 assertClose(invCpiMonthly.monthly[12].deflator, expectedInvDeflator, 1e-9, 'Deflator portfela = iloczyn miesiecznych deflatorow CPI');
 assertClose(invCpiMonthly.portfolioRealNetto, invCpiMonthly.portfolioNetto * invCpiMonthly.monthly[12].deflator, 0.01, 'Portfel real netto skaluje sie finalnym deflatorem');
@@ -1186,7 +1207,7 @@ assertClose(invCpiMonthly.portfolioRealNetto, invCpiMonthly.portfolioNetto * inv
 // 97. Zysk realny netto - wpłaty deflowane miesiecznie
 // ============================================================================
 group('97. Zysk realny netto - wplaty deflowane miesiecznie');
-var invStagger = calcInvestmentPortfolio([{month: 0, kwota: 10000}, {month: 12, kwota: 10000}], 2022, 1, 24, 'annual', 'gotowka');
+var invStagger = calcInvestmentPortfolio([{month: 0, kwota: 10000}, {month: 12, kwota: 10000}], 2022, 1, 24, 'gotowka');
 assert(invStagger !== null, 'Portfel z dwiema wplatami nie jest null');
 var expectedWplatyReal = invStagger.monthly.reduce(function(s, row) { return s + row.wplata * row.deflator; }, 0);
 assertClose(invStagger.totalWplatyReal, expectedWplatyReal, 0.01, 'Suma wplat realnych = suma (wplata × deflator)');
@@ -1203,6 +1224,86 @@ assertClose(parseLocaleFloat('2,75'), 2.75, 1e-12, 'parseLocaleFloat: przecinek'
 assert(isTransientNumericInput('2.') === true, 'isTransientNumericInput: "2." to stan przejsciowy');
 assert(isTransientNumericInput('2,') === true, 'isTransientNumericInput: "2," to stan przejsciowy');
 assert(isTransientNumericInput('2.5') === false, 'isTransientNumericInput: "2.5" nie jest stanem przejsciowym');
+
+// ============================================================================
+// 99. Wydłużenie okresu kredytu - podstawy (annuitet)
+// ============================================================================
+group('99. Wydłużenie okresu - annuitet');
+var evExt = [{ type: 'wydluzenie', month: 1, year: 2013, miesiace: 60 }];
+var resExt = calcHarmonogramWithEvents(350000, 2010, 1, 240, 2, '3M', 'rowna', evExt, 0);
+var rowsExt = resExt.rows;
+assert(rowsExt.length === 240 + 60, 'Wydłużenie +60: rowsB.length = 300 (got ' + rowsExt.length + ')');
+assert(rowsExt[36].event === 'wydluzenie', 'Wiersz miesiąca wydłużenia ma event "wydluzenie" (got "' + rowsExt[36].event + '")');
+// Rata po wydłużeniu niższa od raty bazowej w tym samym miesiącu
+var rowsBaseExt = calcHarmonogram(350000, 2010, 1, 240, 2, '3M', 'rowna');
+assert(rowsExt[36].rata < rowsBaseExt[36].rata - 1,
+  'Rata po wydłużeniu < rata bazowa (' + rowsExt[36].rata.toFixed(2) + ' vs ' + rowsBaseExt[36].rata.toFixed(2) + ')');
+assert(rowsExt[rowsExt.length - 1].saldo <= 0.01, 'Saldo końcowe ~0 po wydłużeniu');
+var sumKapExt = 0;
+rowsExt.forEach(function(r) { sumKapExt += r.kapital; });
+assertClose(sumKapExt, 350000, 1, 'Suma kapitału = kwota kredytu (inwariant bilansowy)');
+// Saldo ciągłe: wydłużenie nie zmienia salda
+assertClose(rowsExt[36].saldo + rowsExt[36].kapital,
+  rowsExt[35].saldo, 0.01,
+  'Saldo ciągłe: saldo[m] + kapital[m] = saldo[m-1]');
+// Wydłużenie nie wymusza fixingu WIBOR — test w miesiącu spoza cyklu 3M.
+// m=37 (luty 2013), 37 mod 3 = 1, więc NIE jest to naturalny fixing.
+var evExtNoFix = [{ type: 'wydluzenie', month: 2, year: 2013, miesiace: 60 }];
+var resExtNoFix = calcHarmonogramWithEvents(350000, 2010, 1, 240, 2, '3M', 'rowna', evExtNoFix, 0);
+assert(resExtNoFix.rows[37].isFix === false, 'Wydłużenie nie wymusza fixingu WIBOR (m=37, poza cyklem 3M)');
+assertClose(resExtNoFix.rows[37].wibor, resExtNoFix.rows[36].wibor, 1e-9, 'WIBOR bez zmian przy wydłużeniu (m=37)');
+
+// ============================================================================
+// 100. Wydłużenie okresu + raty malejące
+// ============================================================================
+group('100. Wydłużenie okresu - malejące');
+var evExtMal = [{ type: 'wydluzenie', month: 1, year: 2015, miesiace: 48 }];
+var resExtMal = calcHarmonogramWithEvents(350000, 2010, 1, 240, 2, '3M', 'malejaca', evExtMal, 0);
+var rowsExtMal = resExtMal.rows;
+assert(rowsExtMal.length === 240 + 48, 'Malejące + wydłużenie +48: rowsB.length = 288');
+assert(rowsExtMal[rowsExtMal.length - 1].saldo <= 0.01, 'Malejące + wydłużenie: saldo końcowe ~0');
+// Część kapitałowa w miesiącu wydłużenia niższa niż bezpośrednio przed
+var rowsBaseMal = calcHarmonogram(350000, 2010, 1, 240, 2, '3M', 'malejaca');
+assert(rowsExtMal[60].kapital < rowsBaseMal[60].kapital - 1,
+  'Kapitał po wydłużeniu < kapitał bazowy (malejące, ' +
+  rowsExtMal[60].kapital.toFixed(2) + ' vs ' + rowsBaseMal[60].kapital.toFixed(2) + ')');
+
+// ============================================================================
+// 101. Kolejność: refinansowanie → wydłużenie → nadpłata w tym samym miesiącu
+// ============================================================================
+group('101. Kolejność refi + wydluzenie + nadplata');
+// Niezależność od kolejności dodania zdarzeń (regresja bug sort comparator).
+var nadpA = { type: 'nadplata', kwota: 10000, month: 6, year: 2015, efekt: 'krotszy_okres' };
+var wydA  = { type: 'wydluzenie', month: 6, year: 2015, miesiace: 36 };
+var refiA = { type: 'refinansowanie', month: 6, year: 2015, nowaMarza: 1.5, prowizjaRef: 1.0, nowyWibor: 'bez_zmian' };
+var resOrd1 = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', [nadpA, wydA, refiA], 0);
+var resOrd2 = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', [refiA, nadpA, wydA], 0);
+var resOrd3 = calcHarmonogramWithEvents(350000, 2010, 1, 360, 2, '3M', 'rowna', [wydA, refiA, nadpA], 0);
+assertClose(resOrd1.totalProwizjeNom, resOrd2.totalProwizjeNom, 0.01,
+  'Prowizje niezależne od kolejności dodania (1 vs 2)');
+assertClose(resOrd2.totalProwizjeNom, resOrd3.totalProwizjeNom, 0.01,
+  'Prowizje niezależne od kolejności dodania (2 vs 3)');
+assert(resOrd1.rows.length === resOrd2.rows.length,
+  'Długość harmonogramu niezależna od kolejności (got ' + resOrd1.rows.length + ' vs ' + resOrd2.rows.length + ')');
+// Prowizja refi policzona na saldzie PRZED nadpłatą i PRZED wydłużeniem.
+var rowsBaseRefi = calcHarmonogram(350000, 2010, 1, 360, 2, '3M', 'rowna');
+var saldoPrzedRefi = rowsBaseRefi[64].saldo; // koniec m=64 = początek m=65 (czerwiec 2015)
+var expectedProwRefi = saldoPrzedRefi * 1.0 / 100;
+assertClose(resOrd1.totalProwizjeNom, expectedProwRefi, 1.0,
+  'Prowizja refi liczona PRZED nadpłatą i wydłużeniem');
+
+// ============================================================================
+// 102. Wydłużenie: ochrona przed miesiace = 0 (Number.isFinite)
+// ============================================================================
+group('102. Wydłużenie - 0 miesięcy → minimum 1');
+var evExtZero = [{ type: 'wydluzenie', month: 1, year: 2013, miesiace: 0 }];
+var resExtZero = calcHarmonogramWithEvents(350000, 2010, 1, 240, 2, '3M', 'rowna', evExtZero, 0);
+assert(resExtZero.rows.length === 241,
+  '0 miesięcy traktowane jako minimum 1 (got ' + resExtZero.rows.length + ')');
+// NaN / undefined również powinny trafić na fallback min=1 (Math.floor(Number.isFinite ? ... : 0))
+var evExtNaN = [{ type: 'wydluzenie', month: 1, year: 2013, miesiace: NaN }];
+var resExtNaN = calcHarmonogramWithEvents(350000, 2010, 1, 240, 2, '3M', 'rowna', evExtNaN, 0);
+assert(resExtNaN.rows.length === 241, 'NaN miesięcy traktowane jako minimum 1');
 
 // ============================================================================
 // PODSUMOWANIE
