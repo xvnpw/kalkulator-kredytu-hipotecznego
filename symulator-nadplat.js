@@ -31,9 +31,9 @@ const SALARY_SOURCE_CONFIG = {
   },
   minimum: {
     chartLabel: 'minimalne',
-    tableHeader: 'Wynagrodzenie minimalne',
+    tableHeader: 'Wyn. minimalne',
     tableTitle: 'Minimalne wynagrodzenie za pracę',
-    ratioHeader: 'Rata / wynagrodzenie',
+    ratioHeader: 'Rata / wyn.',
     ratioTitle: 'Rata jako % wynagrodzenia minimalnego',
     data: WYNAGRODZENIA_MINIMALNE
   }
